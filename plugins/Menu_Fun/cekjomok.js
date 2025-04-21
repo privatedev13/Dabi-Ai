@@ -1,8 +1,8 @@
 module.exports = {
-  name: 'cekcantik',
-  command: ['cekcantik'],
+  name: 'cekjomok',
+  command: ['cekjomok', 'cekgay'],
   tags: 'Fun Menu',
-  desc: 'Cek seberapa cantik seseorang',
+  desc: 'Cek seberapa jomok seseorang',
 
   run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
@@ -25,20 +25,20 @@ module.exports = {
 
     let komentar;
     if (persentase <= 25) {
-      komentar = 'Masih biasa aja';
+      komentar = 'Masih aman lu bang';
     } else if (persentase <= 44) {
-      komentar = 'Lumayan lah';
+      komentar = 'Agak lain lu bang';
     } else if (persentase <= 72) {
-      komentar = 'Cantik juga kamu';
+      komentar = 'Waduh warga sungut lele';
     } else if (persentase <= 88) {
-      komentar = 'Wah cantik banget';
+      komentar = 'Fiks jomok';
     } else {
-      komentar = 'Calon Miss Universe!';
+      komentar = 'Hati² orang jomok';
     }
 
     const mentionTarget = targetId;
 
-    const teks = `*Seberapa cantik @${mentionTarget}*\n\n*${persentase}%* Cantik\n_${komentar}_`;
+    const teks = `*Cek seberapa jomok @${mentionTarget}*\n\n*${persentase}%* Jomok\n_${komentar}_`;
 
     await conn.sendMessage(chatId, {
       text: teks,

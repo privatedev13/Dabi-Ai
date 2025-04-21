@@ -1,13 +1,13 @@
 module.exports = {
-  name: 'cekcantik',
-  command: ['cekcantik'],
+  name: 'ceksigma',
+  command: ['ceksigma'],
   tags: 'Fun Menu',
-  desc: 'Cek seberapa cantik seseorang',
+  desc: 'Cek seberapa sigma seseorang',
 
   run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
     const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : message.key.remoteJid;
+    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, '@');
     const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
 
     if (!textMessage) return;
@@ -18,29 +18,28 @@ module.exports = {
     const args = textMessage.slice(prefix.length).trim().split(/\s+/);
     const commandText = args.shift().toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
-
     let targetId = target(message, senderId);
 
     const persentase = Math.floor(Math.random() * 101);
 
     let komentar;
     if (persentase <= 25) {
-      komentar = 'Masih biasa aja';
+      komentar = 'Masih cupu';
     } else if (persentase <= 44) {
-      komentar = 'Lumayan lah';
+      komentar = 'Lumayan alpha';
     } else if (persentase <= 72) {
-      komentar = 'Cantik juga kamu';
+      komentar = 'Wih calon sigma!';
     } else if (persentase <= 88) {
-      komentar = 'Wah cantik banget';
+      komentar = 'Sigma sejati!';
     } else {
-      komentar = 'Calon Miss Universe!';
+      komentar = 'Hati² Alpha Overlord!';
     }
 
     const mentionTarget = targetId;
 
-    const teks = `*Seberapa cantik @${mentionTarget}*\n\n*${persentase}%* Cantik\n_${komentar}_`;
+    const teks = `Cek seberapa sigma @${mentionTarget}\n\n${persentase}% Sigma\n_${komentar}_`;
 
-    await conn.sendMessage(chatId, {
+    conn.sendMessage(chatId, {
       text: teks,
       mentions: [`${targetId}@s.whatsapp.net`]
     }, { quoted: message });
