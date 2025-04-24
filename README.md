@@ -1,7 +1,7 @@
 # <div align='center'>BaseBot-WhastApp</div>
 
 <p align="center">
- <img src="https://files.catbox.moe/6091km.png">
+ <img src="https://raw.githubusercontent.com/maoudabi0/Dabi-Ai-Documentation/main/assets/Dabi-Ai.png">
 </p>
 
 - - -
