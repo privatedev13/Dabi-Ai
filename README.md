@@ -125,6 +125,11 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 
 - - -
 
+# Dabi-Ai-Documentation
+[![iTasks](https://github-readme-stats.vercel.app/api/pin/?username=maoudabi0&repo=Dabi-Ai-Documentation&border_color=7F3FBF&bg_color=FFFFFF&title_color=010101&text_color=8B949E&icon_color=7F3FBF)](https://github.com/maoudabi0/Dabi-Ai-Documentation)
+
+- - -
+
 ## Request & Fix 
    laporkan Bug ke [sini](https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug)
 
