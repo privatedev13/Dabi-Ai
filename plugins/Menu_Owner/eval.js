@@ -3,6 +3,7 @@ module.exports = {
   command: ['>', '=>', '~>'],
   tags: 'Owner Menu',
   desc: 'Mengeksekusi kode JavaScript secara langsung',
+
   isOwner: true,
 
   run: async (conn, message) => {

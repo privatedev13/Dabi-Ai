@@ -13,6 +13,8 @@ module.exports = {
   tags: 'Owner Menu',
   desc: 'Mengirim pesan broadcast ke semua grup (hanya untuk owner).',
 
+  isPremium: true,
+
   run: async (conn, message, { isPrefix }) => {
     const chatId = message?.key?.remoteJid;
     const isGroup = chatId.endsWith("@g.us");
@@ -34,9 +36,7 @@ module.exports = {
 
     if (!module.exports.command.includes(commandText)) return;
 
-    if (!global.isPremium(senderId)) {
-      return conn.sendMessage(chatId, { text: '❌ Fitur ini hanya untuk pengguna premium!' }, { quoted: message });
-    }
+    if (!(await onlyPremium(module.exports, conn, message))) return;
 
     const broadcastMessage = firstSpaceIndex !== -1 ? withoutPrefix.slice(firstSpaceIndex + 1) : '';
 

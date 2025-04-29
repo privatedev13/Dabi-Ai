@@ -8,6 +8,8 @@ module.exports = {
   tags: 'Owner Menu',
   desc: 'Mengatur mode publik bot',
 
+  isOwner: true,
+
   run: async (conn, message, { isPrefix }) => {
     try {
       const chatId = message?.key?.remoteJid;
@@ -28,13 +30,7 @@ module.exports = {
       const commandText = args[0]?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
-      if (!global.ownerNumber.includes(senderId.replace(/\D/g, ''))) {
-        return conn.sendMessage(
-          chatId,
-          { text: '❌ Hanya owner yang dapat menggunakan perintah ini.' },
-          { quoted: message }
-        );
-      }
+      if (!(await onlyOwner(module.exports, conn, message))) return;
 
       if (!args[1] || !['on', 'off'].includes(args[1].toLowerCase())) {
         return conn.sendMessage(

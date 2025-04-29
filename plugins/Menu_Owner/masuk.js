@@ -6,6 +6,8 @@ module.exports = {
   tags: 'Owner Menu',
   desc: 'Menambahkan bot ke group',
 
+  isPremium: true,
+
   run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
     const isGroup = chatId.endsWith('@g.us');
@@ -21,9 +23,8 @@ module.exports = {
     let text = args.join(' ');
 
     if (!module.exports.command.includes(commandText)) return;
-    if (!global.isPremium(senderId)) {
-      return conn.sendMessage(chatId, { text: '❌ Fitur ini hanya untuk pengguna premium!' }, { quoted: message });
-    }
+
+    if (!(await onlyPremium(module.exports, conn, message))) return;
 
     if (!text && message.message.extendedTextMessage?.contextInfo?.quotedMessage) {
       const quoted = message.message.extendedTextMessage.contextInfo.quotedMessage;
