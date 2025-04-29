@@ -4,6 +4,8 @@ module.exports = {
   tags: 'Info Menu',
   desc: 'Melihat semua grup yang bot masuki (Hanya untuk pengguna premium)',
 
+  isPremium: true,
+
   run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
     const senderId = chatId.endsWith('@g.us') ? message.key.participant : chatId.replace(/:\d+@/, '@');
@@ -19,9 +21,7 @@ module.exports = {
 
     if (!module.exports.command.includes(commandText)) return;
 
-    if (!global.isPremium(senderId)) {
-      return conn.sendMessage(chatId, { text: '❌ Fitur ini hanya untuk pengguna premium!' }, { quoted: message });
-    }
+    if (!(await onlyPremium(module.exports, conn, message))) return;
 
     try {
       const groups = await conn.groupFetchAllParticipating();

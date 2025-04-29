@@ -3,9 +3,9 @@ const path = require('path');
 
 module.exports = {
   name: 'daftar',
-  command: ['daftar', 'register'],
+  command: ['daftar', 'register', 'daftargc'],
   tags: 'Info Menu',
-  desc: 'Mendaftarkan pengguna ke dalam database bot.',
+  desc: 'Mendaftarkan pengguna atau grup ke dalam database bot.',
 
   run: async (conn, message, { isPrefix }) => {
     try {
@@ -27,13 +27,48 @@ module.exports = {
       const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
 
       if (!fs.existsSync(dbPath)) {
-        fs.writeFileSync(dbPath, JSON.stringify({ Private: {} }, null, 2));
+        fs.writeFileSync(dbPath, JSON.stringify({ Private: {}, Grup: {} }, null, 2));
       }
 
       let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-      if (!db.Private || typeof db.Private !== 'object') {
-        db.Private = {};
+      if (!db.Private || typeof db.Private !== 'object') db.Private = {};
+      if (!db.Grup || typeof db.Grup !== 'object') db.Grup = {};
+
+      if (commandText === 'daftargc') {
+        if (!isGroup) {
+          return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: message });
+        }
+
+        const metadata = await conn.groupMetadata(chatId);
+        const groupName = metadata.subject;
+
+        const groupExists = Object.values(db.Grup).some(g => g.Id === chatId);
+        if (groupExists) {
+          return conn.sendMessage(chatId, { text: '✅ Grup ini sudah terdaftar di database.' }, { quoted: message });
+        }
+
+        db.Grup[groupName] = {
+          Id: chatId,
+          Welcome: {
+            welcome: false,
+            welcomeText: ''
+          },
+          Left: {
+            gcLeft: false,
+            leftText: '',
+          },
+          autoai: false,
+          chat: 0,
+          mute: false,
+          setWarn: 0
+        };
+
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+        return conn.sendMessage(chatId, {
+          text: `✅ Grup *${groupName}* berhasil didaftarkan ke dalam database.`
+        }, { quoted: message });
       }
 
       const senderNumber = message.pushName || 'Pengguna';
@@ -90,6 +125,7 @@ module.exports = {
       conn.sendMessage(chatId, {
         text: `✅ Pendaftaran berhasil!\n\n🔹 Nama: *${nama}*\n🔹 Umur: *${umur}*\n🔹 ID: *${db.Private[nama].noId}*\n\nKetik *${prefix}profile* untuk melihat profilmu.`,
         contextInfo: { mentionedJid: [senderId] } }, { quoted: message });
+
     } catch (error) {
       console.error('Error di plugin daftar.js:', error);
       conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mendaftar!' }, { quoted: message });
