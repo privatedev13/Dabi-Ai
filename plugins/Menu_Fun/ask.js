@@ -2,9 +2,9 @@ const { ask } = require('../../toolkit/function.js');
 
 module.exports = {
   name: 'Tanya jawab',
-  command: ['apakah', 'bukan kah', 'bukankah', 'benarkah', 'benar kah'],
+  command: ['apakah', 'Apakah', 'Bukan kah', 'Bukankah', 'Benarkah', 'Benar kah', 'bukan kah', 'bukankah', 'benarkah', 'benar kah'],
   tags: 'Fun Menu',
-  desc: '',
+  desc: 'Bertanya ke pada bot',
 
   run: async (conn, message) => {
     try {
