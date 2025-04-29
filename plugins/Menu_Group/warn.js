@@ -49,19 +49,29 @@ module.exports = {
       const contoh = `Contoh penggunaan:
 .warn 1 @tag/reply
 .warn set <angka>
-.warn reset @tag/reply
-.listwarn`;
+.warn reset @tag/reply`;
       return conn.sendMessage(chatId, { text: contoh }, { quoted: message });
     }
 
     if (args[0] === 'set') {
       const jumlah = parseInt(args[1]);
-      if (isNaN(jumlah)) return conn.sendMessage(chatId, { text: 'Masukkan angka maksimum peringatan.' }, { quoted: message });
+      if (isNaN(jumlah)) {
+        return conn.sendMessage(chatId, { text: 'Masukkan angka maksimum peringatan.' }, { quoted: message });
+      }
 
-      if (!data.Grup[groupName]) data.Grup[groupName] = { Id: chatId };
-      data.Grup[groupName].setWarn = jumlah;
+      const grupDataKey = Object.keys(data.Grup).find(k => data.Grup[k].Id === chatId);
+
+      if (!grupDataKey) {
+        return conn.sendMessage(chatId, {
+          text: `Grup belum terdaftar di dalam database.\n\nKetik *.daftargc* untuk mendaftarkan grup ini.`,
+        }, { quoted: message });
+      }
+
+      data.Grup[grupDataKey].setWarn = jumlah;
       fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-      return conn.sendMessage(chatId, { text: `Set maksimum warning menjadi ${jumlah} untuk grup *${rawGroupName}*.` }, { quoted: message });
+      return conn.sendMessage(chatId, {
+        text: `Set maksimum warning menjadi ${jumlah} untuk grup *${rawGroupName}*.`,
+      }, { quoted: message });
     }
 
     if (args[0] === 'reset') {
@@ -85,14 +95,22 @@ module.exports = {
     }
 
     if (args[0] === '1') {
-      const target = message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || message.message?.extendedTextMessage?.contextInfo?.participant;
-      if (!target) return conn.sendMessage(chatId, { text: 'Tag atau reply pengguna yang ingin diberi peringatan.' }, { quoted: message });
+      let target =
+        message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] ||
+       message.message?.extendedTextMessage?.contextInfo?.participant;
+
+      if (!target) {
+        return conn.sendMessage(chatId, { text: 'Tag atau reply pengguna yang ingin diberi peringatan.' }, { quoted: message });
+      }
+
+      target = target.split(':')[0];
 
       const privateKey = Object.keys(data.Private || {}).find(k => data.Private[k].Nomor === target);
       const groupSetWarn = data.Grup[groupName]?.setWarn || 3;
 
       if (privateKey) {
-        data.Private[privateKey].warn = (data.Private[privateKey].warn || 0) + 1;
+        const current = data.Private[privateKey].warn || 0;
+        data.Private[privateKey].warn = current + 1;
 
         if (data.Private[privateKey].warn >= groupSetWarn) {
           await conn.groupParticipantsUpdate(chatId, [target], 'remove');

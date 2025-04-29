@@ -36,24 +36,28 @@ module.exports = {
       const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
       const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin);
 
-      if (!isUserAdmin) {
-        return conn.sendMessage(chatId, { text: "❌ Hanya admin grup yang bisa menggunakan perintah ini!" }, { quoted: message });
+      const isQuotedFromBot = quotedSender === botNumber;
+
+      if (!isQuotedFromBot && !isUserAdmin) {
+        return conn.sendMessage(chatId, { text: "❌ Hanya admin grup yang bisa menghapus pesan pengguna lain!" }, { quoted: message });
       }
 
       if (!isBotAdmin) {
         return conn.sendMessage(chatId, { text: "❌ Bot harus menjadi admin untuk menghapus pesan!" }, { quoted: message });
       }
 
-      const isQuotedFromBot = quotedSender === botNumber;
-
-      if (isQuotedFromBot) {
-        await conn.sendMessage(chatId, { delete: { remoteJid: chatId, fromMe: true, id: quotedKey } });
-      } else {
-        await conn.sendMessage(chatId, { delete: { remoteJid: chatId, fromMe: false, id: quotedKey, participant: quotedSender } });
-      }
+      await conn.sendMessage(chatId, {
+        delete: {
+          remoteJid: chatId,
+          fromMe: isQuotedFromBot,
+          id: quotedKey,
+          ...(isQuotedFromBot ? {} : { participant: quotedSender })
+        }
+      });
 
     } catch (error) {
-      conn.sendMessage(chatId, { text: "⚠️ Gagal menghapus pesan." }, { quoted: message });
+      console.error(error);
+      conn.sendMessage(message.key.remoteJid, { text: "⚠️ Gagal menghapus pesan." }, { quoted: message });
     }
   }
 };

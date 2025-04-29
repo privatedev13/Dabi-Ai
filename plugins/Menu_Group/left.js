@@ -17,10 +17,10 @@ const saveDB = (data) => {
 };
 
 module.exports = {
-  name: 'welcome',
-  command: ['welcome'],
+  name: 'left',
+  command: ['left'],
   tags: 'Group Menu',
-  desc: 'Mengatur fitur welcome di grup',
+  desc: 'Mengatur fitur pesan keluar grup',
 
   run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
@@ -45,23 +45,27 @@ module.exports = {
     if (!isAdmin) return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan oleh admin grup!" }, { quoted: message });
 
     if (args[0] === "on") {
-      setWelcomeSettings(chatId, groupName, true);
-      return conn.sendMessage(chatId, { text: "✅ Fitur welcome diaktifkan!" }, { quoted: message });
+      setLeftSettings(chatId, groupName, true);
+      return conn.sendMessage(chatId, { text: "✅ Fitur pesan keluar diaktifkan!" }, { quoted: message });
 
     } else if (args[0] === "off") {
-      setWelcomeSettings(chatId, groupName, false);
-      return conn.sendMessage(chatId, { text: "❌ Fitur welcome dinonaktifkan!" }, { quoted: message });
+      setLeftSettings(chatId, groupName, false);
+      return conn.sendMessage(chatId, { text: "❌ Fitur pesan keluar dinonaktifkan!" }, { quoted: message });
 
     } else if (args[0] === "set") {
-      let welcomeText = textMessage.replace(`${prefix}welcome set`, "").trim(); // Ambil teks setelah "set"
-      if (!welcomeText) return conn.sendMessage(chatId, { text: "⚠️ Gunakan perintah:\n.welcome set <teks selamat datang>" }, { quoted: message });
+      let leftText = textMessage.replace(`${prefix}left set`, "").trim();
+      if (!leftText) return conn.sendMessage(chatId, { text: "⚠️ Gunakan perintah:\n.left set <teks selamat tinggal>" }, { quoted: message });
 
-      setWelcomeSettings(chatId, groupName, true, welcomeText);
-      return conn.sendMessage(chatId, { text: `✅ Pesan selamat datang diperbarui:\n\n${welcomeText}` }, { quoted: message });
+      setLeftSettings(chatId, groupName, true, leftText);
+      return conn.sendMessage(chatId, { text: `✅ Pesan selamat tinggal diperbarui:\n\n${leftText}` }, { quoted: message });
+
+    } else if (args[0] === "restart") {
+      setLeftSettings(chatId, groupName, true, "👋 Selamat tinggal @user!");
+      return conn.sendMessage(chatId, { text: "✅ Pesan selamat tinggal direset ke default!" }, { quoted: message });
 
     } else {
       return conn.sendMessage(chatId, {
-        text: `⚙️ Penggunaan:\n${prefix}welcome on → Aktifkan welcome\n${prefix}welcome off → Nonaktifkan welcome\n${prefix}welcome set <teks> → Atur teks welcome`
+        text: `⚙️ Penggunaan:\n${prefix}left on → Aktifkan pesan keluar\n${prefix}left off → Nonaktifkan pesan keluar\n${prefix}left set <teks> → Atur teks pesan keluar\n${prefix}left restart → Reset teks pesan keluar ke default`
       }, { quoted: message });
     }
   }
