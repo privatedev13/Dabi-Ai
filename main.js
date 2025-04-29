@@ -9,7 +9,7 @@ const path = require('path');
 const pino = require('pino');
 const chalk = require('chalk');
 const readline = require('readline');
-const { makeWASocket, useMultiFileAuthState, makeInMemoryStore } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, makeInMemoryStore, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { getMenuText, handleMenuCommand } = require('./plugins/Main_Menu/menu');
 const { isPrefix } = require('./toolkit/setting');
 const { Format } = require('./toolkit/helper');
@@ -78,48 +78,7 @@ const loadPlugins = (directory) => {
   return { loaded: loadedCount, errors: errorCount, messages: errorMessages };
 };
 
-const dbFolder = path.join(__dirname, './toolkit/db');
-const dbFile = path.join(dbFolder, 'database.json');
-
-const initializeDatabase = () => {
-  if (!fs.existsSync(dbFolder)) {
-    fs.mkdirSync(dbFolder, { recursive: true });
-    console.log(chalk.green.bold('✅ Folder database dibuat:', dbFolder));
-  }
-
-  if (!fs.existsSync(dbFile)) {
-    const initialData = {
-      Private: {},
-      Grup: {}
-    };
-    fs.writeFileSync(dbFile, JSON.stringify(initialData, null, 2));
-    console.log(chalk.green.bold('✅ File database dibuat:', dbFile));
-  }
-};
-
 initializeDatabase();
-
-const readDB = () => {
-  try {
-    let data = fs.readFileSync(dbFile, 'utf-8');
-    return data ? JSON.parse(data) : { Private: {}, Grup: {} };
-  } catch (error) {
-    console.error('❌ Error membaca database:', error);
-    return { Private: {}, Grup: {} };
-  }
-};
-
-const getWelcomeStatus = (chatId) => {
-  let db = readDB();
-  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
-  return groupData?.Welcome?.welcome === true;
-};
-
-const getWelcomeText = (chatId) => {
-  let db = readDB();
-  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
-  return groupData?.Welcome?.welcomeText || "👋 Selamat datang @user di grup!";
-};
 
 setInterval(() => {
   const dbPath = path.join(__dirname, './toolkit/db/database.json');
@@ -152,6 +111,14 @@ const isMuted = async (chatId, senderId, conn) => {
     if (!isAdmin) return true;
   }
 
+  return false;
+};
+
+const isPublicMode = (senderId) => {
+  if (!global.public) {
+    const senderNumber = senderId.replace(/\D/g, '');
+    return !global.ownerNumber.includes(senderNumber);
+  }
   return false;
 };
 
@@ -242,7 +209,27 @@ const startBot = async () => {
       else if (mediaInfo) console.log(chalk.white(`  ${mediaInfo}`));
       else if (textMessage) console.log(chalk.white(`  [ ${textMessage} ]`));
 
+      const { ownerSetting, msg } = setting;
+      global.lastGreet = global.lastGreet || {};
+      const senderNumber = senderId.split('@')[0];
+
+      if (isGroup && ownerSetting.forOwner && ownerSetting.ownerNumber.includes(senderNumber)) {
+        const now = Date.now();
+        const last = global.lastGreet[senderId] || 0;
+
+        if (now - last > 5 * 60 * 1000) {
+          global.lastGreet[senderId] = now;
+          const greetText = msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
+
+          await conn.sendMessage(chatId, {
+            text: greetText,
+            mentions: [senderId]
+          }, { quoted: message });
+        }
+      }
+
       if (await isMuted(chatId, senderId, conn)) return;
+      if (isPublicMode(senderId)) return;
 
       if ((isGroup && global.readGroup) || (!isGroup && global.readPrivate)) {
         await conn.readMessages([message.key]);
@@ -258,7 +245,7 @@ const startBot = async () => {
           const args = textMessage.trim().split(/\s+/).slice(1);
           await plugin.run(conn, message, { args, isPrefix });
         } catch (err) {
-          console.log(chalk.red(`❌ Error pada plugin: ${err.message}`));
+          console.log(chalk.red(`❌ Error pada plugin:  ${file}\n${err.message}`));
         }
       }
     });
@@ -272,13 +259,32 @@ const startBot = async () => {
 
           for (let participant of participants) {
             let userTag = `@${participant.split('@')[0]}`;
+            let text = welcomeText
+              .replace(/@user/g, userTag)  
+              .replace(/%user/g, userTag);
+
             await conn.sendMessage(chatId, {
-              text: welcomeText.replace(/@user/g, userTag),
+              text,
               mentions: [participant]
             });
           }
         }
 
+        if (getLeftStatus(chatId) && (action === "remove" || action === "leave")) {
+          let leftText = getLeftText(chatId);
+
+          for (let participant of participants) {
+            let userTag = `@${participant.split('@')[0]}`;
+            let text = leftText
+              .replace(/@user/g, userTag)
+              .replace(/%user/g, userTag);
+
+            await conn.sendMessage(chatId, {
+              text,
+              mentions: [participant]
+            });
+          }
+        }
       } catch (error) {
         console.error('❌ Error pada event group-participants.update:', error);
       }
