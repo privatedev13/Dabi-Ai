@@ -12,7 +12,7 @@ const ownerLastSapa = {};
 
 module.exports = {
   name: 'forowner',
-  command: ['forowner', forners],
+  command: ['forowner', 'forners'],
   tags: 'Owner Menu',
   desc: 'Mengatur sambutan otomatis untuk Owner',
 
