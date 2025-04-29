@@ -36,7 +36,7 @@ module.exports = {
         return res.json();
       };
 
-      const data = await fetchJson(`https://www.archive-ui.biz.id/search/pinterest?q=${encodeURIComponent(text)}`);
+      const data = await fetchJson(`https://api-kuromi-jet.vercel.app/pinterest/search?query=${encodeURIComponent(text)}`);
       if (!data.result || data.result.length === 0) {
         return conn.sendMessage(chatId, { text: 'Gambar tidak ditemukan.' }, { quoted: message });
       }
@@ -46,11 +46,11 @@ module.exports = {
         return conn.sendMessage(chatId, { text: 'Sudah mencapai gambar terakhir.' }, { quoted: message });
       }
 
-      let hasil = data.result[index].image_hd;
+      let hasil = data.result[index];
 
       await conn.sendMessage(chatId, {
         image: { url: hasil },
-        caption: `Menampilkan gambar ke *${index + 1}* dari *${data.result.length}*.`,
+        caption: `Menampilkan gambar ke *${index + 1}* dari *${data.result.length}* hasil pencarian *${text}*.`,
         footer: '',
         headerType: 4
       }, { quoted: message });

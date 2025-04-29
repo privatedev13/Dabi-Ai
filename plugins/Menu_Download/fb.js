@@ -6,7 +6,9 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Mendownload media dari Facebook',
 
-  async run(conn, message, { isPrefix }) {
+  isPremium: true,
+
+  run: async (conn, message, { isPrefix }) => {
     const chatId = message.key.remoteJid;
     const isGroup = chatId.endsWith("@g.us");
     const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, "@");
@@ -21,9 +23,7 @@ module.exports = {
     const commandText = textMessage.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
-    if (!global.isPremium(senderId)) {
-      return conn.sendMessage(chatId, { text: '❌ Fitur ini hanya untuk pengguna premium!' }, { quoted: message });
-    }
+    if (!(await onlyPremium(module.exports, conn, message))) return;
 
     if (!args[0]) {
       return conn.sendMessage(chatId, {
