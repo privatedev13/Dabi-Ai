@@ -10,6 +10,87 @@ if (!fs.existsSync(tempFolder)) {
   fs.mkdirSync(tempFolder, { recursive: true });
 }
 
+const dbFolder = path.join(__dirname, '../toolkit/db');
+const dbFile = path.join(dbFolder, 'database.json');
+
+const initializeDatabase = () => {
+  if (!fs.existsSync(dbFolder)) {
+    fs.mkdirSync(dbFolder, { recursive: true });
+    console.log('✅ Folder database dibuat:', dbFolder);
+  }
+
+  if (!fs.existsSync(dbFile)) {
+    const initialData = { Private: {}, Grup: {} };
+    fs.writeFileSync(dbFile, JSON.stringify(initialData, null, 2));
+    console.log('✅ File database dibuat:', dbFile);
+  }
+};
+
+const readDB = () => {
+  try {
+    let data = fs.readFileSync(dbFile, 'utf-8');
+    return data ? JSON.parse(data) : { Private: {}, Grup: {} };
+  } catch (error) {
+    console.error('❌ Error membaca database:', error);
+    return { Private: {}, Grup: {} };
+  }
+};
+
+const saveDB = (data) => {
+  fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
+};
+
+const getWelcomeStatus = (chatId) => {
+  let db = readDB();
+  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
+  return groupData?.Welcome?.welcome || false;
+};
+
+const getWelcomeText = (chatId) => {
+  let db = readDB();
+  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
+  return groupData?.Welcome?.welcomeText || "👋 Selamat datang @user di grup!";
+};
+
+const setWelcomeSettings = (chatId, groupName, status, text) => {
+  let db = readDB();
+  db.Grup = db.Grup || {};
+
+  db.Grup[groupName] = db.Grup[groupName] || { Id: chatId, Welcome: { welcome: false, welcomeText: "" } };
+
+  db.Grup[groupName].Welcome.welcome = status;
+  if (text) db.Grup[groupName].Welcome.welcomeText = text;
+
+  saveDB(db);
+};
+
+const getLeftStatus = (chatId) => {
+  let db = readDB();
+  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
+  return groupData?.Left?.gcLeft || false;
+};
+
+const getLeftText = (chatId) => {
+  let db = readDB();
+  let groupData = Object.values(db.Grup || {}).find(group => group.Id === chatId);
+  return groupData?.Left?.leftText || "👋 Selamat tinggal @user!";
+};
+
+const setLeftSettings = (chatId, groupName, status, text) => {
+  let db = readDB();
+  db.Grup = db.Grup || {};
+
+  db.Grup[groupName] = db.Grup[groupName] || { 
+    Id: chatId, 
+    Left: { gcLeft: false, leftText: "👋 Selamat tinggal @user!" } 
+  };
+
+  if (status !== undefined) db.Grup[groupName].Left.gcLeft = status;
+  if (text) db.Grup[groupName].Left.leftText = text;
+
+  saveDB(db);
+};
+
 const Connect = {
   log: (text) => console.log(`[LOG] ${text}`),
   error: (text) => console.error(`[ERROR] ${text}`)
@@ -17,6 +98,7 @@ const Connect = {
 
 const Format = {
   time: () => moment().format('HH:mm'),
+  realTime: () => moment().tz('Asia/Jakarta').format('HH:mm:ss DD-MM-YYYY'),
   date: (timestamp) => moment(timestamp * 1000).format('DD-MM-YYYY'),
   uptime: () => {
     let totalSeconds = process.uptime();
@@ -116,13 +198,38 @@ const onlyOwner = async (plugin, conn, message) => {
   return true;
 };
 
+const onlyPremium = async (plugin, conn, message) => {
+  const chatId = message.key.remoteJid;
+  const isGroup = chatId.endsWith('@g.us');
+  const senderId = isGroup ? message.key.participant : message.key.remoteJid;
+
+  if (plugin.isPremium) {
+    const userData = global.getUserData(senderId);
+    if (!userData || !userData.premium?.prem) {
+      await conn.sendMessage(chatId, { text: isPrem }, { quoted: message });
+      return false;
+    }
+  }
+  return true;
+};
+
 module.exports = {
   Connect,
   createSticker,
   download,
   Format,
   target,
-  onlyOwner
+  onlyOwner,
+  onlyPremium,
+  initializeDatabase,
+  readDB,
+  saveDB,
+  getWelcomeStatus,
+  getWelcomeText,
+  setWelcomeSettings,
+  getLeftStatus,
+  getLeftText,
+  setLeftSettings
 };
 
 let file = require.resolve(__filename);

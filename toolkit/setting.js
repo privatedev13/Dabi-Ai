@@ -23,10 +23,20 @@ global.getUserData = (userId) => {
 
 global.isPremium = (userId) => {
     const userData = global.getUserData(userId);
-    return userData ? userData.premium || false : false;
+    return userData ? userData.premium?.prem ?? false : false;
 };
 
 global.onlyOwner = Sys.onlyOwner;
+global.onlyPremium = Sys.onlyPremium;
+global.initializeDatabase = Sys.initializeDatabase;
+global.readDB = Sys.readDB;
+global.saveDB = Sys.saveDB;
+global.getWelcomeStatus = Sys.getWelcomeStatus;
+global.getWelcomeText = Sys.getWelcomeText;
+global.setWelcomeSettings = Sys.setWelcomeSettings;
+global.getLeftStatus = Sys.getLeftStatus;
+global.getLeftText = Sys.getLeftText;
+global.setLeftSettings = Sys.setLeftSettings;
 
 Object.assign(global, {
     Format: Sys.Format,

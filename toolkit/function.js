@@ -1,9 +1,27 @@
 const fs = require("fs");
 
 const sifatlist = [
-  'Baik', 'Jahat', 'Lucu', 'Pemarah', 'Penyabar', 'Pemalu', 'Percaya Diri',
-  'Pemberani', 'Cengeng', 'Bijaksana', 'Pintar', 'Sombong', 'Rendah Hati',
-  'Setia', 'Cemburuan', 'Pelit', 'Dermawan', 'Pemalas', 'kek kontol', 'Rajin', 'Sensitif'
+  'Baik',
+  'Jahat',
+  'Lucu',
+  'Pemarah',
+  'Penyabar',
+  'Pemalu',
+  'Percaya Diri',
+  'Pemberani',
+  'Cengeng',
+  'Bijaksana',
+  'Pintar',
+  'Sombong',
+  'Rendah Hati',
+  'Setia',
+  'Cemburuan',
+  'Pelit',
+  'Dermawan',
+  'Pemalas',
+  'kek kontol',
+  'Rajin',
+  'Sensitif'
 ];
 
 const when = [
@@ -46,11 +64,15 @@ const ask = [
   'Enggak, dia cantik malahan',
   'Kata siapa?, jelas-jelas kek kontol',
   'Lu yang kek kontol',
-  'Coba tebak'
+  'Coba tebak',
+  'Tanya mulu lu',
+  'Gak tau gw',
+  'Tanya owner',
+  'Y',
+  'G'
   ];
 
 const cekKhodam = [
-  'Kosong',
   'Kosong',
   'Kucing Rawa',
   'Biawak Samudra',
@@ -100,6 +122,7 @@ const cekKhodam = [
   'Nenek',
   'Pinokio',
   'Cinderela',
+  'Trenggiling',
   'Agus',
   'Rusdi Boti',
   'Listrik Kejut',
@@ -114,6 +137,7 @@ const cekKhodam = [
   'Serigala berbulu janda',
   'Lemari kecoa',
   'Hiu sumanji',
+  'Sempak Firaun',
   'Kaori',
   'Walid',
   'Sapi terbang',
