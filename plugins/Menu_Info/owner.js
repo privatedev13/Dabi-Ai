@@ -4,20 +4,13 @@ module.exports = {
   tags: 'Info Menu',
   desc: 'Mengirim kontak owner bot',
 
-  run: async (conn, msg, { isPrefix }) => {
+  run: async (conn, message, { isPrefix }) => {
     try {
-      const remoteJid = msg.key.remoteJid;
-      const isGroup = remoteJid.endsWith('@g.us');
-      const senderId = isGroup ? msg.key.participant : remoteJid.replace(/:\d+@/, '@');
-      const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!textMessage) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find(p => textMessage.startsWith(p));
-      if (!prefix) return;
-
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift()?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       const owner = global.ownerName || 'Owner';
@@ -26,7 +19,7 @@ module.exports = {
 
       if (!ownerNumber) {
         console.error('❌ ownerNumber tidak ditemukan. Pastikan config.json terisi dengan benar.');
-        await conn.sendMessage(remoteJid, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: msg });
+        await conn.sendMessage(chatId, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: message });
         return;
       }
 
@@ -39,8 +32,8 @@ module.exports = {
         }
       };
 
-      await conn.sendMessage(remoteJid, contactInfo, { quoted: msg });
-      await conn.sendMessage(remoteJid, { text: `Ini adalah kontak owner *${bot}*` }, { quoted: msg });
+      await conn.sendMessage(chatId, contactInfo, { quoted: message });
+      await conn.sendMessage(chatId, { text: `Ini adalah kontak owner *${bot}*` }, { quoted: message });
 
     } catch (error) {
       console.error('❌ Terjadi kesalahan di plugin owner:', error);

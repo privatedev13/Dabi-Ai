@@ -11,20 +11,13 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const remoteJid = message?.key?.remoteJid;
-      if (!remoteJid) return console.error('❌ JID tidak valid atau tidak ditemukan!');
-
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
       const startTime = performance.now();
-      const endTime = performance.now();
-      const responseTime = (endTime - startTime).toFixed(2);
 
-      const prefix = isPrefix.find(p => textMessage.startsWith(p));
-      if (!prefix) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args[0]?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       const chatList = conn.store?.chats ? Object.values(conn.store.chats) : [];
@@ -44,13 +37,14 @@ module.exports = {
       const platform = os.platform();
       const architecture = os.arch();
       const botName = global.botName || 'Bot';
+      const botFullName = global.botFullName || botName;
       const cpuInfo = os.cpus()[0]?.model || 'Tidak diketahui';
 
       let totalDisk = 'Tidak diketahui';
       let usedDisk = 'Tidak diketahui';
       let freeDisk = 'Tidak diketahui';
       try {
-        const diskInfo = execSync('df -h /storage/emulated', { encoding: 'utf8' }).split('\n')[1].split(/\s+/);
+        const diskInfo = execSync('df -h /', { encoding: 'utf8' }).split('\n')[1].split(/\s+/);
         totalDisk = diskInfo[1];
         usedDisk = diskInfo[2];
         freeDisk = diskInfo[3];
@@ -58,10 +52,13 @@ module.exports = {
         console.error('❌ Gagal mendapatkan informasi penyimpanan:', e.message);
       }
 
+      const endTime = performance.now();
+      const responseTime = (endTime - startTime).toFixed(2);
+
       const statsMessage = `
 Ini adalah status dari bot ${botName}
 
-Stats Bot${Obrack} *${botFullName}* ${Cbrack}
+Stats Bot ${Obrack} *${botFullName}* ${Cbrack}
 ┃
 ┣ ${btn} *Bot Name:* ${botName}
 ┣ ${btn} *Time Server:* ${Format.time()}
@@ -103,7 +100,7 @@ Stats System
         }
       };
 
-      await conn.sendMessage(remoteJid, adReply, { quoted: message });
+      await conn.sendMessage(chatId, adReply, { quoted: message });
 
     } catch (err) {
       console.error('❌ Error pada plugin stats:', err.message);

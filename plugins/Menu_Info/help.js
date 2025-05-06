@@ -8,56 +8,55 @@ module.exports = {
   desc: 'Menampilkan informasi tentang command yang tersedia.',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message?.key?.remoteJid;
-    const senderId = message.key.participant || chatId.replace(/:\d+@/, '@');
+    try {
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-    const textMessage =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      '';
-    if (!textMessage) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
+      if (!module.exports.command.includes(commandText)) return;
 
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!args.length) {
-      return conn.sendMessage(chatId, { text: `Gunakan perintah: ${prefix}help <name>` }, { quoted: message });
-    }
-
-    const pluginsDir = path.join(__dirname, '..'); 
-    const categories = fs.readdirSync(pluginsDir).filter(folder => fs.lstatSync(path.join(pluginsDir, folder)).isDirectory());
-    
-    let foundPlugin = null;
-    for (const category of categories) {
-      const files = fs.readdirSync(path.join(pluginsDir, category)).filter(file => file.endsWith('.js'));
-      for (const file of files) {
-        const plugin = require(path.join(pluginsDir, category, file));
-        if (plugin.name && plugin.name.toLowerCase() === args[0].toLowerCase()) {
-          foundPlugin = plugin;
-          break;
-        }
+      if (!args.length) {
+        return conn.sendMessage(chatId, { text: `Gunakan perintah: ${prefix}${commandText} <name>` }, { quoted: message });
       }
-      if (foundPlugin) break;
+
+      const pluginsDir = path.join(__dirname, '..'); 
+      const categories = fs.readdirSync(pluginsDir).filter(folder => fs.lstatSync(path.join(pluginsDir, folder)).isDirectory());
+
+      let foundPlugin = null;
+      for (const category of categories) {
+        const files = fs.readdirSync(path.join(pluginsDir, category)).filter(file => file.endsWith('.js'));
+        for (const file of files) {
+          const plugin = require(path.join(pluginsDir, category, file));
+          if (plugin.name && plugin.name.toLowerCase() === args[0].toLowerCase()) {
+            foundPlugin = plugin;
+            break;
+          }
+        }
+        if (foundPlugin) break;
+      }
+
+      if (!foundPlugin) {
+        return conn.sendMessage(chatId, { text: `Command dengan nama *${args[0]}* tidak ditemukan.` }, { quoted: message });
+      }
+
+      const { name, command, desc } = foundPlugin;
+      const commandList = command.map(cmd => `${prefix}${cmd}`).join(', ');
+      const description = desc || 'Tidak ada deskripsi.';
+
+      const helpMessage = `*Informasi Command*\n` +
+        `${btn} *Nama:* ${name}\n` +
+        `${btn} *Command:* ${commandList}\n` +
+        `${btn} *Deskripsi:* ${description}\n` +
+        `${btn} *Penggunaan:* ${prefix}${command[0]} [opsional]`;
+
+      conn.sendMessage(chatId, { text: helpMessage }, { quoted: message });
+    } catch (error) {
+      console.error('Error:', error);
+      conn.sendMessage(message.key.remoteJid, {
+        text: `Error: ${error.message || error}`,
+        quoted: message,
+      });
     }
-
-    if (!foundPlugin) {
-      return conn.sendMessage(chatId, { text: `Command dengan nama *${args[0]}* tidak ditemukan.` }, { quoted: message });
-    }
-
-    const { name, command, desc } = foundPlugin;
-    const commandList = command.map(cmd => `${prefix}${cmd}`).join(', ');
-    const description = desc || 'Tidak ada deskripsi.';
-
-    const helpMessage = `*Informasi Command*\n` +
-      `${btn} *Nama:* ${name}\n` +
-      `${btn} *Command:* ${commandList}\n` +
-      `${btn} *Deskripsi:* ${description}\n` +
-      `${btn} *Penggunaan:* ${prefix}${command[0]} [opsional]`;
-
-    conn.sendMessage(chatId, { text: helpMessage }, { quoted: message });
   }
 };

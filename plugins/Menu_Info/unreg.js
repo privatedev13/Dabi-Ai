@@ -9,22 +9,16 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const chatId = message.key.remoteJid;
-      const textMessage =
-        message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!textMessage) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
-
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift().toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       if (args.length < 1) {
         return conn.sendMessage(chatId, {
-          text: `📌 Cara unreg:\n\n*${prefix}unreg <noId>*\n\nContoh:\n*${prefix}unreg bcdfghx72*\n _.me untuk melihat Nomor Id_`,
+          text: `📌 Cara unreg:\n\n*${prefix}${commandText} <noId>*\n\nContoh:\n*${prefix}${commandText} bcdfghx72*\n _.me untuk melihat Nomor Id_`,
         }, { quoted: message });
       }
 
