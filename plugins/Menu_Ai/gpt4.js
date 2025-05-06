@@ -8,18 +8,10 @@ module.exports = {
   
   run: async (conn, message, { isPrefix }) => {
     try {
-      const chatId = message.key.remoteJid;
-      const senderId = message.key.participant || chatId.replace(/:\d+@/, '@');
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-      if (!textMessage) return;
-
-      const prefix = isPrefix.find(p => textMessage.startsWith(p));
-      if (!prefix) return;
-
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift().toLowerCase();
-      const text = args.join(' ');
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
       if (!module.exports.command.includes(commandText)) return;
 

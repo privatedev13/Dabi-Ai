@@ -1,17 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
-const readDB = () => {
-  if (!fs.existsSync(dbPath)) return { autoai: [] };
-  return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-};
-
-const writeDB = (data) => {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-};
-
 module.exports = {
   name: 'resetaichat',
   command: ['resetaichat', 'resetai'],
@@ -22,20 +8,11 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const chatId = message?.key?.remoteJid;
-      const senderId = message?.key?.participant || chatId;
-      const textMessage = message.message?.conversation || 
-                          message.message?.extendedTextMessage?.text || 
-                          '';
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.participant;
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!textMessage) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
-
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift()?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       if (!(await onlyOwner(module.exports, conn, message))) return;
@@ -86,7 +63,7 @@ module.exports = {
 
       if (entryIndex !== -1) {
         db.autoai.splice(entryIndex, 1);
-        writeDB(db);
+        saveDB(db);
 
         return conn.sendMessage(chatId, {
           text: `✅ Data Auto-AI untuk *${type}* dengan ID *${targetId}* telah direset.`

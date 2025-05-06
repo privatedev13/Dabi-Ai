@@ -1,150 +1,89 @@
+let autoAI = global.autoAI || {};
+const fetch = require('node-fetch');
 const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
-const readDB = () => {
-  if (!fs.existsSync(dbPath)) return { Grup: {}, Private: {} };
-  try {
-    return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  } catch (error) {
-    return { Private: {}, Grup: {} };
-  }
-};
-
-const writeDB = (data) => {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-};
 
 module.exports = {
-  name: 'autoai',
-  command: ['ai', 'autoai'],
+  name: 'autoAI',
+  command: ['ai'],
   tags: 'Ai Menu',
-  desc: 'Mengaktifkan atau menonaktifkan AI pada chat tertentu.',
-
-  isPremium: true,
+  desc: 'Aktifkan atau nonaktifkan fitur auto AI di chat',
 
   run: async (conn, message, { isPrefix }) => {
-    try {
-      const chatId = message?.key?.remoteJid;
-      const isGroup = chatId.endsWith('@g.us');
-      const senderId = isGroup ? message.key.participant : chatId;
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-      let db = readDB();
-      let chatData;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      if (isGroup) {
-        const metadata = await conn.groupMetadata(chatId);
-        const groupName = metadata?.subject || `Group_${chatId}`;
+    if (!module.exports.command.includes(commandText)) return;
 
-        if (!db.Grup) db.Grup = {};
-        if (!db.Grup[groupName]) {
-          db.Grup[groupName] = {
-            Id: chatId,
-            Welcome: { welcome: false, welcomeText: '' },
-            autoai: false,
-            chat: 0
-          };
-        }
-
-        chatData = db.Grup[groupName];
-      } else {
-        const senderName = message.pushName || senderId.split('@')[0];
-
-        if (!db.Private) db.Private = {};
-        if (!db.Private[senderName]) {
-          db.Private[senderName] = {
-            Nomor: senderId,
-            autoai: false,
-            chat: 0
-          };
-        }
-
-        chatData = db.Private[senderName];
-      }
-
-      const mtype = Object.keys(message.message || {})[0];
-      const textMessage =
-        (mtype === 'conversation' && message.message?.conversation) ||
-        (mtype === 'extendedTextMessage' && message.message?.extendedTextMessage?.text) ||
-        '';
-
-      if (!textMessage) return;
-
-      const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-
-      if (!prefix) {
-        if (chatData.autoai) {
-          const isBotMentioned =
-            message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(conn.user.id) ||
-            message.message?.extendedTextMessage?.contextInfo?.quotedMessage?.conversation;
-
-          const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-          const isReplyingToBot = quotedMsg && quotedMsg?.conversation && message.message?.extendedTextMessage?.contextInfo?.participant === conn.user.id;
-
-          if (isBotMentioned || isReplyingToBot) {
-            const senderName = message.pushName || senderId.split('@')[0];
-            const today = new Date();
-            const hari = today.toLocaleString('id-ID', { weekday: 'long' });
-            const jam = today.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const tgl = today.toLocaleDateString('id-ID');
-
-            const prompt = global.logic.replace("${ownerName}", global.ownerName).replace("${senderName}", senderName);
-
-            const requestData = {
-              content: textMessage,
-              user: senderId,
-              prompt: prompt,
-            };
-
-            try {
-              const response = (await axios.post('https://luminai.my.id', requestData)).data.result;
-
-              chatData.chat += 1;
-              writeDB(db);
-
-              return conn.sendMessage(chatId, { text: response }, { quoted: message });
-            } catch (error) {
-              console.error('Error fetching AI response:', error);
-              await conn.sendMessage(chatId, { text: 'Maaf, terjadi kesalahan saat menghubungi AI!' }, { quoted: message });
-            }
-          }
-        }
-        return;
-      }
-
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift()?.toLowerCase();
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (args.length === 0) {
-        const status = chatData.autoai ? 'aktif' : 'nonaktif';
-        return conn.sendMessage(chatId, { text: `Auto-AI saat ini ${status} untuk chat ini.` }, { quoted: message });
-      }
-
-      const action = args[0]?.toLowerCase();
-      if (!(await onlyPremium(module.exports, conn, message))) return;
-
-      if (action === 'on') {
-        chatData.autoai = true;
-        writeDB(db);
-        return conn.sendMessage(chatId, { text: 'Auto-AI telah diaktifkan untuk chat ini.' }, { quoted: message });
-      } else if (action === 'off') {
-        chatData.autoai = false;
-        writeDB(db);
-        return conn.sendMessage(chatId, { text: 'Auto-AI telah dinonaktifkan untuk chat ini.' }, { quoted: message });
-      }
-
-      conn.sendMessage(chatId, {
-        text: 'Gunakan `.ai on` untuk mengaktifkan atau `.ai off` untuk menonaktifkan AI.'
+    const isCmd = args[0]?.toLowerCase();
+    if (!isCmd) {
+      return conn.sendMessage(chatId, { 
+        text: `Contoh penggunaan:\n\n${prefix}${commandText} on\n${prefix}${commandText} off` 
       }, { quoted: message });
-    } catch (error) {
-      console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
-        text: `Error: ${error.message || error}`,
-        quoted: message,
-      });
+    }
+
+    if (isCmd === 'on') {
+      autoAI[chatId] = true;
+      global.autoAI = autoAI;
+      return conn.sendMessage(chatId, { 
+        text: 'Auto AI diaktifkan di chat ini.' 
+      }, { quoted: message });
+    } else if (isCmd === 'off') {
+      autoAI[chatId] = false;
+      global.autoAI = autoAI;
+      return conn.sendMessage(chatId, { 
+        text: 'Auto AI dinonaktifkan di chat ini.' 
+      }, { quoted: message });
+    } else {
+      return conn.sendMessage(chatId, { 
+        text: 'Pilihan tidak dikenal! Gunakan `on` atau `off`.' 
+      }, { quoted: message });
     }
   },
+
+  before: async (conn, message) => {
+    const chatId = message?.key?.remoteJid;
+    const m = message;
+    const msg = m.message || {};
+    const exp = conn.user?.id;
+
+    const isMention = msg?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(exp);
+    const isReply = msg?.extendedTextMessage?.contextInfo?.participant === exp;
+
+    if (!autoAI[chatId]) return;
+    if (!(isMention || isReply)) return;
+
+    const setting = JSON.parse(fs.readFileSync('./toolkit/set/config.json'));
+    const offline = setting?.offline?.status;
+
+    const body = 
+      m.body ||
+      msg?.conversation ||
+      msg?.extendedTextMessage?.text;
+
+    if (!body) return;
+
+    const context = offline
+      ? `Kamu sedang berbicara dengan AI karena pemilik sedang tidak aktif. Jawab dengan sopan dan profesional.`
+      : `Balas sebaik mungkin sesuai konteks pesan.`;
+
+    try {
+      const res = await fetch(`https://apizell.web.id/ai/custom?text=${encodeURIComponent(body)}&logic=${encodeURIComponent(context)}`);
+      const data = await res.json();
+
+      if (data?.result) {
+        await conn.sendMessage(chatId, {
+          text: data.result,
+          quoted: m
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      await conn.sendMessage(chatId, {
+        text: 'Terjadi kesalahan saat mengakses AI.',
+        quoted: m
+      });
+    }
+  }
 };
