@@ -13,23 +13,11 @@ module.exports = {
 
   run: async function (conn, message, { isPrefix }) {
     try {
-      const chatId = message.key.remoteJid;
-      const isGroup = chatId.endsWith("@g.us");
-      const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, "@");
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      const messageText = 
-        message.message?.conversation || 
-        message.message?.extendedTextMessage?.text || 
-        message.message?.imageMessage?.caption || 
-        message.message?.videoMessage?.caption || 
-        "";
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      if (!messageText) return;
-
-      const prefix = isPrefix.find((p) => messageText.startsWith(p));
-      if (!prefix) return;
-
-      const commandText = messageText.slice(prefix.length).trim().split(/\s+/)[0]?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       if (!(await onlyPremium(module.exports, conn, message))) return;

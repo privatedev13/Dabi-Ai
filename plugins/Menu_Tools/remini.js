@@ -8,20 +8,11 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const messageText =
-        message.body ||
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        message.message?.imageMessage?.caption ||
-        '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!messageText) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find(p => messageText.startsWith(p));
-      if (!prefix) return;
-
-      const args = messageText.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args[0]?.toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
@@ -31,7 +22,7 @@ module.exports = {
         return conn.sendMessage(
           message.key.remoteJid,
           {
-            text: `Balas gambar dengan caption *${prefix}remini [mode]*\n\nMode tersedia:\n- enhance\n- recolor\n- dehaze`,
+            text: `Balas gambar dengan caption *${prefix}${ commandText} [mode]*\n\nMode tersedia:\n- enhance\n- recolor\n- dehaze`,
           },
           { quoted: message }
         );

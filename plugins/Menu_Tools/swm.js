@@ -5,26 +5,15 @@ module.exports = {
   name: 'Sticker Watermark',
   command: ['swm', 'swn'],
   tags: 'Tools Menu',
-  desc: 'Mengubah watermark (author & pack) pada stiker.\n\n' +
-        'Gunakan:\n' +
-        '- *swm <author> | <pack>* → Mengubah author & pack\n' +
-        '- *swn <author>* → Hanya mengubah author\n' +
-        'Harus reply ke stiker!',
+  desc: 'Mengubah watermark (author & pack) pada stiker',
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const messageText =
-        message.body ||
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!messageText) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find(p => messageText.startsWith(p));
-      if (!prefix) return;
-
-      const [commandText, ...args] = messageText.slice(prefix.length).trim().split(/\s+/);
       if (!module.exports.command.includes(commandText)) return;
 
       const inputText = args.join(' ').trim();
@@ -32,10 +21,16 @@ module.exports = {
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const stickerMessage = quotedMessage?.stickerMessage;
 
-      if (!stickerMessage) {
+      if (!stickerMessage || !inputText) {
         return conn.sendMessage(
           message.key.remoteJid,
-          { text: '⚠ Harap reply ke stiker yang ingin diubah!' },
+          {
+            text:
+              'Gunakan:\n' +
+              '- *swm <author> | <pack>* → Mengubah author & pack\n' +
+              '- *swn <author>* → Hanya mengubah author\n' +
+              'Harus reply ke stiker!',
+          },
           { quoted: message }
         );
       }

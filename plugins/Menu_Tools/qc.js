@@ -2,7 +2,7 @@ const axios = require('axios');
 const uploadImage = require('../../toolkit/scrape/uploadImage.js');
 const { webp2png } = require('../../toolkit/scrape/webp2mp4.js');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { writeFileSync, readFileSync } = require('fs');
+const { writeFileSync, readFileSync, unlinkSync } = require('fs');
 const { tmpdir } = require('os');
 const { exec } = require('child_process');
 const path = require('path');
@@ -14,19 +14,11 @@ module.exports = {
   desc: 'Membuat quoted stiker',
 
   async run(conn, message, { isPrefix }) {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith("@g.us");
-    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, "@");
-    const pushName = message.pushName || "Pengguna WhatsApp";
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || "";
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args, pushName } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/).slice(1);
-    const commandText = textMessage.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     if (textMessage.length > 100) return conn.sendMessage(chatId, { text: "Maksimal 100 karakter!" });
@@ -36,15 +28,13 @@ module.exports = {
 
     conn.sendMessage(chatId, { react: { text: "🕛", key: message.key } });
 
-    // **Menghitung ukuran berdasarkan panjang teks**
     const text = args.join(" ") || textMessage;
     const words = text.split(" ").length;
     const charCount = text.length;
-    const lineCount = Math.ceil(charCount / 20); // Estimasi jumlah baris berdasarkan karakter
+    const lineCount = Math.ceil(charCount / 20);
 
-    // **Lebar menyesuaikan panjang teks, tinggi menyesuaikan jumlah baris**
-    let width = Math.min(600 + words * 12, 850);  // Lebar meningkat dengan kata (maks 850px)
-    let height = Math.min(300 + lineCount * 40, 500); // Tinggi meningkat dengan baris (maks 500px)
+    let width = Math.min(600 + words * 12, 850);
+    let height = Math.min(300 + lineCount * 40, 500);
 
     let obj = {
       type: "quote",
@@ -57,7 +47,11 @@ module.exports = {
         {
           entities: [],
           avatar: true,
-          from: { id: 1, name: pushName, photo: { url: pp } },
+          from: { 
+            id: 1, 
+            name: pushName || 'User',
+            photo: { url: pp } 
+          },
           text,
           replyMessage: {},
         },
@@ -69,15 +63,20 @@ module.exports = {
       const quotedType = Object.keys(quotedMessage)[0];
 
       if (quotedType === "conversation" || quotedType === "extendedTextMessage") {
+        const quotedText = quotedMessage[quotedType].text || "";
         obj.messages[0].replyMessage = {
           name: await conn.getName(message.message.extendedTextMessage.contextInfo.participant),
-          text: quotedMessage[quotedType].text || "",
+          text: quotedText,
           chatId: chatId.split("@")[0],
         };
       } else if (quotedType === "stickerMessage" || quotedType === "imageMessage") {
-        let img = await downloadMediaMessage(quotedMessage);
-        let up = quotedType === "stickerMessage" ? await webp2png(img) : await uploadImage(img);
-        obj.messages[0].media = { url: up };
+        try {
+          let img = await downloadMediaMessage(quotedMessage);
+          let up = quotedType === "stickerMessage" ? await webp2png(img) : await uploadImage(img);
+          obj.messages[0].media = { url: up };
+        } catch (e) {
+          console.error('Error processing media:', e);
+        }
       }
     }
 
@@ -86,6 +85,7 @@ module.exports = {
       const webpBuffer = await convertToWebp(buffer, width, height);
       await sendImageAsSticker(conn, chatId, webpBuffer, message);
     } catch (error) {
+      console.error('Error in quoted sticker creation:', error);
       conn.sendMessage(chatId, { text: "Gagal membuat kutipan." });
     }
   },
@@ -93,15 +93,28 @@ module.exports = {
 
 async function generateQuotly(obj) {
   try {
-    const response = await axios.post("https://bot.lyo.su/quote/generate", obj, {
-      headers: { "Content-Type": "application/json" },
-    });
+    // Encode the text and name parameters
+    const encodedText = encodeURIComponent(obj.messages[0].text);
+    const encodedName = encodeURIComponent(obj.messages[0].from.name);
+    
+    const response = await axios.post(
+      `https://apizell.web.id/tools/qc?text=${encodedText}&name=${encodedName}`,
+      obj,
+      {
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        timeout: 30000 // 30 seconds timeout
+      }
+    );
 
-    const imageBase64 = response.data.result.image;
-    if (!imageBase64) throw new Error("No image result found.");
-    return Buffer.from(imageBase64, "base64");
+    if (!response.data?.result?.image) {
+      throw new Error("Invalid response format or no image result found");
+    }
+    return Buffer.from(response.data.result.image, "base64");
   } catch (error) {
-    console.error("Quotly error:", error);
+    console.error("Quotly API error:", error);
     throw new Error("Failed to generate the quote image.");
   }
 }
@@ -111,23 +124,45 @@ async function convertToWebp(buffer, width, height) {
     const tmpPath = path.join(tmpdir(), `quote_${Date.now()}.png`);
     const outputPath = path.join(tmpdir(), `quote_${Date.now()}.webp`);
     
-    writeFileSync(tmpPath, buffer);
+    try {
+      writeFileSync(tmpPath, buffer);
 
-    exec(
-      `ffmpeg -i "${tmpPath}" -vf "scale=${width}:${height}:flags=lanczos" -c:v libwebp -lossless 1 -qscale 100 "${outputPath}"`,
-      (err) => {
-        if (err) return reject(err);
-        resolve(readFileSync(outputPath));
-      }
-    );
+      exec(
+        `ffmpeg -i "${tmpPath}" -vf "scale=${width}:${height}:flags=lanczos" -c:v libwebp -lossless 1 -qscale 100 "${outputPath}"`,
+        (err) => {
+          // Clean up temp files
+          try { unlinkSync(tmpPath); } catch (e) {}
+          
+          if (err) {
+            try { unlinkSync(outputPath); } catch (e) {}
+            return reject(err);
+          }
+          
+          try {
+            const result = readFileSync(outputPath);
+            unlinkSync(outputPath);
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      );
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
 async function sendImageAsSticker(conn, chatId, webpBuffer, message) {
-  await conn.sendMessage(chatId, { 
-    sticker: webpBuffer,
-    mimetype: "image/webp",
-    packname: "Dabi Chan",
-    author: "Quoted Sticker"
-  }, { quoted: message });
+  try {
+    await conn.sendMessage(chatId, { 
+      sticker: webpBuffer,
+      mimetype: "image/webp",
+      packname: "Dabi Chan",
+      author: "Quoted Sticker"
+    }, { quoted: message });
+  } catch (error) {
+    console.error('Error sending sticker:', error);
+    throw error;
+  }
 }

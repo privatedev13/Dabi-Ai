@@ -9,20 +9,11 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const messageText =
-        message.body ||
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        message.message?.imageMessage?.caption ||
-        message.message?.videoMessage?.caption ||
-        '';
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!messageText) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find(p => messageText.startsWith(p));
-      if (!prefix) return;
-
-      const commandText = messageText.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
