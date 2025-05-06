@@ -5,18 +5,10 @@ module.exports = {
   desc: 'Daftar semua admin grup',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, '@');
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    if (!textMessage) return;
-
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
     if (!module.exports.command.includes(commandText)) return;
 

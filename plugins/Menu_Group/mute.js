@@ -1,28 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
-const readDB = () => {
-  if (!fs.existsSync(dbPath)) return { Private: {}, Grup: {} };
-
-  try {
-    const data = fs.readFileSync(dbPath, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error membaca database:', error);
-    return { Private: {}, Grup: {} };
-  }
-};
-
-const writeDB = (data) => {
-  try {
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Error menyimpan database:', error);
-  }
-};
-
 module.exports = {
   name: 'mute',
   command: ['mute'],
@@ -31,19 +6,11 @@ module.exports = {
 
   run: async (conn, message, { isPrefix, args }) => {
     try {
-      const chatId = message.key.remoteJid;
-      const isGroup = chatId.endsWith('@g.us');
-      const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, "@");
-      const textMessage =
-        message.message?.conversation || message.message?.extendedTextMessage?.text || "";
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      if (!textMessage) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
-
-      const commandText = textMessage.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
-      args = textMessage.slice(prefix.length).trim().split(/\s+/).slice(1);
       if (!module.exports.command.includes(commandText)) return;
 
       if (!isGroup) {
@@ -66,7 +33,7 @@ module.exports = {
           autoai: false,
           chat: 0,
         };
-        writeDB(db);
+        saveDB(db);
       }
 
       const currentGroup = Object.values(db.Grup).find((g) => g.Id === chatId);
@@ -87,7 +54,7 @@ module.exports = {
           return conn.sendMessage(chatId, { text: '⚠️ Mode mute sudah aktif di grup ini.' }, { quoted: message });
         }
         currentGroup.mute = true;
-        writeDB(db);
+        saveDB(db);
         return conn.sendMessage(chatId, {
           text: '✅ Mode mute berhasil diaktifkan. Hanya admin yang dapat menggunakan bot.',
         }, { quoted: message });
@@ -98,7 +65,7 @@ module.exports = {
           return conn.sendMessage(chatId, { text: '⚠️ Mode mute tidak aktif di grup ini.' }, { quoted: message });
         }
         currentGroup.mute = false;
-        writeDB(db);
+        saveDB(db);
         return conn.sendMessage(chatId, {
           text: '✅ Mode mute berhasil dinonaktifkan. Semua member dapat menggunakan bot.',
         }, { quoted: message });

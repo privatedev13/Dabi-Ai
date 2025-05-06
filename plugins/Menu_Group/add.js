@@ -5,22 +5,11 @@ module.exports = {
   desc: 'Menambahkan anggota ke grup (hanya bisa digunakan oleh admin).',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message?.key?.remoteJid;
-    const isGroup = chatId.endsWith("@g.us");
-    const senderId = isGroup ? message.key.participant : chatId;
-    const mtype = Object.keys(message.message || {})[0];
-    const textMessage =
-      (mtype === "conversation" && message.message?.conversation) ||
-      (mtype === "extendedTextMessage" && message.message?.extendedTextMessage?.text) ||
-      "";
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args[0]?.toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     let targetId = target(message, senderId);
@@ -30,14 +19,18 @@ module.exports = {
       return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" });
 
     const groupMetadata = await conn.groupMetadata(chatId);
-    const groupAdmins = groupMetadata.participants.filter(p => p.admin).map(p => p.id);
+    const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin)
+
     const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+    const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
 
-    if (!groupAdmins.includes(senderId))
-      return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan oleh admin grup!" });
+    if (!isUserAdmin) {
+      return conn.sendMessage(chatId, { text: '❌ Hanya admin grup yang bisa menggunakan perintah ini!' }, { quoted: message });
+    }
 
-    if (!groupAdmins.includes(botNumber))
-      return conn.sendMessage(chatId, { text: "❌ Bot harus menjadi admin untuk menggunakan perintah ini!" });
+    if (!isBotAdmin) {
+      return conn.sendMessage(chatId, { text: '❌ Bot harus menjadi admin untuk menambahkan orang ke grup!' }, { quoted: message });
+    }
 
     const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const quotedSender = message.message?.extendedTextMessage?.contextInfo?.participant;

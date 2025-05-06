@@ -1,21 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const dbFile = path.join(__dirname, '../../toolkit/db/database.json');
-
-if (!fs.existsSync(dbFile)) {
-  fs.writeFileSync(dbFile, JSON.stringify({ Grup: {} }, null, 2));
-}
-
-const readDB = () => {
-  let data = fs.readFileSync(dbFile, 'utf-8');
-  return data ? JSON.parse(data) : { Grup: {} };
-};
-
-const saveDB = (data) => {
-  fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
-};
-
 module.exports = {
   name: 'left',
   command: ['left'],
@@ -23,19 +5,20 @@ module.exports = {
   desc: 'Mengatur fitur pesan keluar grup',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : chatId.replace(/\D/g, '');
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
     if (!module.exports.command.includes(commandText)) return;
+
     if (!isGroup) return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: message });
+
+    const db = readDB();
+    const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
+    if (!groupData) {
+      return conn.sendMessage(chatId, { text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: message });
+    }
 
     const groupMetadata = await conn.groupMetadata(chatId);
     const groupName = groupMetadata.subject;
