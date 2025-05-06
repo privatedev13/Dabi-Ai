@@ -37,6 +37,8 @@ global.setWelcomeSettings = Sys.setWelcomeSettings;
 global.getLeftStatus = Sys.getLeftStatus;
 global.getLeftText = Sys.getLeftText;
 global.setLeftSettings = Sys.setLeftSettings;
+global.updateBio = Sys.updateBio;
+global.parseMessage = Sys.parseMessage;
 
 Object.assign(global, {
     Format: Sys.Format,
@@ -68,6 +70,7 @@ Object.assign(global, {
     autoBio: setting.botSetting.autoBio,
     public: setting.botSetting.public,
     logic: setting.botSetting.logic,
+    mode: setting.botSetting.Mode,
     sewaList: toko.storeSetting.sewa || [],
     storeList: Object.keys(toko.storeSetting).filter(k => k !== 'sewa'),
     owner: setting.msg.rejectMsg.isOwner,
