@@ -16,32 +16,20 @@ module.exports = {
   isPremium: true,
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message?.key?.remoteJid;
-    const isGroup = chatId.endsWith("@g.us");
-    const senderId = isGroup ? message.key.participant : chatId;
-    const mtype = Object.keys(message.message || {})[0];
-    const textMessage =
-      (mtype === "conversation" && message.message?.conversation) ||
-      (mtype === "extendedTextMessage" && message.message?.extendedTextMessage?.text) ||
-      "";
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
-
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const withoutPrefix = textMessage.slice(prefix.length).trim();
-    const firstSpaceIndex = withoutPrefix.indexOf(' ');
-    const commandText = firstSpaceIndex !== -1 ? withoutPrefix.slice(0, firstSpaceIndex).toLowerCase() : withoutPrefix.toLowerCase();
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
     if (!module.exports.command.includes(commandText)) return;
 
     if (!(await onlyPremium(module.exports, conn, message))) return;
 
-    const broadcastMessage = firstSpaceIndex !== -1 ? withoutPrefix.slice(firstSpaceIndex + 1) : '';
+    const commandWithPrefix = `${prefix}${commandText}`;
+    const broadcastMessage = textMessage.slice(commandWithPrefix.length).trim();
 
     if (!broadcastMessage) {
-      return conn.sendMessage(chatId, { text: `❌ Pesan broadcast tidak boleh kosong! Gunakan format:\n\`${prefix}bcgc [pesan]\`` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `❌ Pesan broadcast tidak boleh kosong! Gunakan format:\n\`${commandWithPrefix} [pesan]\`` }, { quoted: message });
     }
 
     if (isBroadcasting) {
@@ -63,7 +51,7 @@ module.exports = {
     for (const id of groupIds) {
       try {
         await conn.sendMessage(id, {
-          text: `${broadcastMessage}`,
+          text: broadcastMessage,
           contextInfo: {
             externalAdReply: {
               title: '📢 B R O A D C A S T',

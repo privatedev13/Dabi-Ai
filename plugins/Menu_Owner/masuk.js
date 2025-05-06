@@ -9,23 +9,16 @@ module.exports = {
   isPremium: true,
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, '@');
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
-    let text = args.join(' ');
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
     if (!module.exports.command.includes(commandText)) return;
 
     if (!(await onlyPremium(module.exports, conn, message))) return;
 
+    let text = args.join(' ');
     if (!text && message.message.extendedTextMessage?.contextInfo?.quotedMessage) {
       const quoted = message.message.extendedTextMessage.contextInfo.quotedMessage;
       text = quoted.conversation || quoted.extendedTextMessage?.text || '';

@@ -11,17 +11,10 @@ module.exports = {
   isOwner: false,
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const senderId = chatId.endsWith('@g.us') ? message.key.participant : chatId.replace(/\D/g, '');
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
-
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
     if (!module.exports.command.includes(commandText)) return;
 

@@ -19,14 +19,11 @@ module.exports = {
   isOwner: true,
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const senderId = message.participant || message.key.participant || message.key.remoteJid;
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
+
     if (!module.exports.command.includes(commandText)) return;
 
     if (!(await onlyOwner(module.exports, conn, message))) return
@@ -42,8 +39,8 @@ module.exports = {
       return conn.sendMessage(chatId, { text: "❌ Fitur sambutan untuk Owner dinonaktifkan!" }, { quoted: message });
 
     } else if (args[0] === "set") {
-      let forOwnerTeks = textMessage.replace(`${prefix}forowner set`, "").trim();
-      if (!forOwnerTeks) return conn.sendMessage(chatId, { text: "⚠️ Gunakan perintah:\n.forowner set <teks sambutan>" }, { quoted: message });
+      let forOwnerTeks = textMessage.slice((prefix + commandText + ' set').length).trim();
+      if (!forOwnerTeks) return conn.sendMessage(chatId, { text: `⚠️ Gunakan perintah:\n${prefix}${commandText} set <teks sambutan>` }, { quoted: message });
 
       config.msg.rejectMsg.forOwnerText = forOwnerTeks;
       saveConfig(config);
@@ -56,7 +53,7 @@ module.exports = {
 
     } else {
       return conn.sendMessage(chatId, {
-        text: `⚙️ Penggunaan:\n${prefix}forowner on → Aktifkan sambutan Owner\n${prefix}forowner off → Nonaktifkan sambutan Owner\n${prefix}forowner set <teks> → Atur teks sambutan\n${prefix}forowner reset → Reset teks sambutan`
+        text: `⚙️ Penggunaan:\n${prefix}${commandText} on → Aktifkan sambutan Owner\n${prefix}${commandText} off → Nonaktifkan sambutan Owner\n${prefix}${commandText} set <teks> → Atur teks sambutan\n${prefix}${commandText} reset → Reset teks sambutan`
       }, { quoted: message });
     }
   }
