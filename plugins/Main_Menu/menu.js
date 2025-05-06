@@ -10,19 +10,11 @@ module.exports = {
   tags: 'Info Menu',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, '@');
-    const textMessage =
-      message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     const senderNumber = message.pushName || 'Pengguna';
@@ -108,7 +100,10 @@ function getMenuText(sender, requestedCategory) {
 
       menuText += `${head} ${Obrack} *${category}* ${Cbrack}\n`;
       commands.forEach((cmd) => {
-        menuText += `${side} ${btn} ${isPrefix[0]}${cmd}\n`;
+        const plugin = global.plugins[cmd];
+        const isPremium = plugin && plugin.isPremium === true;
+        const premiumLabel = isPremium ? ' *[ premium ]*' : '';
+        menuText += `${side} ${btn} ${isPrefix[0]}${cmd}${premiumLabel}\n`;
       });
       menuText += `${foot}${garis}\n\n`;
     }
