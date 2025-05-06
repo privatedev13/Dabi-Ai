@@ -7,24 +7,15 @@ module.exports = {
   desc: 'Download video dari TikTok tanpa watermark.',
 
   async run(conn, message, { isPrefix }) {
-    const chatId = message?.key?.remoteJid;
-    const senderId = message.key.participant || chatId;
-    const textMessage =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      "";
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     if (!args[0]) {
-      return conn.sendMessage(chatId, { text: `Example:\n${prefix}${commandText} https://vt.tiktok.com/ZSF4cWcA2/` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Example:\n${prefix}${commandText} https://vt.tiktok.com/7494086723190721798/` }, { quoted: message });
     }
 
     if (!args[0].includes('tiktok.com')) {

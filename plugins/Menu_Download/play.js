@@ -22,24 +22,17 @@ module.exports = {
 
   run: async (conn, message, { isPrefix }) => {
     try {
-      const chatId = message?.key?.remoteJid;
-      const textMessage =
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        "";
-      if (!textMessage) return;
+      const parsed = parseMessage(message, isPrefix);
+      if (!parsed) return;
 
-      const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
+      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-      const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-      const commandText = args.shift().toLowerCase();
       if (!module.exports.command.includes(commandText)) return;
 
       const text = args.join(" ");
       if (!text) {
         return conn.sendMessage(chatId, {
-          text: `Masukkan judul lagu yang ingin dicari.\nContoh: *${prefix}play melukis senja*`
+          text: `Masukkan judul lagu yang ingin dicari.\nContoh: *${prefix}${commandText} Jadian yuk chloe pawapua/<url>*`
         }, { quoted: message });
       }
 

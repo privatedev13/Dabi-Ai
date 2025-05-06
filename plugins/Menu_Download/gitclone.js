@@ -7,24 +7,16 @@ module.exports = {
   desc: 'Download repository GitHub dalam bentuk .zip',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message?.key?.remoteJid;
-    const textMessage =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      "";
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift().toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     const text = args.join(' ');
     if (!text) {
-      return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}git https://github.com/DGXeon/XeonMedia` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/MaouDabi0/Dabi-Ai` }, { quoted: message });
     }
 
     if (!/^https?:\/\//.test(text) || !text.includes('github.com')) {
