@@ -12,8 +12,6 @@ const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState, makeInMemoryStore, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { getMenuText, handleMenuCommand } = require('./plugins/Main_Menu/menu');
 const { isPrefix } = require('./toolkit/setting');
-const { Format } = require('./toolkit/helper');
-const { updateBio } = require('./plugins/Menu_Owner/autobio');
 
 const store = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) });
 const logger = pino({ level: 'silent' });
@@ -98,6 +96,16 @@ setInterval(() => {
 
   fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 }, 60000);
+
+const configPath = path.join(__dirname, './toolkit/set/config.json');
+fs.watchFile(configPath, () => {
+  try {
+    delete require.cache[require.resolve(configPath)];
+    global.setting = require(configPath);
+  } catch (err) {
+    console.error(chalk.red('❌ Gagal memuat ulang config.json:'), err);
+  }
+});
 
 const isMuted = async (chatId, senderId, conn) => {
   const db = readDB();
@@ -208,6 +216,9 @@ const startBot = async () => {
       if (mediaInfo && textMessage) console.log(chalk.white(`  ${mediaInfo} | [ ${textMessage} ]`));
       else if (mediaInfo) console.log(chalk.white(`  ${mediaInfo}`));
       else if (textMessage) console.log(chalk.white(`  [ ${textMessage} ]`));
+
+      if (global.setting?.botSetting?.Mode === 'group' && !isGroup) return;
+      if (global.setting?.botSetting?.Mode === 'private' && isGroup) return;
 
       const { ownerSetting, msg } = setting;
       global.lastGreet = global.lastGreet || {};
