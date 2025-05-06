@@ -1,8 +1,10 @@
+const { cekDosa } = require('../../toolkit/function.js');
+
 module.exports = {
-  name: 'cek mesum',
-  command: ['cekmesum'],
+  name: 'Cek Dosa',
+  command: ['cekdosa', 'cek dosa'],
   tags: 'Fun Menu',
-  desc: 'Mengecek seberapa mesum orang',
+  desc: 'Mengecek 10 dosa besar user',
 
   run: async (conn, message, { isPrefix }) => {
     try {
@@ -13,28 +15,18 @@ module.exports = {
 
       if (!module.exports.command.includes(commandText)) return;
 
-      let targetId = target(message, senderId);
+      const targetId = target(message, senderId);
       const mentionTarget = targetId;
 
-      const persentase = Math.floor(Math.random() * 101);
+      const dosaUnik = [...cekDosa].sort(() => Math.random() - 0.5).slice(0, 10);
 
-      let komentar;
-      if (persentase <= 25) {
-        komentar = 'Masih mending';
-      } else if (persentase <= 44) {
-        komentar = 'Waduh ini sih udah';
-      } else if (persentase <= 72) {
-        komentar = 'Parah sih ini';
-      } else if (persentase <= 88) {
-        komentar = 'Cabul bet';
-      } else {
-        komentar = 'Hati-hati orang cabul';
-      }
-
-      const teks = `*seberapa cabul @${mentionTarget}*\n\n*${persentase}%* Cabul\n_${komentar}_`
+      let teks = `Top 10 dosa besar @${mentionTarget}\n`;
+      dosaUnik.forEach((dosa, i) => {
+        teks += `${i + 1}. ${dosa}\n`;
+      });
 
       await conn.sendMessage(chatId, {
-        text: teks,
+        text: teks.trim(),
         mentions: [`${targetId}@s.whatsapp.net`]
       }, { quoted: message });
 

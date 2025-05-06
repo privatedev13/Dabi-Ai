@@ -12,8 +12,8 @@ module.exports = {
       const senderId = chatId.endsWith('@g.us')
         ? message.key.participant
         : chatId.replace(/:\d+@/, '@');
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
 
+      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
       const prefix = module.exports.command.find((p) => textMessage.startsWith(p));
       if (!prefix) return;
 

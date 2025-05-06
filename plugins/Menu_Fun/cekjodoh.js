@@ -5,23 +5,14 @@ module.exports = {
   desc: 'Cek jodoh antara dua orang secara random.',
 
   run: async (conn, message, { isPrefix }) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = message.key.participant;
-    const textMessage =
-      message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+    const parsed = parseMessage(message, isPrefix);
+    if (!parsed) return;
 
-    if (!textMessage) return;
+    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
 
-    const prefix = isPrefix.find((p) => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/);
-    const commandText = args.shift()?.toLowerCase();
     if (!module.exports.command.includes(commandText)) return;
 
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di grup.' }, { quoted: message });
-        
 
     const groupMetadata = await conn.groupMetadata(chatId);
     const participants = groupMetadata.participants.map(p => p.id).filter(id => id !== conn.user.id);

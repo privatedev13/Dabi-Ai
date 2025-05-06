@@ -1,10 +1,10 @@
-const { cekKhodam } = require('../../toolkit/function.js');
+const { cekKuat } = require('../../toolkit/function.js');
 
 module.exports = {
-  name: 'CekKhodam',
-  command: ['cekkodam', 'cekkhodam'],
+  name: 'Cek kekuatan',
+  command: ['cekkekuatan', 'cekkuat'],
   tags: 'Fun Menu',
-  desc: '',
+  desc: 'Mengecek seberapa kuat orang',
 
   run: async (conn, message, { isPrefix }) => {
     try {
@@ -18,25 +18,14 @@ module.exports = {
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
 
-      const cek = cekKhodam[Math.floor(Math.random() * cekKhodam.length)];
+      const cek = cekKuat[Math.floor(Math.random() * cekKuat.length)];
 
-      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const teks = `Nama: @${mentionTarget}\nKekuatan: ${cek}`
 
-      const teks = `_Pengecekan Khodam untuk @${mentionTarget}⁩ telah berhasil_!\n\nSetelah melalui penelusuran spiritual yang mendalam, diketahui bahwa Khodam yang mendampingi @${mentionTarget} adalah *${cek}*`;
-
-      const teks2 = `Bentar tak terawang dulu...`;
-
-      conn.sendMessage(chatId, {
-        text: teks2,
-        mentions: [`${targetId}@s.whatsapp.net`]
-      }, { quoted: message });
-
-      await delay(3000);
       await conn.sendMessage(chatId, {
         text: teks,
         mentions: [`${targetId}@s.whatsapp.net`]
       }, { quoted: message });
-
     } catch (error) {
       console.error('Error:', error);
       conn.sendMessage(message.key.remoteJid, {
