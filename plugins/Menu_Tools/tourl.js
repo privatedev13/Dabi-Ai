@@ -8,17 +8,18 @@ module.exports = {
   name: 'tourl',
   command: ['tourl'],
   tags: 'Tools Menu',
-  desc: 'Mengubah media menjadi URL menggunakan Catbox.moe',
+  desc: 'Mengubah media menjadi URL.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const quoted = message.quoted;
       const targetMsg = quoted || message;
 

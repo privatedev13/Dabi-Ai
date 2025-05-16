@@ -5,16 +5,18 @@ module.exports = {
   name: 'remini',
   command: ['remini'],
   tags: 'Tools Menu',
+  desc: 'Menghdkan gambar',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const isImage = quotedMessage?.imageMessage;
 

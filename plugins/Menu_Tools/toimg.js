@@ -8,19 +8,19 @@ module.exports = {
   command: ['toimg'],
   tags: 'Tools Menu',
   desc: 'Mengonversi stiker menjadi gambar',
-
+  prefix: true,
   isPremium: true,
 
-  run: async function (conn, message, { isPrefix }) {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyPremium(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
 
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const stickerMessage = quotedMessage?.stickerMessage || message.message?.stickerMessage;

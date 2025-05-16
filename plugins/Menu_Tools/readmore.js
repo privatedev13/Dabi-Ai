@@ -2,17 +2,18 @@ module.exports = {
   name: 'readmore',
   command: ['rd', 'readmore'],
   tags: 'Tools Menu',
-  desc: 'Membuat teks read more (lihat selengkapnya) untuk menyembunyikan bagian teks.',
+  desc: 'Membuat teks read more.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const fullText = args.join(' ');
       if (!fullText.includes('|')) {
         return conn.sendMessage(chatId, {

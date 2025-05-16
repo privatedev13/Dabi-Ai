@@ -2,16 +2,17 @@ module.exports = {
   name: 'clearchat',
   command: ['clearchat', 'cc'],
   tags: 'Tools Menu',
-  desc: 'Bersihkan semua riwayat chat untuk Anda sendiri',
+  desc: 'Bersihkan semua riwayat chat',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     try {
       console.log(`Attempting to clear chat for chatId: ${chatId}`);
 

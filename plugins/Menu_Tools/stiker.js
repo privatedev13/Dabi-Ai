@@ -1,21 +1,22 @@
-const { createSticker } = require('../../toolkit/helper');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { writeExifImg, writeExifVid } = require('../../toolkit/exif.js');
 
 module.exports = {
   name: 'stiker',
   command: ['s', 'stiker', 'sticker'],
   tags: 'Tools Menu',
   desc: 'Membuat sticker',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const isImage = quotedMessage?.imageMessage || message.message?.imageMessage;
       const isVideo = quotedMessage?.videoMessage || message.message?.videoMessage;
@@ -43,10 +44,18 @@ module.exports = {
         );
       }
 
-      let sticker;
+      const metadata = {
+        packname: footer,
+        author: message.pushName
+      };
+
+      let stickerPath;
       try {
-        sticker = await createSticker(media, isVideo);
-        if (!sticker) throw new Error('Stiker tidak berhasil dibuat!');
+        stickerPath = isImage
+          ? await writeExifImg(media, metadata)
+          : await writeExifVid(media, metadata);
+
+        if (!stickerPath) throw new Error('Gagal membuat stiker!');
       } catch (error) {
         return conn.sendMessage(
           message.key.remoteJid,
@@ -55,7 +64,8 @@ module.exports = {
         );
       }
 
-      await conn.sendMessage(message.key.remoteJid, { sticker }, { quoted: message });
+      const stickerBuffer = require('fs').readFileSync(stickerPath);
+      await conn.sendMessage(message.key.remoteJid, { sticker: stickerBuffer }, { quoted: message });
     } catch (error) {
       conn.sendMessage(
         message.key.remoteJid,

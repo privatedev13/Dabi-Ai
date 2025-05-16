@@ -6,20 +6,20 @@ module.exports = {
   name: 'rvo',
   command: ['rvo', 'readviewonce'],
   tags: 'Tools Menu',
-  desc: 'Mengekstrak media sekali lihat (foto, video, audio) dari pesan yang dibalas',
-
+  desc: 'Mengekstrak media sekali lihat.',
+  prefix: true,
   isPremium: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyPremium(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
 
       const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       if (!quotedMsg) {

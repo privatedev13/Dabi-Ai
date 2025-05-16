@@ -7,16 +7,19 @@ module.exports = {
   command: ['catat'],
   tags: 'Tools Menu',
   desc: 'Menambahkan isi ke dalam nama catatan',
+  prefix: true,
+  owner: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
       if (!fs.existsSync(catatanPath)) fs.writeFileSync(catatanPath, '{}');
       const catatan = JSON.parse(fs.readFileSync(catatanPath));
 

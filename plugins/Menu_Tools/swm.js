@@ -1,23 +1,23 @@
-const { Sticker, StickerTypes } = require('wa-sticker-formatter');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { writeExifImg } = require('../../toolkit/exif.js');
 
 module.exports = {
   name: 'Sticker Watermark',
   command: ['swm', 'swn'],
   tags: 'Tools Menu',
-  desc: 'Mengubah watermark (author & pack) pada stiker',
+  desc: 'Mengubah watermark stiker',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const inputText = args.join(' ').trim();
-
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const stickerMessage = quotedMessage?.stickerMessage;
 
@@ -51,24 +51,20 @@ module.exports = {
       let pack = footer;
 
       if (inputText.includes('|')) {
-        const splitText = inputText.split('|').map(t => t.trim());
-        author = splitText[0] || author;
-        pack = splitText[1] || pack;
-      } else if (inputText) {
+        const [a, p] = inputText.split('|').map(t => t.trim());
+        author = a || author;
+        pack = p || pack;
+      } else {
         author = inputText;
       }
 
-      let sticker;
+      let stickerPath;
       try {
-        sticker = new Sticker(media, {
-          pack,
-          author,
-          type: StickerTypes.FULL,
-          quality: 100,
-        });
+        stickerPath = await writeExifImg(media, { author, packname: pack }, true);
+        if (!stickerPath) throw new Error('Exif tidak berhasil ditulis!');
+        const stickerBuffer = require('fs').readFileSync(stickerPath);
 
-        const buffer = await sticker.toBuffer();
-        await conn.sendMessage(message.key.remoteJid, { sticker: buffer }, { quoted: message });
+        await conn.sendMessage(message.key.remoteJid, { sticker: stickerBuffer }, { quoted: message });
       } catch (error) {
         return conn.sendMessage(
           message.key.remoteJid,
