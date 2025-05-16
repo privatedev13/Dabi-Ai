@@ -5,19 +5,19 @@ module.exports = {
   name: 'addtoko',
   command: ['addtoko'],
   tags: 'Shop Menu',
-  desc: 'Menambahkan nama toko ke dalam daftar toko dan membuat file plugin toko',
+  desc: 'Menambahkan toko',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     const tokoName = args.join(' ').trim();
     if (!tokoName) {
@@ -56,14 +56,14 @@ module.exports = {
   tags: 'Toko Menu',
   desc: 'Menampilkan toko ${tokoName}',
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     const tokoPath = './toolkit/set/toko.json';
     let tokoData;
     try {

@@ -10,15 +10,18 @@ module.exports = {
   command: ['beli', 'buy'],
   tags: 'Shop Menu',
   desc: 'Membeli barang dari toko',
+  prefix: true,
 
-  run: async (conn, message, { args, isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage || null;
 
       if (!fs.existsSync(dbPath)) {
         fs.writeFileSync(dbPath, JSON.stringify({ pendingOrders: [] }, null, 2));
@@ -83,18 +86,21 @@ module.exports = {
       }
 
       let order;
-      if (quotedMessage) {
-        const quotedUserId = message.message.extendedTextMessage.contextInfo.participant;
+      const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+
+      if (quotedMessage && contextInfo?.participant) {
+        const quotedUserId = contextInfo.participant;
         order = dbData.pendingOrders.find(o => o.userId === quotedUserId);
       } else {
         if (args.length < 3 || args[2].toLowerCase() !== 'done') {
-          return conn.sendMessage(chatId, { text: `⚠️ Gunakan format *${prefix}buy <NamaToko>, <Harga> done* atau reply pesan pembelian dengan "done".` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `⚠️ Gunakan format *${prefix}buy <NamaToko> <Harga> done* atau reply pesan pembelian dengan "done".` }, { quoted: message });
         }
+
         const tokoName = args[0];
-        const harga = args[1];
+        const harga = parseInt(args[1]);
 
         order = dbData.pendingOrders.find(o => 
-          o.toko.toLowerCase() === tokoName.toLowerCase() && 
+          o.toko.toLowerCase() === tokoName.toLowerCase() &&
           o.harga === harga
         );
       }
@@ -103,7 +109,7 @@ module.exports = {
         return conn.sendMessage(chatId, { text: "❌ Tidak ada transaksi yang cocok untuk dikonfirmasi!" }, { quoted: message });
       }
 
-      dbData.pendingOrders = dbData.pendingOrders.filter(o => 
+      dbData.pendingOrders = dbData.pendingOrders.filter(o =>
         !(o.userId === order.userId && o.toko === order.toko && o.barang === order.barang && o.harga === order.harga)
       );
       fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 2));
@@ -114,6 +120,7 @@ module.exports = {
       }, { quoted: message });
 
     } catch (err) {
+      console.error("ERROR BUY:", err);
       conn.sendMessage(message.key.remoteJid, { text: "❌ Terjadi kesalahan, coba lagi nanti." }, { quoted: message });
     }
   }

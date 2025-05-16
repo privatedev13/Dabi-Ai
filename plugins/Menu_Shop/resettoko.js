@@ -5,20 +5,20 @@ module.exports = {
   name: 'resettoko',
   command: ['resettoko'],
   tags: 'Shop Menu',
-  desc: 'Mereset daftar toko di toko.json (hanya storeSetting)',
+  desc: 'Mereset daftar toko.',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
 
       if (!fs.existsSync(tokoPath)) {
         return conn.sendMessage(chatId, { text: "❌ File toko.json tidak ditemukan." }, { quoted: message });
