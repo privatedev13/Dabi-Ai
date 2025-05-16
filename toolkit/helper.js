@@ -150,38 +150,38 @@ const download = async (url, filePath) => {
   });
 };
 
-const target = (msg, senderId) => {
-  const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
+const target = (message, senderId) => {
+  const ctx = message.message?.extendedTextMessage?.contextInfo || {};
   const mentioned = ctx.mentionedJid?.[0];
   const replied = ctx.participant;
   const id = mentioned || replied || senderId;
   return id.replace(/@s.whatsapp.net$/, '');
 };
 
-const chkOwner = async (plugin, conn, msg) => {
-  const chatId = msg.key.remoteJid;
+const getSenderId = (message) => {
+  const chatId = message?.key?.remoteJid;
   const isGroup = chatId.endsWith('@g.us');
-  const senderId = isGroup ? msg.key.participant : msg.key.remoteJid;
+  return { chatId, senderId: isGroup ? message.key.participant : chatId };
+};
 
+const chkOwner = async (plugin, conn, message) => {
   if (plugin.owner) {
+    const { chatId, senderId } = getSenderId(message);
     const num = senderId.replace(/\D/g, '');
     if (!global.ownerNumber.includes(num)) {
-      await conn.sendMessage(chatId, { text: owner }, { quoted: msg });
+      await conn.sendMessage(chatId, { text: owner }, { quoted: message });
       return false;
     }
   }
   return true;
 };
 
-const chkPrem = async (plugin, conn, msg) => {
-  const chatId = msg.key.remoteJid;
-  const isGroup = chatId.endsWith('@g.us');
-  const senderId = isGroup ? msg.key.participant : msg.key.remoteJid;
-
+const chkPrem = async (plugin, conn, message) => {
   if (plugin.premium) {
+    const { chatId, senderId } = getSenderId(message);
     const user = global.getUserData(senderId);
     if (!user?.premium?.prem) {
-      await conn.sendMessage(chatId, { text: prem }, { quoted: msg });
+      await conn.sendMessage(chatId, { text: prem }, { quoted: message });
       return false;
     }
   }
@@ -260,11 +260,24 @@ const chtEmt = async (textMessage, message, senderId, chatId, conn) => {
   return false;
 };
 
-const exCht = (message) => {
-  const chatId = message?.key?.remoteJid;
-  const isGroup = chatId?.endsWith('@g.us');
-  const senderId = isGroup ? message?.key?.participant : chatId;
-  const pushName = message.pushName || botName || 'User';
+const exCht = (message = {}) => {
+  const chatId = message?.key?.remoteJid || '';
+  const isGroup = chatId.endsWith('@g.us');
+
+  let senderId = '';
+  if (isGroup) {
+    senderId = message?.key?.participant 
+            || message?.participant 
+            || message?.sender 
+            || '';
+  } else {
+    senderId = message?.key?.fromMe
+      ? global.botNumber || ''
+      : chatId;
+  }
+
+  const pushName = message?.pushName || global.botName || 'User';
+
   return { chatId, isGroup, senderId, pushName };
 };
 
