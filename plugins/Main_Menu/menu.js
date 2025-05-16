@@ -8,20 +8,19 @@ module.exports = {
   name: 'menu',
   command: ['menuall', 'menu'],
   tags: 'Info Menu',
+  desc: 'Menampilkan menu',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    const senderNumber = message.pushName || 'Pengguna';
-    const sender = `${senderNumber}`;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup, pushName } = chatInfo;
     const requestedCategory = args.length ? args.join(' ').toLowerCase() : null;
-    const menuText = getMenuText(sender, requestedCategory);
+    const menuText = getMenuText(pushName, requestedCategory, prefix);
 
     const adReply = {
       contextInfo: {
@@ -47,7 +46,7 @@ module.exports = {
   }
 };
 
-function getMenuText(sender, requestedCategory) {
+function getMenuText(sender, requestedCategory, prefix) {
   let menuText = `Halo *${sender}*, Saya adalah asisten virtual yang siap membantu.\n`;
   menuText += `Gunakan perintah di bawah untuk berinteraksi dengan saya.\n`;
   menuText += `> ⚠ Note:\n> Bot ini masih dalam tahap pengembangan,\n> jadi gunakan dengan bijak\n\n`;
@@ -90,7 +89,7 @@ function getMenuText(sender, requestedCategory) {
 
     menuText += `${head} ${Obrack} *${matchedCategory}* ${Cbrack}\n`;
     commands.forEach((cmd) => {
-      menuText += `${side} ${btn} ${isPrefix[0]}${cmd}\n`;
+      menuText += `${side} ${btn} ${prefix}${cmd}\n`;
     });
     menuText += `${foot}${garis}\n\n`;
   } else {
@@ -102,8 +101,8 @@ function getMenuText(sender, requestedCategory) {
       commands.forEach((cmd) => {
         const plugin = global.plugins[cmd];
         const isPremium = plugin && plugin.isPremium === true;
-        const premiumLabel = isPremium ? ' *[ premium ]*' : '';
-        menuText += `${side} ${btn} ${isPrefix[0]}${cmd}${premiumLabel}\n`;
+        const isPremiumLabel = isPremium ? ' *[ isPremium ]*' : '';
+        menuText += `${side} ${btn} ${prefix}${cmd}${isPremiumLabel}\n`;
       });
       menuText += `${foot}${garis}\n\n`;
     }
