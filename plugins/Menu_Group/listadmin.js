@@ -3,20 +3,21 @@ module.exports = {
   command: ['listadmin', 'listadmins'],
   tags: 'Group Menu',
   desc: 'Daftar semua admin grup',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
-    }
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!isGroup) {
+        return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
+      }
+
       const groupMetadata = await conn.groupMetadata(chatId);
       const admins = groupMetadata.participants.filter(p => p.admin).map(p => p.id);
 

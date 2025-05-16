@@ -5,17 +5,18 @@ module.exports = {
   name: 'intro',
   command: ['intro'],
   tags: 'Group Menu',
-  desc: 'Mengirimkan pesan sambutan jika grup terdaftar di database.',
+  desc: 'Mengirimkan intro grup',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       if (!isGroup) {
         return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya dapat digunakan di grup.' }, { quoted: message });
       }
@@ -34,7 +35,7 @@ module.exports = {
       let foundGroup = null;
 
       for (const [nama, data] of Object.entries(db.Grup)) {
-        if (data.Id === chatId && data.Welcome?.welcome === true) {
+        if (data.Id === chatId && data.gbFilter.Welcome?.welcome === true) {
           foundGroup = data;
           break;
         }
@@ -46,7 +47,7 @@ module.exports = {
         }, { quoted: message });
       }
 
-      const welcomeText = foundGroup.Welcome.welcomeText || 'Selamat datang!';
+      const welcomeText = foundGroup.gbFilter.Welcome.welcomeText || 'Selamat datang!';
 
       conn.sendMessage(chatId, {
         text: welcomeText,

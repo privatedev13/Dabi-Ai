@@ -1,31 +1,35 @@
 module.exports = {
   name: 'kick',
-  command: ['kick', 'tendang', 'keluar'],
+  command: ['kick', 'dor', 'tendang', 'keluar'],
   tags: 'Group Menu',
-  desc: 'Mengeluarkan anggota dari grup (hanya bisa digunakan oleh admin).',
+  desc: 'Mengeluarkan anggota dari grup.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     let targetId = target(message, senderId);
     const mentionTarget = targetId;
 
-    const teks = `❌ Gunakan format:\n${prefix}kick @${mentionTarget} atau reply pesan target.`;
+    const teks = `❌ Gunakan format:\n${prefix}${commandText} @${mentionTarget} atau reply pesan target.`;
     const teks1 = `✅ Berhasil mengeluarkan @${mentionTarget}`;
 
     if (!isGroup) return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: message });
 
-    let groupMetadata = await conn.groupMetadata(chatId);
-    let groupAdmins = groupMetadata.participants.filter((p) => p.admin).map((p) => p.id);
-    let botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
+    const { botAdmin, userAdmin, adminList } = await stGrup(conn, chatId, senderId);
 
-    if (!groupAdmins.includes(senderId)) return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan oleh admin grup!" }, { quoted: message });
-    if (!groupAdmins.includes(botNumber)) return conn.sendMessage(chatId, { text: "❌ Bot harus menjadi admin untuk menggunakan perintah ini!" }, { quoted: message });
+    if (!userAdmin) {
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+    }
+
+    if (!botAdmin) {
+      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+    }
 
     let mentionedJid = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
     let quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
@@ -36,7 +40,9 @@ module.exports = {
       mentions: [`${targetId}@s.whatsapp.net`]
     }, { quoted: message });
 
-    if (groupAdmins.includes(targetUser)) return conn.sendMessage(chatId, { text: "❌ Tidak bisa mengeluarkan admin grup!" }, { quoted: message });
+    if (adminList.includes(targetUser)) {
+      return conn.sendMessage(chatId, { text: "❌ Tidak bisa mengeluarkan admin grup!" }, { quoted: message });
+    }
 
     await conn.groupParticipantsUpdate(chatId, [targetUser], "remove")
       .then(() => conn.sendMessage(chatId, {

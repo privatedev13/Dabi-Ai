@@ -2,34 +2,34 @@ module.exports = {
   name: 'add',
   command: ['add', 'invite', 'tambahkan'],
   tags: 'Group Menu',
-  desc: 'Menambahkan anggota ke grup (hanya bisa digunakan oleh admin).',
+  desc: 'Menambahkan anggota ke grup',
+  prefix: true,
+  owner: true,
+  premium: false,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isPrem(module.exports, conn, message))) return;
     let targetId = target(message, senderId);
     const mentionTarget = targetId;
-
     if (!isGroup)
       return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" });
 
-    const groupMetadata = await conn.groupMetadata(chatId);
-    const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin)
+    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
-    const botNumber = conn.user.id.split(":")[0] + "@s.whatsapp.net";
-    const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
-
-    if (!isUserAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Hanya admin grup yang bisa menggunakan perintah ini!' }, { quoted: message });
+    if (!userAdmin) {
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
     }
 
-    if (!isBotAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Bot harus menjadi admin untuk menambahkan orang ke grup!' }, { quoted: message });
+    if (!botAdmin) {
+    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
     }
 
     const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
@@ -47,7 +47,7 @@ module.exports = {
 
     if (!targetUser) {
       return conn.sendMessage(chatId, {
-        text: `❌ Gunakan perintah ini dengan format:\n• Reply pesan target\n• ${prefix}add 628xxxxxxxxx`
+        text: `❌ Gunakan perintah ini dengan format:\n• Reply pesan target\n• ${prefix}${commandText} 628xxxxxxxxx`
       }, { quoted: message });
     }
 

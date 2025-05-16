@@ -2,17 +2,18 @@ module.exports = {
   name: 'mute',
   command: ['mute'],
   tags: 'Group Menu',
-  desc: 'Aktifkan atau nonaktifkan mode mute di grup dengan .mute on/off',
+  desc: 'Aktifkan atau nonaktifkan mode mute grup',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix, args }) => {
+   run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       if (!isGroup) {
         return conn.sendMessage(chatId, { text: '❗ Perintah ini hanya bisa digunakan di grup.' }, { quoted: message });
       }
@@ -22,7 +23,6 @@ module.exports = {
       const groupName = groupMetadata?.subject || `Group_${chatId}`;
 
       const db = readDB();
-
       const groupData = Object.values(db.Grup).find((g) => g.Id === chatId);
 
       if (!groupData) {
@@ -38,13 +38,10 @@ module.exports = {
 
       const currentGroup = Object.values(db.Grup).find((g) => g.Id === chatId);
 
-      const groupAdmins = groupMetadata.participants
-        .filter((p) => p.admin !== null)
-        .map((admin) => admin.id.replace(/:\d+@/, '@'));
+      const { userAdmin } = await stGrup(conn, chatId, senderId);
 
-      const isAdmin = groupAdmins.includes(normalizedSenderId);
-      if (!isAdmin) {
-        return conn.sendMessage(chatId, { text: '❗ Hanya admin yang dapat menggunakan perintah ini.' }, { quoted: message });
+      if (!userAdmin) {
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
       }
 
       const action = args[0]?.toLowerCase();
@@ -72,7 +69,7 @@ module.exports = {
       }
 
       conn.sendMessage(chatId, {
-        text: `❗ Penggunaan yang benar:\n${isPrefix[0]}mute on - Aktifkan mode mute\n${isPrefix[0]}mute off - Nonaktifkan mode mute`,
+        text: `❗ Penggunaan yang benar:\n${prefix}${commandText} on - Aktifkan mode mute\n${prefix}${commandText} off - Nonaktifkan mode mute`,
       }, { quoted: message });
     } catch (error) {
       console.error('Error di plugin mute.js:', error);

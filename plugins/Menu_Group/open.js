@@ -5,31 +5,29 @@ module.exports = {
   command: ['open', 'buka', 'bukagrup'],
   tags: 'Group Menu',
   desc: 'Membuka chat Group',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
-    }
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const groupMetadata = await conn.groupMetadata(chatId);
-      const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-      const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
-      const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin);
-
-      if (!isUserAdmin) {
-        return conn.sendMessage(chatId, { text: '❌ Hanya admin grup yang bisa menggunakan perintah ini!' }, { quoted: message });
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!isGroup) {
+        return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
       }
 
-      if (!isBotAdmin) {
-        return conn.sendMessage(chatId, { text: '❌ Bot harus menjadi admin untuk membuka grup!' }, { quoted: message });
+      const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+
+      if (!userAdmin) {
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+      }
+
+      if (!botAdmin) {
+        return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
       }
 
       await conn.groupSettingUpdate(chatId, 'not_announcement');

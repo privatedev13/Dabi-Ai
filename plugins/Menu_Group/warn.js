@@ -1,7 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
 function sanitizeGroupName(name) {
   return name.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
 }
@@ -10,16 +6,18 @@ module.exports = {
   name: 'warn',
   command: ['warn', 'warning'],
   tags: 'Group Menu',
+  desc: 'Memberi sangsi kepada member',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    const data = readDB();
 
     if (!data.Grup) data.Grup = {};
     if (!data.Private) data.Private = {};
@@ -27,16 +25,14 @@ module.exports = {
 
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Fitur ini hanya untuk grup!' }, { quoted: message });
 
-    const metadata = await conn.groupMetadata(chatId);
-    const admins = metadata.participants.filter(p => p.admin !== null).map(p => p.id);
-    const isAdmin = admins.includes(senderId);
+    const { botAdmin, userAdmin, subject } = await stGrup(conn, chatId, senderId);
 
-    if (!isAdmin) {
-      return conn.sendMessage(chatId, { text: 'Hanya admin yang bisa menggunakan perintah ini.' }, { quoted: message });
-    }
+    if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+    if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
 
-    const rawGroupName = metadata.subject || `grup${Object.keys(data.Grup).length + 1}`;
+    const rawGroupName = subject || `grup${Object.keys(data.Grup).length + 1}`;
     const groupName = sanitizeGroupName(rawGroupName);
+    const grupData = gcData(chatId);
 
     if (!args[0]) {
       const contoh = `Contoh penggunaan:
@@ -52,35 +48,35 @@ module.exports = {
         return conn.sendMessage(chatId, { text: 'Masukkan angka maksimum peringatan.' }, { quoted: message });
       }
 
-      const grupDataKey = Object.keys(data.Grup).find(k => data.Grup[k].Id === chatId);
-
-      if (!grupDataKey) {
+      if (!grupData) {
         return conn.sendMessage(chatId, {
           text: `Grup belum terdaftar di dalam database.\n\nKetik *.daftargc* untuk mendaftarkan grup ini.`,
         }, { quoted: message });
       }
 
-      data.Grup[grupDataKey].setWarn = jumlah;
-      fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+      grupData.setWarn = jumlah;
+      saveDB(data);
       return conn.sendMessage(chatId, {
         text: `Set maksimum warning menjadi ${jumlah} untuk grup *${rawGroupName}*.`,
       }, { quoted: message });
     }
 
     if (args[0] === 'reset') {
-      const target = message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || message.message?.extendedTextMessage?.contextInfo?.participant;
+      const target = message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
+        || message.message?.extendedTextMessage?.contextInfo?.participant;
+
       if (!target) return conn.sendMessage(chatId, { text: 'Tag atau reply pengguna untuk mereset warning.' }, { quoted: message });
 
       const privateKey = Object.keys(data.Private || {}).find(k => data.Private[k].Nomor === target);
       if (privateKey) {
         data.Private[privateKey].warn = 0;
-        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+        saveDB(data);
         return conn.sendMessage(chatId, { text: `Warning untuk @${target.split('@')[0]} telah direset.`, mentions: [target] }, { quoted: message });
       }
 
       if (data.Warning[target]) {
         data.Warning[target].warn = 0;
-        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+        saveDB(data);
         return conn.sendMessage(chatId, { text: `Warning untuk @${target.split('@')[0]} telah direset.`, mentions: [target] }, { quoted: message });
       }
 
@@ -88,18 +84,16 @@ module.exports = {
     }
 
     if (args[0] === '1') {
-      let target =
-        message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] ||
-       message.message?.extendedTextMessage?.contextInfo?.participant;
+      let target = message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
+        || message.message?.extendedTextMessage?.contextInfo?.participant;
 
       if (!target) {
         return conn.sendMessage(chatId, { text: 'Tag atau reply pengguna yang ingin diberi peringatan.' }, { quoted: message });
       }
 
       target = target.split(':')[0];
-
       const privateKey = Object.keys(data.Private || {}).find(k => data.Private[k].Nomor === target);
-      const groupSetWarn = data.Grup[groupName]?.setWarn || 3;
+      const groupSetWarn = grupData?.setWarn || 3;
 
       if (privateKey) {
         const current = data.Private[privateKey].warn || 0;
@@ -126,7 +120,7 @@ module.exports = {
         }
       }
 
-      fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+      saveDB(data);
     }
   }
 };

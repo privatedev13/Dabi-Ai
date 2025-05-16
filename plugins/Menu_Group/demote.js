@@ -3,34 +3,25 @@ module.exports = {
   command: ['demote', 'stopadmin', 'demoteadmin'],
   tags: 'Group Menu',
   desc: 'Turunkan admin grup menjadi anggota',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) {
       return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
     }
 
-    const groupMetadata = await conn.groupMetadata(chatId);
-    const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-    const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
-    const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin);
-
-    if (!isUserAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
-    }
-
-    if (!isBotAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
-    }
+    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+    if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
 
     const targetId = target(message, senderId);
-
     if (!targetId || targetId === senderId.replace(/@s\.whatsapp\.net$/, '')) {
       return conn.sendMessage(chatId, {
         text: `⚠️ Harap mention atau reply admin yang ingin diturunkan!\nContoh: ${prefix}demote @user`,
@@ -38,19 +29,32 @@ module.exports = {
       }, { quoted: message });
     }
 
-    const isTargetAdmin = groupMetadata.participants.some(p => p.id === `${targetId}@s.whatsapp.net` && p.admin);
+    const metadata = await mtData(chatId, conn);
+    if (!metadata) {
+      return conn.sendMessage(chatId, { text: '❌ Gagal mengambil metadata grup.' }, { quoted: message });
+    }
+
+    const fullTargetId = `${targetId.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+
+    const isTargetAdmin = metadata.participants.some(p =>
+      p.id === fullTargetId && (p.admin === 'admin' || p.admin === 'superadmin')
+    );
+
     if (!isTargetAdmin) {
       return conn.sendMessage(chatId, {
         text: `❌ @${targetId} bukan admin grup!`,
-        mentions: [`${targetId}@s.whatsapp.net`]
+        mentions: [fullTargetId]
       }, { quoted: message });
     }
 
     try {
-      await conn.groupParticipantsUpdate(chatId, [`${targetId}@s.whatsapp.net`], 'demote');
+      await conn.groupParticipantsUpdate(chatId, [fullTargetId], 'demote');
+      const groupCache = new Map();
+      groupCache.delete(chatId);
+      await mtData(chatId, conn);
       conn.sendMessage(chatId, {
         text: `✅ Berhasil menurunkan @${targetId} dari admin grup!`,
-        mentions: [`${targetId}@s.whatsapp.net`]
+        mentions: [fullTargetId]
       }, { quoted: message });
     } catch (err) {
       console.error(err);

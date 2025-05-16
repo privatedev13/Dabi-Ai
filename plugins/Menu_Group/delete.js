@@ -3,40 +3,41 @@ module.exports = {
   command: ['d', 'del'],
   tags: 'Group Menu',
   desc: 'Menghapus pesan pengguna di group',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       if (!isGroup) {
         return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: message });
       }
 
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-      const quotedKey = message.message?.extendedTextMessage?.contextInfo?.stanzaId;
-      const quotedSender = message.message?.extendedTextMessage?.contextInfo?.participant;
+      const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+      const quotedMessage = contextInfo?.quotedMessage;
+      const quotedKey = contextInfo?.stanzaId;
+      const quotedSender = contextInfo?.participant;
+
       if (!quotedMessage || !quotedKey || !quotedSender) {
         return conn.sendMessage(chatId, { text: "❌ Harap kutip pesan yang ingin dihapus!" }, { quoted: message });
       }
 
-      const groupMetadata = await conn.groupMetadata(chatId);
-      const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-      const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
-      const isUserAdmin = groupMetadata.participants.some(p => p.id === senderId && p.admin);
+      const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net';
+      const isQuotedFromBot = quotedSender === botId;
 
-      const isQuotedFromBot = quotedSender === botNumber;
+      const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
-      if (!isQuotedFromBot && !isUserAdmin) {
-        return conn.sendMessage(chatId, { text: "❌ Hanya admin grup yang bisa menghapus pesan pengguna lain!" }, { quoted: message });
+      if (!isQuotedFromBot && !userAdmin) {
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan admin dan hanya bisa menghapus pesan dari bot.' }, { quoted: message });
       }
 
-      if (!isBotAdmin) {
-        return conn.sendMessage(chatId, { text: "❌ Bot harus menjadi admin untuk menghapus pesan!" }, { quoted: message });
+      if (!isQuotedFromBot && !botAdmin) {
+        return conn.sendMessage(chatId, { text: '❌ Bot bukan admin, tidak bisa menghapus pesan pengguna lain.' }, { quoted: message });
       }
 
       await conn.sendMessage(chatId, {
@@ -49,7 +50,7 @@ module.exports = {
       });
 
     } catch (error) {
-      console.error(error);
+      console.error('Delete command error:', error);
       conn.sendMessage(message.key.remoteJid, { text: "⚠️ Gagal menghapus pesan." }, { quoted: message });
     }
   }
