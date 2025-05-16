@@ -7,16 +7,17 @@ module.exports = {
   command: ['listcatatan', 'catatanlist', 'liat'],
   tags: 'Info Menu',
   desc: 'Menampilkan daftar atau isi catatan',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       if (!fs.existsSync(catatanPath)) {
         return conn.sendMessage(chatId, { text: 'Belum ada catatan.' }, { quoted: message });
       }

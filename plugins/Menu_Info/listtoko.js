@@ -6,16 +6,17 @@ module.exports = {
   command: ['listtoko', 'daftartoko'],
   tags: 'Info Menu',
   desc: 'Menampilkan daftar toko yang terdaftar',
+  prefix: true,
 
-  run: async (conn, message, { args, isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       if (!fs.existsSync(tokoPath)) {
         return conn.sendMessage(chatId, { text: "❌ File toko.json tidak ditemukan." }, { quoted: message });
       }

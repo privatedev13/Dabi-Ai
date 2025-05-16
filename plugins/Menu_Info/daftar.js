@@ -1,28 +1,22 @@
-const fs = require('fs');
-const path = require('path');
-
 module.exports = {
   name: 'daftar',
   command: ['daftar', 'register', 'daftargc'],
   tags: 'Info Menu',
-  desc: 'Mendaftarkan pengguna atau grup ke dalam database bot.',
+  desc: 'Mendaftarkan pengguna atau grup.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
+      const { chatId, senderId, isGroup, pushName } = chatInfo;
 
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
-      if (!fs.existsSync(dbPath)) {
-        fs.writeFileSync(dbPath, JSON.stringify({ Private: {}, Grup: {} }, null, 2));
-      }
-
-      let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+      intDB();
+      let db = readDB();
 
       if (!db.Private || typeof db.Private !== 'object') db.Private = {};
       if (!db.Grup || typeof db.Grup !== 'object') db.Grup = {};
@@ -46,27 +40,33 @@ module.exports = {
           chat: 0,
           mute: false,
           setWarn: 0,
-          Welcome: {
-            welcome: false,
-            welcomeText: ''
-          },
-          Left: {
-            gcLeft: false,
-            leftText: '',
+          gbFilter: {
+            Welcome: {
+              welcome: false,
+              welcomeText: ''
+            },
+            Left: {
+              gcLeft: false,
+              leftText: '',
+            },
+            link: {
+              antilink: false,
+              setlink: ''
+            },
+            stiker: {
+              antistiker: false
+            }
           }
         };
 
-        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+        saveDB(db);
 
         return conn.sendMessage(chatId, {
           text: `✅ Grup *${groupName}* berhasil didaftarkan ke dalam database.`
         }, { quoted: message });
       }
 
-      const senderNumber = message.pushName || 'Pengguna';
-      const sender = `${senderNumber}`;
-
-      const teks = `📌 Cara daftar:\n\n*${prefix}daftar Nama Kamu Umur*\n\nContoh:\n*${prefix}daftar ${sender} 15*`;
+      const teks = `📌 Cara daftar:\n\n*${prefix}daftar Nama Kamu Umur*\n\nContoh:\n*${prefix}daftar ${pushName} 15*`;
 
       if (args.length < 2) {
         return conn.sendMessage(chatId, { text: teks }, { quoted: message });
@@ -80,12 +80,7 @@ module.exports = {
           text: `❌ ️Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: message });
       }
 
-      if (umur < 12) {
-        return conn.sendMessage(chatId, {
-          text: `⚠️ Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: message });
-      }
-
-      if (db.Private[nama]) {
+      if (getUser(db, senderId)) {
         return conn.sendMessage(chatId, {
           text: `❌ Nama *${nama}* sudah terdaftar!\n\nGunakan nama lain atau cek profil dengan *${prefix}profile*.` }, { quoted: message });
       }
@@ -106,16 +101,23 @@ module.exports = {
         noId: generateRandomId(),
         autoai: false,
         chat: 0,
-        premium: {
-          prem: false,
+        claim: false,
+        isPremium: {
+          isPrem: false,
           time: 0,
         },
       };
 
-      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+      saveDB(db);
+
+      let textMsg = `✅ Pendaftaran berhasil!\n\n`;
+      textMsg += `🔹 Nama: *${nama}*\n`;
+      textMsg += `🔹 Umur: *${umur}*\n`;
+      textMsg += `🔹 ID: *${db.Private[nama].noId}*\n\n`;
+      textMsg += `Ketik *${prefix}profile* untuk melihat profil.`
 
       conn.sendMessage(chatId, {
-        text: `✅ Pendaftaran berhasil!\n\n🔹 Nama: *${nama}*\n🔹 Umur: *${umur}*\n🔹 ID: *${db.Private[nama].noId}*\n\nKetik *${prefix}profile* untuk melihat profilmu.`,
+        text: textMsg,
         contextInfo: { mentionedJid: [senderId] } }, { quoted: message });
 
     } catch (error) {

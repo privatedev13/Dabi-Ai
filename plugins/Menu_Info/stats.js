@@ -8,18 +8,18 @@ module.exports = {
   command: ['stats', 'info', 'st', 'ping', 'device'],
   tags: 'Info Menu',
   desc: 'Menampilkan status device dan statik bot',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const startTime = performance.now();
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const startTime = performance.now();
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const chatList = conn.store?.chats ? Object.values(conn.store.chats) : [];
       const totalChat = chatList.length;
       const totalGroupChat = chatList.filter(c => c.id.endsWith('@g.us')).length;

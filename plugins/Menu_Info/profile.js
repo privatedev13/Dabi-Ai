@@ -1,103 +1,100 @@
-const fs = require('fs');
-const path = require('path');
-
 module.exports = {
   name: 'profile',
-  command: ['profile', 'profil', 'me'],
+  command: ['profile', 'profil', 'me', 'claim'],
   tags: 'Info Menu',
-  desc: 'Menampilkan informasi profil pengguna, seperti nama, nomor, dan status akun.',
+  desc: 'Menampilkan informasi profil.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    prefix,
+    commandText,
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
+      const { chatId, senderId, pushName } = chatInfo;
+      const targetId = target(message, senderId);
+      const mentionTarget = `${targetId}@s.whatsapp.net`;
 
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
+      intDB();
+      const db = readDB();
 
-      if (!module.exports.command.includes(commandText)) return;
-
-      let targetId = target(message, senderId);
-      const mentionTarget = targetId;
-
-      const userName = message.pushName || 'Pengguna';
-      const dbPath = path.join(__dirname, "../../toolkit/db/database.json");
-
-      if (!fs.existsSync(dbPath)) {
-        return conn.sendMessage(chatId, { text: "⚠️ Database tidak ditemukan!" }, { quoted: message });
+      const userKey = getUser(db, mentionTarget);
+      if (!userKey) {
+        return conn.sendMessage(chatId, {
+          text: `⚠️ Kamu belum terdaftar di database!\n\nKetik *${prefix}daftar* untuk mendaftar.`,
+        }, { quoted: message });
       }
 
-      const db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+      const userData = db.Private[userKey];
 
-      if (!db.Private || typeof db.Private !== "object") {
-        return conn.sendMessage(chatId, { text: "⚠️ Database tidak valid atau rusak!" }, { quoted: message });
+      if (commandText.toLowerCase() === 'claim') {
+        const result = await tryFree(mentionTarget);
+        return conn.sendMessage(chatId, {
+          text: result.message
+        }, { quoted: message });
       }
 
-      const userData = Object.values(db.Private).find((u) => u.Nomor === senderId);
+      let isPremiumText = "Tidak ❌";
+      if (userData.isPremium?.isPrem) {
+        const now = Date.now();
+        const activated = userData.isPremium.activatedAt || now;
+        const expired = activated + userData.isPremium.time;
 
-      if (!userData) {
-        return conn.sendMessage(chatId, { text: `⚠️ Kamu belum terdaftar di database!\n\nKetik *${prefix}${commandText}* untuk mendaftar.` }, { quoted: message });
-      }
-
-      let premiumText = "Tidak ❌";
-      if (userData.premium?.prem) {
-        const waktuSekarang = Date.now();
-        const waktuAktivasi = userData.premium.activatedAt || waktuSekarang;
-        const waktuKadaluarsa = waktuAktivasi + userData.premium.time;
-
-        if (waktuKadaluarsa > waktuSekarang) {
-          const waktuSisa = waktuKadaluarsa - waktuSekarang;
-          const totalMenit = Math.floor(waktuSisa / (1000 * 60));
-          const totalJam = Math.floor(totalMenit / 60);
-          const totalHari = Math.floor(totalJam / 24);
-
-          if (totalHari > 0) {
-            premiumText = `${totalHari} Hari ${totalJam % 24} Jam ${totalMenit % 60} Menit`;
-          } else if (totalJam > 0) {
-            premiumText = `${totalJam} Jam ${totalMenit % 60} Menit`;
-          } else {
-            premiumText = `${totalMenit} Menit`;
-          }
+        if (expired > now) {
+          const remaining = expired - now;
+          const m = Math.floor(remaining / (1000 * 60));
+          const h = Math.floor(m / 60);
+          const d = Math.floor(h / 24);
+          isPremiumText = d > 0
+            ? `${d} Hari ${h % 24} Jam ${m % 60} Menit`
+            : h > 0
+              ? `${h} Jam ${m % 60} Menit`
+              : `${m} Menit`;
         } else {
-          premiumText = "Kadaluarsa ❗";
+          isPremiumText = "Kadaluarsa ❗";
         }
       }
 
-      let profileText = `${head} ${Obrack} Profil @${mentionTarget} ${Cbrack}\n`;
+      const claimText = !userData.claim
+        ? `Kamu bisa claim trial premium dengan *${prefix}claim*`
+        : `Kamu sudah claim trial`;
+
+      let profileText = `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n`;
       profileText += `${side} ${btn} *Nomor:* ${userData.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n`;
       profileText += `${side} ${btn} *Auto AI:* ${userData.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n`;
       profileText += `${side} ${btn} *Total Chat:* ${userData.chat}\n`;
-      profileText += `${side} ${btn} *Status Premium:* ${userData.premium?.prem ? "Ya ✅" : "Tidak ❌"}\n`;
-      profileText += `${side} ${btn} *Premium Tersisa:* ${premiumText}\n`;
+      profileText += `${side} ${btn} *Umur:* ${userData.umur}\n`;
+      profileText += `${side} ${btn} *Status Premium:* ${userData.isPremium?.isPrem ? "Ya ✅" : "Tidak ❌"}\n`;
+      profileText += `${side} ${btn} *Premium Tersisa:* ${isPremiumText}\n`;
       profileText += `${side} ${btn} *Nomor Id:* ${userData.noId || "Tidak ada"}\n`;
-      profileText += `${foot}${garis}`;
+      profileText += `${foot}${garis}\n\n`;
+      profileText += `${claimText}`;
 
-      await conn.sendMessage(
-        chatId,
-        {
-          text: profileText,
-          mentions: [`${targetId}@s.whatsapp.net`],
-          contextInfo: {
-            externalAdReply: {
-              title: userName,
-              body: `Ini adalah Profile ${userName}`,
-              thumbnailUrl: thumbnail,
-              mediaType: 1,
-              renderLargerThumbnail: true,
-            },
-            mentionedJid: [senderId],
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363310100263711@newsletter'
-            }
+      await conn.sendMessage(chatId, {
+        text: profileText,
+        mentions: [mentionTarget],
+        contextInfo: {
+          externalAdReply: {
+            title: pushName,
+            body: `Ini adalah Profile ${pushName}`,
+            thumbnailUrl: thumbnail,
+            mediaType: 1,
+            renderLargerThumbnail: true,
           },
-        },
-        { quoted: message }
-      );
+          mentionedJid: [mentionTarget],
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363310100263711@newsletter'
+          }
+        }
+      }, { quoted: message });
 
     } catch (error) {
       console.error("Error di plugin profile.js:", error);
-      conn.sendMessage(chatId, { text: "⚠️ Terjadi kesalahan saat mengambil profil!" }, { quoted: message });
+      conn.sendMessage(chatId, {
+        text: "⚠️ Terjadi kesalahan saat mengambil profil!"
+      }, { quoted: message });
     }
   },
 };

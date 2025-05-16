@@ -2,19 +2,19 @@ module.exports = {
   name: 'listgroup',
   command: ['listgc', 'listgroup'],
   tags: 'Info Menu',
-  desc: 'Melihat semua grup yang bot masuki (Hanya untuk pengguna premium)',
+  desc: 'Melihat semua grup yang bot masuki',
+  prefix: true,
+  premium: true,
 
-  isPremium: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyPremium(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
 
     try {
       const groups = await conn.groupFetchAllParticipating();

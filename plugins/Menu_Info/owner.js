@@ -3,16 +3,17 @@ module.exports = {
   command: ['owner', 'contact', 'admin'],
   tags: 'Info Menu',
   desc: 'Mengirim kontak owner bot',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const owner = global.ownerName || 'Owner';
       const ownerNumber = global.contact;
       const bot = global.botName || 'Bot';
