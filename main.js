@@ -9,11 +9,10 @@ const path = require('path');
 const pino = require('pino');
 const chalk = require('chalk');
 const readline = require('readline');
-const { makeWASocket, makeInMemoryStore, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { getMenuText, handleMenuCommand } = require('./plugins/Main_Menu/menu');
 const { isPrefix } = require('./toolkit/setting');
 
-const store = makeInMemoryStore({ logger: pino().child({ level: 'silent', stream: 'store' }) });
 const logger = pino({ level: 'silent' });
 
 const folderName = 'temp';
@@ -27,50 +26,52 @@ global.categories = {};
 global.autoBio = false;
 
 const pluginFolder = path.join(__dirname, './plugins');
-const loadPlugins = (directory) => {
-  if (!fs.existsSync(directory)) return console.log(chalk.yellow(`⚠️ Folder plugin tidak ditemukan: ${directory}`));
+const loadPlugins = () => {
+  if (!fs.existsSync(pluginFolder)) {
+    return console.log(chalk.yellow(`⚠️ Folder plugin tidak ditemukan: ${pluginFolder}`));
+  }
 
   let loadedCount = 0;
   let errorCount = 0;
   const errorMessages = [];
-  const files = fs.readdirSync(directory);
 
-  files.forEach((file) => {
-    const fullPath = path.join(directory, file);
-    if (fs.statSync(fullPath).isDirectory()) {
-      const subDirResults = loadPlugins(fullPath);
-      loadedCount += subDirResults.loaded;
-      errorCount += subDirResults.errors;
-      errorMessages.push(...subDirResults.messages);
-      return;
-    }
-    if (!file.endsWith('.js')) return;
-
-    try {
-      const pluginName = path.basename(fullPath, '.js');
-      const plugin = require(fullPath);
-      if (plugin?.run) {
-        global.plugins[pluginName] = plugin;
-
-        const category = plugin.tags || 'Uncategorized';
-        if (!global.categories[category]) global.categories[category] = [];
-        global.categories[category].push(plugin.command);
-
-        loadedCount++;
-      }
-    } catch (err) {
-      errorCount++;
-      errorMessages.push(`❌ Plugin tidak berhasil dimuat: ${file} error: ${err.message}`);
-    }
+  const folders = fs.readdirSync(pluginFolder).filter(name => {
+    const fullPath = path.join(pluginFolder, name);
+    return fs.statSync(fullPath).isDirectory();
   });
 
-  if (directory === pluginFolder) {
-    if (errorCount === 0) {
-      console.log(chalk.green(`✅ Semua plugins (${loadedCount}) berhasil dimuat`));
-    } else {
-      errorMessages.forEach(msg => console.log(msg));
-      console.log(chalk.yellow(`⚠️ Total plugins berhasil dimuat: ${loadedCount}, gagal: ${errorCount}`));
-    }
+  folders.forEach(folder => {
+    const folderPath = path.join(pluginFolder, folder);
+    const files = fs.readdirSync(folderPath);
+
+    files.forEach(file => {
+      const fullPath = path.join(folderPath, file);
+      if (!file.endsWith('.js')) return;
+
+      try {
+        const pluginName = path.basename(fullPath, '.js');
+        const plugin = require(fullPath);
+        if (plugin?.run) {
+          global.plugins[pluginName] = plugin;
+
+          const category = plugin.tags || 'Uncategorized';
+          if (!global.categories[category]) global.categories[category] = [];
+          global.categories[category].push(plugin.command);
+
+          loadedCount++;
+        }
+      } catch (err) {
+        errorCount++;
+        errorMessages.push(`❌ Plugin tidak berhasil dimuat: ${file} error: ${err.message}`);
+      }
+    });
+  });
+
+  if (errorCount === 0) {
+    console.log(chalk.green(`✅ Semua plugins (${loadedCount}) berhasil dimuat`));
+  } else {
+    errorMessages.forEach(msg => console.log(msg));
+    console.log(chalk.yellow(`⚠️ Total plugins berhasil dimuat: ${loadedCount}, gagal: ${errorCount}`));
   }
 
   return { loaded: loadedCount, errors: errorCount, messages: errorMessages };
@@ -135,7 +136,7 @@ const startBot = async () => {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
     const conn = makeWASocket({
       auth: state,
-      printQRInTerminal: true,
+      printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
       logger: logger,
@@ -259,18 +260,22 @@ const startBot = async () => {
       const filtered = await gcFilter(conn, message, chatId, senderId, isGroup);
       if (filtered) return;
 
-      const { ownerSetting, msg } = setting;
+      const { ownerSetting } = setting;
       global.lastGreet = global.lastGreet || {};
-      const senderNumber = senderId.split('@')[0];
-
-      if (isGroup && ownerSetting.forOwner && ownerSetting.ownerNumber.includes(senderNumber)) {
+      const senderNumber = senderId?.split('@')[0];
+      if (!senderNumber) {
+        console.error('Gagal mendapatkan nomor pengirim.');
+        return;
+      }
+      
+      if (chatId.endsWith('@g.us') && ownerSetting.forOwner && ownerSetting.ownerNumber.includes(senderNumber)) {
         const now = Date.now();
         const last = global.lastGreet[senderId] || 0;
-
+      
         if (now - last > 5 * 60 * 1000) {
           global.lastGreet[senderId] = now;
           const greetText = msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
-
+      
           await conn.sendMessage(chatId, {
             text: greetText,
             mentions: [senderId]
