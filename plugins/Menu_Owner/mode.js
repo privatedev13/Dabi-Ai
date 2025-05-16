@@ -7,22 +7,23 @@ module.exports = {
   command: ['mode'],
   tags: 'Owner Menu',
   desc: 'Ubah mode bot menjadi group/private/off',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-    if (!(await onlyOwner(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     const Mode = args[0]?.toLowerCase();
     if (!['group', 'private', 'off'].includes(Mode)) {
       return conn.sendMessage(chatId, {
-        text: `⚠️ Mode tidak valid!\n\nContoh penggunaan:\n${prefix}${commandText} group\n${prefix}${commandText} private\n${prefix}${commandText}\n\nMode saat ini: *${global.setting?.botSetting?.Mode || 'unknown'}*`
+        text: `⚠️ Mode tidak valid!\n\nContoh penggunaan:\n${prefix}${commandText} group\n${prefix}${commandText} private\n${prefix}off\n\nMode saat ini: *${global.setting?.botSetting?.Mode || 'unknown'}*`
       }, { quoted: message });
     }
 

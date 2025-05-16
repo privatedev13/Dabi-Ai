@@ -15,18 +15,18 @@ module.exports = {
   command: ['forowner', 'forners'],
   tags: 'Owner Menu',
   desc: 'Mengatur sambutan otomatis untuk Owner',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return
 
     if (args[0] === "on") {
       config.ownerSetting.forOwner = true;

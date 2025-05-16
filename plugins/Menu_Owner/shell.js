@@ -5,24 +5,19 @@ module.exports = {
   command: ['sh', '$', 'shell'],
   tags: 'Owner Menu',
   desc: 'Menjalankan perintah shell di server',
+  prefix: false,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const chatId = message.key.remoteJid;
-      const senderId = chatId.endsWith('@g.us') 
-        ? message.key.participant 
-        : chatId.replace(/:\d+@/, '@');
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-
-      if (!textMessage) return;
-
-      const args = textMessage.trim().split(/\s+/).slice(1);
-      const commandText = textMessage.trim().split(/\s+/)[0].toLowerCase();
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
 
       if (args.length === 0) {
         return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan perintah shell yang valid!' }, { quoted: message });

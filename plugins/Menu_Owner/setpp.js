@@ -5,19 +5,19 @@ module.exports = {
   name: 'setpp',
   command: ['setpp', 'setprofile'],
   tags: 'Owner Menu',
-  desc: 'Mengubah foto profil bot (hanya untuk owner).',
+  desc: 'Mengubah foto profil bot.',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     let mediaMessage;
 
@@ -28,7 +28,7 @@ module.exports = {
     }
 
     if (!mediaMessage) {
-      return conn.sendMessage(chatId, { text: `📷 *Cara menggunakan perintah:*\n\nKirim gambar dengan caption atau reply gambar dengan perintah:\n\`${isPrefix[0]}setpp\`` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `📷 *Cara menggunakan perintah:*\n\nKirim gambar dengan caption atau reply gambar dengan perintah:\n\`${prefix}${commandText}\`` }, { quoted: message });
     }
 
     try {

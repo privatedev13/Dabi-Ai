@@ -3,50 +3,57 @@ module.exports = {
   command: ['>', '=>', '~>'],
   tags: 'Owner Menu',
   desc: 'Mengeksekusi kode JavaScript secara langsung',
+  prefix: false,
+  owner: true,
 
-  isOwner: true,
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    commandText,
+    args
+  }) => {
+    const { chatId } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
-  run: async (conn, message) => {
+    const code = args.join(' ').trim();
+    if (!code) {
+      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: message });
+    }
+
     try {
-      const chatId = message.key.remoteJid;
-      const senderId = chatId.endsWith('@g.us')
-        ? message.key.participant
-        : chatId.replace(/:\d+@/, '@');
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+      let result;
+      if (commandText === '~>') {
+        let outputLogs = [];
+        const originalLog = console.log;
+        console.log = (...args) => {
+          outputLogs.push(args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg))).join(' '));
+        };
 
-      const prefix = module.exports.command.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
+        result = await eval(`(async () => { ${code}; })()`);
+        console.log = originalLog;
 
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+        const logText = outputLogs.join('\n');
+        const resultText = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+        const output = [logText, resultText].filter(Boolean).join('\n') || '✅ *Kode dijalankan tanpa output.*';
 
-      const code = textMessage.slice(prefix.length).trim();
-      if (!code) {
-        return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: message });
+        await conn.sendMessage(chatId, { text: `✅ *Output:*\n\`\`\`${output}\`\`\`` }, { quoted: message });
+
+      } else if (commandText === '=>') {
+        result = await eval(`(async () => { return (${code}); })()`);
+      } else {
+        result = await eval(`(async () => { ${code}; })()`);
       }
 
-      try {
-        let result;
-        if (prefix === '~>') {
-          console.log('🟢 Debug:', code);
-          result = await eval(`(async () => { console.log = (msg) => conn.sendMessage(chatId, { text: String(msg) }); ${code} })()`);
-        } else if (prefix === '=>') {
-          result = await eval(`(async () => ${code})()`);
-        } else {
-          result = await eval(`(async () => { ${code} })()`);
-        }
-
-        const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : result;
-        const response = output !== undefined ? `✅ *Output:*\n\`\`\`${output}\`\`\`` : '✅ *Kode berhasil dijalankan tanpa output.*';
-
-        conn.sendMessage(chatId, { text: response }, { quoted: message });
-      } catch (err) {
-        conn.sendMessage(chatId, { text: `❌ *Error:* ${err.message}` }, { quoted: message });
+      if (commandText !== '~>') {
+        const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+        const response = output && output !== 'undefined'
+          ? `✅ *Output:*\n\`\`\`${output}\`\`\``
+          : '✅ *Kode berhasil dijalankan tanpa output.*';
+        await conn.sendMessage(chatId, { text: response }, { quoted: message });
       }
-    } catch (error) {
-      console.error('Eval Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
-        text: `❌ *Gagal menjalankan perintah!*\nError: ${error.message}`
-      });
+
+    } catch (err) {
+      conn.sendMessage(chatId, { text: `❌ *Error:* ${err.message}` }, { quoted: message });
     }
   }
 };

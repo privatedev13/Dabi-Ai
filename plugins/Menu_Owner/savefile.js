@@ -5,19 +5,19 @@ module.exports = {
   name: 'savefile',
   command: ['savefile', 'sf'],
   tags: 'Owner Menu',
-  desc: 'Menulis ulang file dengan teks dari pesan yang dikutip',
+  desc: 'Menulis ulang file.',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     if (!args.length) {
       return conn.sendMessage(chatId, { text: '⚠️ Masukkan path file yang ingin ditulis ulang!' }, { quoted: message });

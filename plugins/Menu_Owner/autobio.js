@@ -1,40 +1,49 @@
+const fs = require('fs');
+const path = require('path');
+const configPath = path.join(__dirname, '../../toolkit/set/config.json');
+
 module.exports = {
   name: 'autobio',
   command: ['autobio', 'bio'],
   tags: 'Owner Menu',
   desc: 'Mengatur autobio',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
+   run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return;
-
-    if (!args[1] || !['on', 'off'].includes(args[1].toLowerCase())) {
-      return conn.sendMessage(
-        chatId,
-        { text: 'Gunakan: .autobio on/off' },
-        { quoted: message }
-      );
+    const option = args[0]?.toLowerCase();
+    if (!option || !['on', 'off'].includes(option)) {
+      return conn.sendMessage(chatId, { text: `Gunakan: ${prefix}${commandText} on/off\n\nStatus autobio: ${autoBio}` }, { quoted: message });
     }
 
-    const status = args[1].toLowerCase() === 'on';
-    global.autoBio = status;
+    const status = option === 'on';
 
-    conn.sendMessage(
+    global.autoBio = status;
+    if (global.setting?.botSetting) {
+      global.setting.botSetting.autoBio = status;
+    }
+
+    try {
+      fs.writeFileSync(configPath, JSON.stringify(global.setting, null, 2));
+    } catch (e) {
+      return conn.sendMessage(chatId, { text: 'Gagal menyimpan pengaturan ke config.json' }, { quoted: message });
+    }
+
+    await conn.sendMessage(
       chatId,
       { text: `Auto Bio telah ${status ? 'diaktifkan' : 'dimatikan'}` },
       { quoted: message }
     );
 
-    if (status) {
-      global.updateBio(conn);
-    }
+    if (status) global.updateBio?.(conn);
   }
 };

@@ -7,23 +7,24 @@ module.exports = {
   command: ['public'],
   tags: 'Owner Menu',
   desc: 'Mengatur mode publik bot',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
 
       if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
         return conn.sendMessage(
           chatId,
-          { text: `⚠ Gunakan perintah: ${prefix}${commandText} on/off` },
+          { text: `⚠ Gunakan perintah:\n${prefix}${commandText} on/off\n\nStatus: ${public}` },
           { quoted: message }
         );
       }

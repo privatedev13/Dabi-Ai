@@ -1,31 +1,23 @@
 const fs = require('fs');
 const path = require('path');
-const { isPrefix } = require('../../toolkit/setting');
 
 module.exports = {
   name: 'autoread',
   command: ['autoread', 'ad'],
   tags: 'Owner Menu',
   desc: 'Setting autoread gc/private',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, options = {}) => {
-    const chatId = message.key.remoteJid;
-    const isGroup = chatId.endsWith('@g.us');
-    const senderId = isGroup ? message.key.participant : chatId.replace(/:\d+@/, '@');
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-
-    if (!textMessage) return;
-
-    const prefix = isPrefix.find(p => textMessage.startsWith(p));
-    if (!prefix) return;
-
-    const args = textMessage.slice(prefix.length).trim().split(/\s+/).slice(1);
-    const commandText = textMessage.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase();
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyOwner(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 

@@ -1,24 +1,20 @@
-const fs = require('fs');
-const path = require('path');
-
 module.exports = {
-  name: 'addprem',
+  name: 'addisPrem',
   command: ['addprem'],
   tags: 'Owner Menu',
-  desc: 'Menambahkan pengguna ke status premium dengan durasi tertentu',
+  desc: 'Menambahkan pengguna ke status isPremium.',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+      const { chatId } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
 
       if (args.length < 2) {
         return conn.sendMessage(chatId, {
@@ -26,17 +22,8 @@ module.exports = {
         }, { quoted: message });
       }
 
-      const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
-      if (!fs.existsSync(dbPath)) {
-        fs.writeFileSync(dbPath, JSON.stringify({ Private: {} }, null, 2));
-      }
-
-      let db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-
-      if (!db.Private || typeof db.Private !== 'object') {
-        db.Private = {};
-      }
+      intDB();
+      const db = readDB();
 
       let targetNumber;
       if (message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
@@ -58,38 +45,34 @@ module.exports = {
 
       let durationMs;
       switch (unit) {
-        case 'h':
-          durationMs = value * 60 * 60 * 1000;
-          break;
-        case 'd':
-          durationMs = value * 24 * 60 * 60 * 1000;
-          break;
-        case 'm':
-          durationMs = value * 60 * 1000;
-          break;
+        case 'h': durationMs = value * 60 * 60 * 1000; break;
+        case 'd': durationMs = value * 24 * 60 * 60 * 1000; break;
+        case 'm': durationMs = value * 60 * 1000; break;
       }
 
-      let userKey = Object.keys(db.Private).find((key) => db.Private[key].Nomor === targetNumber);
-
+      const userKey = getUser(db, targetNumber);
       if (!userKey) {
         return conn.sendMessage(chatId, {
           text: `❌ Pengguna tidak ada di database!`
         }, { quoted: message });
       }
 
-      db.Private[userKey].premium = {
-        prem: true,
-        time: durationMs,
+      db.Private[userKey].isPremium = {
+        isPrem: true,
+        time: durationMs
       };
 
-      fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+      saveDB(db);
 
       conn.sendMessage(chatId, {
         text: `✅ Pengguna *${userKey}* (${targetNumber}) telah menjadi *Premium* selama ${value} ${unit === 'h' ? 'jam' : unit === 'd' ? 'hari' : 'menit'}!`
       }, { quoted: message });
+
     } catch (error) {
-      console.error('Error di plugin addprem.js:', error);
-      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat menambahkan status premium!' }, { quoted: message });
+      console.error('Error di plugin addisPrem.js:', error);
+      conn.sendMessage(chatId, {
+        text: '⚠️ Terjadi kesalahan saat menambahkan status isPremium!'
+      }, { quoted: message });
     }
   },
 };

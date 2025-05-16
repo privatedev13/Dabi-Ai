@@ -11,19 +11,19 @@ module.exports = {
   name: 'bcgc',
   command: ['bcgc', 'broadcastgc'],
   tags: 'Owner Menu',
-  desc: 'Mengirim pesan broadcast ke semua grup (hanya untuk owner).',
-
+  desc: 'Mengirim pesan broadcast ke semua grup.',
+  prefix: true,
   isPremium: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyPremium(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
 
     const commandWithPrefix = `${prefix}${commandText}`;
     const broadcastMessage = textMessage.slice(commandWithPrefix.length).trim();
