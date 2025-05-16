@@ -1,4 +1,4 @@
-console.log('Starting...');
+console.log('Starting...\n');
 
 const fs = require('fs');
 const path = require('path');
@@ -7,7 +7,7 @@ const { fork } = require('child_process');
 const licensePath = path.join(__dirname, 'LICENSE');
 if (fs.existsSync(licensePath)) {
   const licenseContent = fs.readFileSync(licensePath, 'utf8');
-  console.log('=== LICENSE FILE ===\n' + licenseContent + '\n====================');
+  console.log('··───── LICENSE ─────··\n\n' + licenseContent + `\n\n··───────────··\n`);
 } else {
   console.log('LICENSE file not found.');
 }
