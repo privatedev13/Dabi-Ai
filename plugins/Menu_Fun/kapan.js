@@ -4,19 +4,17 @@ module.exports = {
   name: 'kapan',
   command: ['kapan yah', 'kapan'],
   tags: 'Fun Menu',
-  desc: '',
+  desc: 'Sambung kata dengan bot',
+  prefix: false,
 
-  run: async (conn, message, { text }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    commandText,
+    args
+  }) => {
     try {
-      const chatId = message.key.remoteJid;
-      const senderId = chatId.endsWith('@g.us')
-        ? message.key.participant
-        : chatId.replace(/:\d+@/, '@');
-
-      const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-      const prefix = module.exports.command.find((p) => textMessage.startsWith(p));
-      if (!prefix) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const kapan = when[Math.floor(Math.random() * when.length)];
 
       await conn.sendMessage(chatId, { text: kapan }, { quoted: message });

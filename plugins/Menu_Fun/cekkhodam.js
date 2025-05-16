@@ -4,22 +4,22 @@ module.exports = {
   name: 'CekKhodam',
   command: ['cekkodam', 'cekkhodam'],
   tags: 'Fun Menu',
-  desc: '',
+  desc: 'Cek kodam pengguna',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
 
       const cek = cekKhodam[Math.floor(Math.random() * cekKhodam.length)];
-
       const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
       const teks = `_Pengecekan Khodam untuk @${mentionTarget}⁩ telah berhasil_!\n\nSetelah melalui penelusuran spiritual yang mendalam, diketahui bahwa Khodam yang mendampingi @${mentionTarget} adalah *${cek}*`;
@@ -36,7 +36,6 @@ module.exports = {
         text: teks,
         mentions: [`${targetId}@s.whatsapp.net`]
       }, { quoted: message });
-
     } catch (error) {
       console.error('Error:', error);
       conn.sendMessage(message.key.remoteJid, {

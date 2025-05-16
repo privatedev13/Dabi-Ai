@@ -5,19 +5,19 @@ module.exports = {
   command: ['cekkekuatan', 'cekkuat'],
   tags: 'Fun Menu',
   desc: 'Mengecek seberapa kuat orang',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
-
       const cek = cekKuat[Math.floor(Math.random() * cekKuat.length)];
 
       const teks = `Nama: @${mentionTarget}\nKekuatan: ${cek}`

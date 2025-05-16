@@ -5,16 +5,17 @@ module.exports = {
   command: ['cekdosa', 'cek dosa'],
   tags: 'Fun Menu',
   desc: 'Mengecek 10 dosa besar user',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       const targetId = target(message, senderId);
       const mentionTarget = targetId;
 

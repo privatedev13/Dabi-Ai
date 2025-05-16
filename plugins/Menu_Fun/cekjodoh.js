@@ -3,15 +3,16 @@ module.exports = {
   command: ['cekjodoh'],
   tags: 'Fun Menu',
   desc: 'Cek jodoh antara dua orang secara random.',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di grup.' }, { quoted: message });
 
     const groupMetadata = await conn.groupMetadata(chatId);

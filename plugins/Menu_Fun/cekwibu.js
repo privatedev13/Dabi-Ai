@@ -3,27 +3,25 @@ module.exports = {
   command: ['cekwibu', 'cek wibu'],
   tags: 'Fun Menu',
   desc: 'Mengecek seberapa wibu orang',
-
+  prefix: true,
   isPremium: false,
-  isOwner: false,
+  owner: false,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyPremium(module.exports, conn, message))) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
+      if (!(await isOwner(module.exports, conn, message))) return;
       const targetId = target(message, senderId);
       const mentionTarget = targetId;
-
       const persentase = Math.floor(Math.random() * 101);
+
       let komentar;
       if (persentase <= 25) {
         komentar = 'Masih aman tapi karbit';

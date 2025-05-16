@@ -3,19 +3,19 @@ module.exports = {
   command: ['cekmesum'],
   tags: 'Fun Menu',
   desc: 'Mengecek seberapa mesum orang',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
-
       const persentase = Math.floor(Math.random() * 101);
 
       let komentar;
@@ -31,7 +31,7 @@ module.exports = {
         komentar = 'Hati-hati orang cabul';
       }
 
-      const teks = `*seberapa cabul @${mentionTarget}*\n\n*${persentase}%* Cabul\n_${komentar}_`
+      const teks = `*seberapa cabul* @${mentionTarget}\n\n*${persentase}%* Cabul\n_${komentar}_`
 
       await conn.sendMessage(chatId, {
         text: teks,

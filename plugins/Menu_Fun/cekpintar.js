@@ -3,25 +3,24 @@ module.exports = {
   command: ['cekpinter', 'cekpintar', 'cekkepintaran'],
   tags: 'Fun Menu',
   desc: 'Cek seberapa pinter orang',
-
-  isOwner: false,
+  prefix: true,
+  owner: false,
   isPremium: false,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
-      if (!(await onlyPremium(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, message))) return;
 
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
-
       const persentase = Math.floor(Math.random() * 101);
       let komentar;
       if (persentase <= 25) {
@@ -36,7 +35,7 @@ module.exports = {
         komentar = 'Orang c*na sih ini!';
       }
 
-      const teks = `*Seberapa pintar @${mentionTarget}*\n\n*${persentase}%* pintar\n_${komentar}_`;
+      const teks = `*Seberapa pintar* @${mentionTarget}\n\n*${persentase}%* pintar\n_${komentar}_`;
 
       await conn.sendMessage(chatId, {
       text: teks,

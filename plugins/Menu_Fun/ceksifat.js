@@ -4,33 +4,25 @@ module.exports = {
   name: 'ceksifat',
   command: ['ceksifat'],
   tags: 'Fun Menu',
-  desc: 'Menebak sifat seseorang berdasarkan nama secara acak.',
+  desc: 'Menebak sifat seseorang',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      let targetId = senderId;
-      let mentionedJid = message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
-      let quotedParticipant = message.message?.extendedTextMessage?.contextInfo?.participant;
-
-      if (mentionedJid) {
-        targetId = mentionedJid;
-      } else if (quotedParticipant) {
-        targetId = quotedParticipant;
-      }
-
-      const username = targetId.split('@')[0];
+      const { chatId, senderId, isGroup } = chatInfo;
+      let targetId = target(message, senderId);
+      const mentionTarget = targetId;
       const sifat = sifatlist[Math.floor(Math.random() * sifatlist.length)];
 
       await conn.sendMessage(chatId, {
-        text: `Nama: @${username}\nSifat: ${sifat}`,
-        mentions: [targetId]
+        text: `Nama: @${mentionTarget}\nSifat: ${sifat}`,
+        mentions: [`${targetId}@s.whatsapp.net`]
       }, { quoted: message });
     } catch (error) {
       console.error('Error:', error);

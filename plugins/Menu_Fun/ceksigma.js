@@ -3,16 +3,18 @@ module.exports = {
   command: ['ceksigma'],
   tags: 'Fun Menu',
   desc: 'Cek seberapa sigma seseorang',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
     let targetId = target(message, senderId);
+    const mentionTarget = targetId;
     const persentase = Math.floor(Math.random() * 101);
 
     let komentar;
@@ -27,8 +29,6 @@ module.exports = {
     } else {
       komentar = 'Hati² Alpha Overlord!';
     }
-
-    const mentionTarget = targetId;
 
     const teks = `Cek seberapa sigma @${mentionTarget}\n\n${persentase}% Sigma\n_${komentar}_`;
 
