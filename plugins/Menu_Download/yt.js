@@ -1,24 +1,27 @@
-const { ytDonlodMp3, ytDonlodMp4 } = require('../../toolkit/scrape/youtube');
+const { ytMp3, ytMp4 } = require('../../toolkit/scrape/youtube');
 
 module.exports = {
   name: 'youtube',
   command: ['ytmp3', 'ytmp4'],
   tags: 'Download Menu',
   desc: 'Mendownload media dari YouTube',
+  prefix: true,
+  isPremium: false,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
       const text = args.join(' ').trim();
       if (!text) {
         return conn.sendMessage(chatId, {
-          text: `Silakan masukkan link YouTube!\n\nContoh:\n${prefix}${commandText} https://youtube.com/watch?v=dQw4w9WgXcQ`
+          text: `Silakan masukkan link YouTube!\n\nContoh:\n${prefix}${commandText} https://youtu.be/rCYlIIf_1L0?si=fGJw_zjBVPCRlDXM`
         }, { quoted: message });
       }
 
@@ -30,16 +33,17 @@ module.exports = {
       await conn.sendMessage(chatId, { react: { text: '⏳', key: message.key } });
 
       if (commandText === 'ytmp3') {
-        const result = await ytDonlodMp3(text);
+        const result = await ytMp3(text);
         await conn.sendMessage(chatId, {
           audio: { url: result.url },
           mimetype: 'audio/mp4',
           ptt: false
         }, { quoted: message });
       } else if (commandText === 'ytmp4') {
-        const result = await ytDonlodMp4(text);
+        const result = await ytMp4(text, { quality: 'hd' });
         await conn.sendMessage(chatId, {
-          video: { url: result.url }
+          video: { url: result.url },
+          caption: result.title || 'Berikut videonya'
         }, { quoted: message });
       } else {
         await conn.sendMessage(chatId, { text: `Command tidak dikenali.` }, { quoted: message });

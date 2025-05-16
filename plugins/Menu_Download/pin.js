@@ -6,16 +6,19 @@ module.exports = {
   name: 'pinterest',
   command: ['pin', 'pinterest'],
   tags: 'Download Menu',
-  desc: 'Scrape gambar dari Pinterest berdasarkan kata kunci',
+  desc: 'Mencari media dari pinterest',
+  prefix: true,
+  isPremium: false,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
     const query = args.join(' ');
     if (!query) {
       return conn.sendMessage(chatId, { text: `Contoh: ${prefix}${commandText} christy jkt48` }, { quoted: message });

@@ -4,18 +4,20 @@ module.exports = {
   name: 'instagram',
   command: ['instagram', 'ig', 'igdl', 'instegrem', 'insta'],
   tags: 'Download Menu',
-  desc: 'Mengunduh video atau foto dari Instagram menggunakan link.',
+  desc: 'Mengunduh video atau foto dari Instagram',
+  prefix: true,
   isPremium: true,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-      if (!(await onlyPremium(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
 
       if (!args) {
         return conn.sendMessage(chatId, { text: `Masukkan URL Instagram! Contoh: *${prefix}${commandText} https://www.instagram.com/p/C1Ck8sENM94/*` }, { quoted: message });

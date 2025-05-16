@@ -19,16 +19,19 @@ module.exports = {
   command: ['play', 'lagu', 'song', 'ply'],
   tags: 'Download Menu',
   desc: 'Mendownload lagu dari YouTube',
+  prefix: true,
+  isPremium: false,
 
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, message))) return;
       const text = args.join(" ");
       if (!text) {
         return conn.sendMessage(chatId, {

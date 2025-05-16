@@ -5,18 +5,18 @@ module.exports = {
   command: ['fb', 'fbdl', 'facebook'],
   tags: 'Download Menu',
   desc: 'Mendownload media dari Facebook',
-
+  prefix: true,
   isPremium: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    if (!(await onlyPremium(module.exports, conn, message))) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
 
     if (!args[0]) {
       return conn.sendMessage(chatId, {

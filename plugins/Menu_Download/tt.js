@@ -5,15 +5,18 @@ module.exports = {
   command: ['tiktok', 'tt'],
   tags: 'Download Menu',
   desc: 'Download video dari TikTok tanpa watermark.',
+  prefix: true,
+  isPremium: false,
 
-  async run(conn, message, { isPrefix }) {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
     if (!args[0]) {
       return conn.sendMessage(chatId, { text: `Example:\n${prefix}${commandText} https://vt.tiktok.com/7494086723190721798/` }, { quoted: message });
     }
