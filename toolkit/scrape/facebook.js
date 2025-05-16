@@ -1,1 +1,82 @@
-const _0x5a5075=_0x2568;(function(_0x1e05f7,_0x59d569){const _0x338e50=_0x2568,_0x59b84c=_0x1e05f7();while(!![]){try{const _0x7e4f8e=parseInt(_0x338e50(0xf3))/0x1+parseInt(_0x338e50(0x10a))/0x2+parseInt(_0x338e50(0xff))/0x3+-parseInt(_0x338e50(0x100))/0x4*(-parseInt(_0x338e50(0x106))/0x5)+parseInt(_0x338e50(0xe3))/0x6*(-parseInt(_0x338e50(0x101))/0x7)+parseInt(_0x338e50(0x105))/0x8*(parseInt(_0x338e50(0xfa))/0x9)+-parseInt(_0x338e50(0xfb))/0xa*(parseInt(_0x338e50(0xf0))/0xb);if(_0x7e4f8e===_0x59d569)break;else _0x59b84c['push'](_0x59b84c['shift']());}catch(_0x26d882){_0x59b84c['push'](_0x59b84c['shift']());}}}(_0x1ebb,0x4de4a));function _0x1ebb(){const _0x59b9e7=['.thumbnail\x20>\x20.content\x20>\x20.clearfix\x20>\x20h3','https://v3.fdownloader.net/api/ajaxSearch?lang=id','.thumbnail\x20>\x20.content\x20>\x20.clearfix\x20>\x20p','data','find','2067813arURyT','68300dnUocc','status','https://fdownloader.net/id','.thumbnail\x20>\x20.image-fb\x20>\x20img','1071372wpVPGf','179884FJDEGs','2555igrDnL','#fbdownloader','attr','text','16prMuUY','30EIbTEF','trim','#note_convert','data-videourl','498592wGyLSq','Error\x20Extracting\x20Exp\x20And\x20Token','2760kIwEhW','exports','#popup_play\x20>\x20.popup-body\x20>\x20.popup-content\x20>\x20#vid','get','Invalid\x20URL,\x20Enter\x20A\x20Valid\x20Facebook\x20Video\x20URL','cheerio','href','https://fdownloader.net','.tab__content','post','filter','Mozilla/5.0\x20(Windows\x20NT\x2010.0\x20Win64\x20x64)\x20AppleWebKit/537.36\x20(KHTML,\x20like\x20Gecko)\x20Chrome/127.0.0.0\x20Safari/537.36','match','1705pNvDjl','button','value','209840ybDClH','test'];_0x1ebb=function(){return _0x59b9e7;};return _0x1ebb();}const axios=require('axios'),cheerio=require(_0x5a5075(0xe8));function _0x2568(_0x244809,_0x49ce7d){const _0x1ebbfc=_0x1ebb();return _0x2568=function(_0x2568da,_0x54164f){_0x2568da=_0x2568da-0xe2;let _0x4a2f3d=_0x1ebbfc[_0x2568da];return _0x4a2f3d;},_0x2568(_0x244809,_0x49ce7d);}async function facebook(_0x1a0c00){const _0x499c05=_0x5a5075;if(!/facebook\.\w+\/(reel|watch|share)/gi[_0x499c05(0xf4)](_0x1a0c00))throw new Error(_0x499c05(0xe7));try{const _0x5b71cd=await axios['get'](_0x499c05(0xfd),{'headers':{'User-Agent':'Mozilla/5.0\x20(Windows\x20NT\x2010.0\x20Win64\x20x64)\x20AppleWebKit/537.36\x20(KHTML,\x20like\x20Gecko)\x20Chrome/127.0.0.0\x20Safari/537.36'}}),_0x2d657c=_0x5b71cd[_0x499c05(0xf8)],_0x57dad0=_0x2d657c[_0x499c05(0xef)](/k_exp ?= ?"(\d+)"/i),_0x552c78=_0x2d657c[_0x499c05(0xef)](/k_token ?= ?"([a-f0-9]+)"/i),_0x3e2e07=_0x57dad0?_0x57dad0[0x1]:null,_0xbea36e=_0x552c78?_0x552c78[0x1]:null;if(!_0x3e2e07||!_0xbea36e)throw new Error(_0x499c05(0xe2));const _0x4fedde=await axios[_0x499c05(0xec)](_0x499c05(0xf6),new URLSearchParams({'k_exp':_0x3e2e07,'k_token':_0xbea36e,'q':_0x1a0c00,'lang':'id','web':'fdownloader.net','v':'v2','w':''}),{'headers':{'User-Agent':_0x499c05(0xee),'origin':_0x499c05(0xea)}}),_0x3e6aa1=_0x4fedde['data'];if(_0x3e6aa1[_0x499c05(0xfc)]!=='ok')throw new Error('Failed\x20Doing\x20Ajax\x20Search');const _0x3135f7=cheerio['load'](_0x3e6aa1['data']);return{'title':_0x3135f7(_0x499c05(0xf5))[_0x499c05(0x104)]()['trim'](),'duration':_0x3135f7(_0x499c05(0xf7))[_0x499c05(0x104)]()[_0x499c05(0x107)](),'thumbnail':_0x3135f7(_0x499c05(0xfe))[_0x499c05(0x103)]('src')||'','media':_0x3135f7(_0x499c05(0xe5))[_0x499c05(0x103)]('src')||'','video':_0x3135f7(_0x499c05(0x102))[_0x499c05(0xf9)](_0x499c05(0xeb))['eq'](0x0)['find']('tr')['map']((_0x3139be,_0x2a9e5c)=>{const _0x34dd0d=_0x499c05,_0x21dbc8=_0x3135f7(_0x2a9e5c)[_0x34dd0d(0xf9)]('.video-quality')[_0x34dd0d(0x104)]()['trim'](),_0x46d78f=_0x3135f7(_0x2a9e5c)[_0x34dd0d(0xf9)]('a')['attr'](_0x34dd0d(0xe9))||_0x3135f7(_0x2a9e5c)['find'](_0x34dd0d(0xf1))[_0x34dd0d(0x103)](_0x34dd0d(0x109))||null;return _0x46d78f&&_0x46d78f!==_0x34dd0d(0x108)?{'quality':_0x21dbc8,'url':_0x46d78f}:null;})[_0x499c05(0xe6)]()[_0x499c05(0xed)](Boolean),'music':_0x3135f7(_0x499c05(0x102))['find']('#audioUrl')[_0x499c05(0x103)](_0x499c05(0xf2))||''};}catch(_0x5cdd3c){throw _0x5cdd3c;}}module[_0x5a5075(0xe4)]=facebook;
+const axios = require("axios");
+const cheerio = require("cheerio");
+
+async function facebook(url) {
+  if (!/facebook\.\w+\/(reel|watch|share)/gi.test(url)) {
+    throw new Error("Invalid URL, Enter A Valid Facebook Video URL");
+  }
+
+  try {
+    const response = await axios.get("https://fdownloader.net/id", {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0 Win64 x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+      },
+    });
+
+    const html = response.data;
+    const exMatch = html.match(/k_exp ?= ?"(\d+)"/i);
+    const toMatch = html.match(/k_token ?= ?"([a-f0-9]+)"/i);
+    const ex = exMatch ? exMatch[1] : null;
+    const to = toMatch ? toMatch[1] : null;
+
+    if (!ex || !to) {
+      throw new Error("Error Extracting Exp And Token");
+    }
+
+    const searchResponse = await axios.post(
+      "https://v3.fdownloader.net/api/ajaxSearch?lang=id",
+      new URLSearchParams({
+        k_exp: ex,
+        k_token: to,
+        q: url,
+        lang: "id",
+        web: "fdownloader.net",
+        v: "v2",
+        w: "",
+      }),
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0 Win64 x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+          origin: "https://fdownloader.net",
+        },
+      }
+    );
+
+    const data = searchResponse.data;
+
+    if (data.status !== "ok" || typeof data.data !== "string") {
+      throw new Error("Failed Doing Ajax Search or response is not HTML");
+    }
+
+    const $ = cheerio.load(data.data);
+
+    return {
+      title: $(".thumbnail > .content > .clearfix > h3").text().trim(),
+      duration: $(".thumbnail > .content > .clearfix > p").text().trim(),
+      thumbnail: $(".thumbnail > .image-fb > img").attr("src") || "",
+      media: $("#popup_play > .popup-body > .popup-content > #vid").attr("src") || "",
+      video: $("#fbdownloader")
+        .find(".tab__content")
+        .eq(0)
+        .find("tr")
+        .map((i, el) => {
+          const quality = $(el).find(".video-quality").text().trim();
+          const url =
+            $(el).find("a").attr("href") ||
+            $(el).find("button").attr("data-videourl") ||
+            null;
+
+          return url && url !== "#note_convert" ? { quality, url } : null;
+        })
+        .get()
+        .filter(Boolean),
+      music: $("#fbdownloader").find("#audioUrl").attr("value") || "",
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+module.exports = facebook;

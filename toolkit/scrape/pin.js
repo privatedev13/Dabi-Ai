@@ -1,3 +1,6 @@
+const axios = require('axios');
+const cheerio = require('cheerio');
+
 const pinterestCookies = [
   'csrftoken=f860f505f91304ab951e560bd632fc12',
   '_routing_id="62b86408-7b60-447b-aa77-e55388b89dc6"',
@@ -14,6 +17,23 @@ const pinterestHeaders = {
   'Cookie': pinterestCookies
 };
 
+async function getPinterestImage(query) {
+  const url = `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`;
+  const res = await axios.get(url, { headers: pinterestHeaders });
+  const $ = cheerio.load(res.data);
+
+  const imageUrls = [];
+  $('img').each((i, el) => {
+    const src = $(el).attr('src') || $(el).attr('srcset');
+    if (src && src.includes('originals/460x')) {
+      imageUrls.push(src.split(' ')[0]);
+    }
+  });
+
+  return imageUrls;
+}
+
 module.exports = {
-  pinterestHeaders
+  pinterestHeaders,
+  getPinterestImage
 };
