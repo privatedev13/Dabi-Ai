@@ -2,20 +2,20 @@ module.exports = {
   name: 'resetaichat',
   command: ['resetaichat', 'resetai'],
   tags: 'Ai Menu',
-  desc: 'Mereset data Auto-AI pada pengguna atau grup (Hanya Owner).',
+  desc: 'Mereset data Auto-AI pada pengguna atau grup',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const parsed = parseMessage(message, isPrefix);
-      if (!parsed) return;
-
-      const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-      if (!module.exports.command.includes(commandText)) return;
-
-      if (!(await onlyOwner(module.exports, conn, message))) return;
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, message))) return;
 
       if (args.length < 1) {
         return conn.sendMessage(chatId, {

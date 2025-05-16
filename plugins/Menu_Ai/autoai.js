@@ -1,89 +1,64 @@
-let autoAI = global.autoAI || {};
-const fetch = require('node-fetch');
 const fs = require('fs');
+const path = require('path');
+const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
 
 module.exports = {
-  name: 'autoAI',
-  command: ['ai'],
+  name: 'autoai',
+  command: ['autoai', 'ai'],
   tags: 'Ai Menu',
-  desc: 'Aktifkan atau nonaktifkan fitur auto AI di chat',
+  desc: 'Mengaktifkan atau menonaktifkan ai',
+  prefix: true,
 
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
-
-    const isCmd = args[0]?.toLowerCase();
-    if (!isCmd) {
-      return conn.sendMessage(chatId, { 
-        text: `Contoh penggunaan:\n\n${prefix}${commandText} on\n${prefix}${commandText} off` 
-      }, { quoted: message });
-    }
-
-    if (isCmd === 'on') {
-      autoAI[chatId] = true;
-      global.autoAI = autoAI;
-      return conn.sendMessage(chatId, { 
-        text: 'Auto AI diaktifkan di chat ini.' 
-      }, { quoted: message });
-    } else if (isCmd === 'off') {
-      autoAI[chatId] = false;
-      global.autoAI = autoAI;
-      return conn.sendMessage(chatId, { 
-        text: 'Auto AI dinonaktifkan di chat ini.' 
-      }, { quoted: message });
-    } else {
-      return conn.sendMessage(chatId, { 
-        text: 'Pilihan tidak dikenal! Gunakan `on` atau `off`.' 
-      }, { quoted: message });
-    }
-  },
-
-  before: async (conn, message) => {
-    const chatId = message?.key?.remoteJid;
-    const m = message;
-    const msg = m.message || {};
-    const exp = conn.user?.id;
-
-    const isMention = msg?.extendedTextMessage?.contextInfo?.mentionedJid?.includes(exp);
-    const isReply = msg?.extendedTextMessage?.contextInfo?.participant === exp;
-
-    if (!autoAI[chatId]) return;
-    if (!(isMention || isReply)) return;
-
-    const setting = JSON.parse(fs.readFileSync('./toolkit/set/config.json'));
-    const offline = setting?.offline?.status;
-
-    const body = 
-      m.body ||
-      msg?.conversation ||
-      msg?.extendedTextMessage?.text;
-
-    if (!body) return;
-
-    const context = offline
-      ? `Kamu sedang berbicara dengan AI karena pemilik sedang tidak aktif. Jawab dengan sopan dan profesional.`
-      : `Balas sebaik mungkin sesuai konteks pesan.`;
-
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
     try {
-      const res = await fetch(`https://apizell.web.id/ai/custom?text=${encodeURIComponent(body)}&logic=${encodeURIComponent(context)}`);
-      const data = await res.json();
-
-      if (data?.result) {
-        await conn.sendMessage(chatId, {
-          text: data.result,
-          quoted: m
-        });
+      const { chatId, senderId, isGroup } = chatInfo;
+      if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
+        return conn.sendMessage(chatId, {
+          text: `Gunakan format: ${prefix + commandText} <on/off>`
+        }, { quoted: message });
       }
-    } catch (e) {
-      console.error(e);
-      await conn.sendMessage(chatId, {
-        text: 'Terjadi kesalahan saat mengakses AI.',
-        quoted: m
-      });
+
+      const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+      const settingValue = args[0].toLowerCase() === 'on';
+
+      if (isGroup) {
+        const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
+        if (!groupData) {
+          return conn.sendMessage(chatId, {
+            text: 'Grup ini belum terdaftar dalam database.'
+          }, { quoted: message });
+        }
+
+        groupData.autoai = settingValue;
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+        return conn.sendMessage(chatId, {
+          text: `Fitur Auto-AI untuk grup ini telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
+        }, { quoted: message });
+
+      } else {
+        const userKey = Object.keys(db.Private).find(name => db.Private[name].Nomor === senderId);
+        if (!userKey) {
+          return conn.sendMessage(chatId, {
+            text: 'Nomor kamu belum terdaftar dalam database.'
+          }, { quoted: message });
+        }
+
+        db.Private[userKey].autoai = settingValue;
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+        return conn.sendMessage(chatId, {
+          text: `Fitur Auto-AI untuk kamu telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
+        }, { quoted: message });
+      }
+
+    } catch (err) {
+      console.error(err);
+      conn.sendMessage(message.chatId, { text: 'Terjadi kesalahan saat memproses perintah.' }, { quoted: message });
     }
   }
 };

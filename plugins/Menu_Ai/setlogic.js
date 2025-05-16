@@ -10,16 +10,18 @@ module.exports = {
   command: ['setlogic'],
   tags: 'Ai Menu',
   desc: 'Menyetel/menseting logika AI',
+  prefix: true,
+  owner: true,
 
-  isOwner: true,
-
-  run: async (conn, message, { isPrefix }) => {
-    const parsed = parseMessage(message, isPrefix);
-    if (!parsed) return;
-
-    const { chatId, isGroup, senderId, textMessage, prefix, commandText, args } = parsed;
-
-    if (!module.exports.command.includes(commandText)) return;
+  run: async (conn, message, {
+    chatInfo,
+    textMessage,
+    prefix,
+    commandText,
+    args
+  }) => {
+    const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isOwner(module.exports, conn, message))) return;
 
     if (args.length === 0) {
       const config = getConfig();
@@ -27,7 +29,7 @@ module.exports = {
       const currentLogic = config.botSetting.logic || 'Belum disetel.';
 
       return conn.sendMessage(chatId, {
-        text: `⚙️ Gunakan perintah:\n${prefix}setlogic [teks logika]\n\n📌 Contoh:\n${prefix}setlogic Ini adalah logika baru.\n\n*Logika saat ini (${botName}):*\n${currentLogic}`
+        text: `⚙️ Gunakan perintah:\n${prefix}${commandText} [teks logika]\n\n📌 Contoh:\n${prefix}${commandText} Ini adalah logika baru.\n\n*Logika saat ini [ ${botName} ]:*\n${currentLogic}`
       }, { quoted: message });
     }
 
