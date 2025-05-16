@@ -6,6 +6,8 @@ const settingPath = './toolkit/set/config.json';
 const tokoPath = './toolkit/set/toko.json';
 const databasePath = './toolkit/db/database.json';
 const packageJsonPath = path.join(__dirname, '../package.json');
+const emtData = require('./transmitter.js');
+const reactId = require('./reaction.js');
 
 const setting = JSON.parse(fs.readFileSync(settingPath, 'utf-8'));
 const toko = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
@@ -21,24 +23,38 @@ global.getUserData = (userId) => {
     return Object.values(database.Private).find(user => user.Nomor === userId) || null;
 };
 
-global.isPremium = (userId) => {
+global.premium = (userId) => {
     const userData = global.getUserData(userId);
     return userData ? userData.premium?.prem ?? false : false;
 };
 
-global.onlyOwner = Sys.onlyOwner;
-global.onlyPremium = Sys.onlyPremium;
-global.initializeDatabase = Sys.initializeDatabase;
+global.isOwner = Sys.chkOwner;
+global.isPrem = Sys.chkPrem;
+global.intDB = Sys.intDB;
 global.readDB = Sys.readDB;
 global.saveDB = Sys.saveDB;
-global.getWelcomeStatus = Sys.getWelcomeStatus;
-global.getWelcomeText = Sys.getWelcomeText;
-global.setWelcomeSettings = Sys.setWelcomeSettings;
-global.getLeftStatus = Sys.getLeftStatus;
-global.getLeftText = Sys.getLeftText;
-global.setLeftSettings = Sys.setLeftSettings;
+global.enGcW = Sys.enGcW;
+global.enGcL = Sys.enGcL;
+global.getWlcTxt = Sys.getWelcTxt;
+global.getLftTxt = Sys.getLeftTxt;
+global.stGcW = Sys.stGcW;
+global.stGcL = Sys.stGcL;
 global.updateBio = Sys.updateBio;
+global.exCht = Sys.exCht;
+global.getUser = Sys.getUser;
+global.gcData = Sys.getGroupData;
 global.parseMessage = Sys.parseMessage;
+global.parseNoPrefix = Sys.parseNoPrefix;
+global.chtEmt = Sys.chtEmt;
+global.stGrup = Sys.exGrp;
+global.ai = emtData.ai;
+global.mtData = emtData.mtData;
+global.gtMJid = emtData.gtMention;
+global.gbLink = emtData.gbLink;
+global.tryFree = emtData.tryPrem;
+global.translate = emtData.translate;
+global.rctKey = reactId.rctKey;
+global.gcFilter = emtData.gcFilter;
 
 Object.assign(global, {
     Format: Sys.Format,
@@ -74,8 +90,9 @@ Object.assign(global, {
     sewaList: toko.storeSetting.sewa || [],
     storeList: Object.keys(toko.storeSetting).filter(k => k !== 'sewa'),
     owner: setting.msg.rejectMsg.isOwner,
-    isPrem: setting.msg.rejectMsg.isPremium,
-    apiKey2: setting.apiKey.apiKey2.key,
+    prem: setting.msg.rejectMsg.isPremium,
+    zellApi: setting.apiKey.zellApi.web,
+    ytKey: setting.apiKey.ytKey.key,
 
     ownerStore: {
         dana: setting.ownerSetting.ownerStore?.dana || 'Tidak tersedia',

@@ -3,7 +3,6 @@ const path = require('path');
 const moment = require('moment-timezone');
 const { exec } = require('child_process');
 const axios = require('axios');
-const { Sticker, StickerTypes } = require('wa-sticker-formatter');
 
 const tempFolder = path.join(__dirname, '../temp');
 if (!fs.existsSync(tempFolder)) fs.mkdirSync(tempFolder, { recursive: true });
@@ -11,7 +10,7 @@ if (!fs.existsSync(tempFolder)) fs.mkdirSync(tempFolder, { recursive: true });
 const dbFolder = path.join(__dirname, '../toolkit/db');
 const dbFile = path.join(dbFolder, 'database.json');
 
-const initializeDatabase = () => {
+const intDB = () => {
   if (!fs.existsSync(dbFolder)) fs.mkdirSync(dbFolder, { recursive: true });
   if (!fs.existsSync(dbFile)) {
     fs.writeFileSync(dbFile, JSON.stringify({ Private: {}, Grup: {} }, null, 2));
@@ -38,32 +37,92 @@ const saveDB = (data) => {
   fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 };
 
-const getGroupSetting = (chatId, type, key, defVal) => {
-  const group = Object.values(readDB().Grup || {}).find(g => g.Id === chatId);
-  const value = group?.[type]?.[key];
-  return (typeof value === 'string' && value.trim() === '') ? defVal : (value ?? defVal);
+const getUser = (db, number) => {
+  if (!db || typeof db !== 'object' || !db.Private) return null;
+  return Object.keys(db.Private).find(key => db.Private[key].Nomor === number);
 };
 
-const getWelcomeStatus = chatId => getGroupSetting(chatId, 'Welcome', 'welcome', false);
-const getWelcomeText = chatId => getGroupSetting(chatId, 'Welcome', 'welcomeText', '👋 Selamat datang @user di grup!');
-const getLeftStatus = chatId => getGroupSetting(chatId, 'Left', 'gcLeft', false);
-const getLeftText = chatId => getGroupSetting(chatId, 'Left', 'leftText', '👋 Selamat tinggal @user!');
-
-const setGroupSetting = (chatId, groupName, type, statusKey, statusVal, textKey, textVal) => {
+const getGroupData = (chatId) => {
   const db = readDB();
-  db.Grup = db.Grup || {};
-  db.Grup[groupName] = db.Grup[groupName] || { Id: chatId };
-  db.Grup[groupName][type] = db.Grup[groupName][type] || {};
-  if (statusVal !== undefined) db.Grup[groupName][type][statusKey] = statusVal;
-  if (textVal) db.Grup[groupName][type][textKey] = textVal;
+  return Object.values(db.Grup || {}).find(g => g.Id === chatId);
+};
+
+const enGcW = (chatId) => {
+  const data = getGroupData(chatId);
+  return data?.gbFilter?.Welcome?.welcome === true;
+};
+
+const getWelcTxt = (chatId) => {
+  const data = getGroupData(chatId);
+  const text = data?.gbFilter?.Welcome?.welcomeText;
+  return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat datang @user di grup!';
+};
+
+const enGcL = (chatId) => {
+  const data = getGroupData(chatId);
+  return data?.gbFilter?.Left?.gcLeft === true;
+};
+
+const getLeftTxt = (chatId) => {
+  const data = getGroupData(chatId);
+  const text = data?.gbFilter?.Left?.leftText;
+  return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat tinggal @user!';
+};
+
+const loadGroupDB = (chatId) => {
+  const db = readDB();
+  let groupData = getGroupData(chatId);
+
+  if (!groupData) {
+    db.Grup[chatId] = {
+      id: chatId,
+      gbFilter: {}
+    };
+    groupData = db.Grup[chatId];
+  }
+
+  groupData.gbFilter = groupData.gbFilter || {};
+  return { db, groupData };
+};
+
+const stGcW = (chatId, isOn, welcomeText) => {
+  const { db, groupData } = loadGroupDB(chatId);
+  groupData.gbFilter.Welcome = groupData.gbFilter.Welcome || {};
+  groupData.gbFilter.Welcome.welcome = isOn;
+  if (welcomeText !== undefined) {
+    groupData.gbFilter.Welcome.welcomeText = welcomeText;
+  }
   saveDB(db);
 };
 
-const setWelcomeSettings = (chatId, groupName, status, text) =>
-  setGroupSetting(chatId, groupName, 'Welcome', 'welcome', status, 'welcomeText', text);
+const stGcL = (chatId, isOn, leftText) => {
+  const { db, groupData } = loadGroupDB(chatId);
+  groupData.gbFilter.Left = groupData.gbFilter.Left || {};
+  groupData.gbFilter.Left.gcLeft = isOn;
+  if (leftText !== undefined) {
+    groupData.gbFilter.Left.leftText = leftText;
+  }
+  saveDB(db);
+};
 
-const setLeftSettings = (chatId, groupName, status, text) =>
-  setGroupSetting(chatId, groupName, 'Left', 'gcLeft', status, 'leftText', text);
+const exGrp = async (conn, chatId, senderId) => {
+  const metadata = await mtData(chatId, conn);
+  if (!metadata) return {};
+
+  const groupName = metadata.subject;
+  const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
+  const participants = metadata.participants;
+  const adminList = participants.filter(p => p.admin).map(p => p.id);
+
+  return {
+    metadata,
+    groupName,
+    botNumber,
+    botAdmin: adminList.includes(botNumber),
+    userAdmin: adminList.includes(senderId),
+    adminList
+  };
+};
 
 const Connect = {
   log: text => console.log(`[LOG] ${text}`),
@@ -91,53 +150,20 @@ const download = async (url, filePath) => {
   });
 };
 
-const createSticker = async (media, isVideo = false) => {
-  const inputPath = path.join(tempFolder, isVideo ? 'input.mp4' : 'input.png');
-  const outputPath = path.join(tempFolder, 'output.webp');
-  fs.writeFileSync(inputPath, media);
-
-  try {
-    const cmd = isVideo
-      ? `ffmpeg -i ${inputPath} -vf "scale='min(512,iw)':-1:flags=lanczos,format=rgba" -r 10 -an -vsync vfr ${outputPath}`
-      : `ffmpeg -i ${inputPath} -vf "scale='min(512,iw)':-1:flags=lanczos" ${outputPath}`;
-
-    await new Promise((res, rej) => {
-      exec(cmd, (err, _, stderr) => err ? rej(stderr) : res());
-    });
-
-    const sticker = new Sticker(outputPath, {
-      pack: footer,
-      author: botName,
-      type: StickerTypes.FULL,
-      quality: 80
-    });
-
-    const buffer = await sticker.toBuffer();
-    fs.unlinkSync(inputPath);
-    fs.unlinkSync(outputPath);
-    return buffer;
-  } catch (e) {
-    Connect.error('❌ Gagal membuat stiker:', e.message);
-    try { fs.unlinkSync(inputPath); } catch {}
-    try { fs.unlinkSync(outputPath); } catch {}
-    throw e;
-  }
-};
-
 const target = (msg, senderId) => {
   const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
   const mentioned = ctx.mentionedJid?.[0];
   const replied = ctx.participant;
   const id = mentioned || replied || senderId;
-  return id.replace(/@s\.whatsapp\.net$/, '');
+  return id.replace(/@s.whatsapp.net$/, '');
 };
 
-const onlyOwner = async (plugin, conn, msg) => {
+const chkOwner = async (plugin, conn, msg) => {
   const chatId = msg.key.remoteJid;
   const isGroup = chatId.endsWith('@g.us');
   const senderId = isGroup ? msg.key.participant : msg.key.remoteJid;
 
-  if (plugin.isOwner) {
+  if (plugin.owner) {
     const num = senderId.replace(/\D/g, '');
     if (!global.ownerNumber.includes(num)) {
       await conn.sendMessage(chatId, { text: owner }, { quoted: msg });
@@ -147,15 +173,15 @@ const onlyOwner = async (plugin, conn, msg) => {
   return true;
 };
 
-const onlyPremium = async (plugin, conn, msg) => {
+const chkPrem = async (plugin, conn, msg) => {
   const chatId = msg.key.remoteJid;
   const isGroup = chatId.endsWith('@g.us');
   const senderId = isGroup ? msg.key.participant : msg.key.remoteJid;
 
-  if (plugin.isPremium) {
+  if (plugin.premium) {
     const user = global.getUserData(senderId);
     if (!user?.premium?.prem) {
-      await conn.sendMessage(chatId, { text: isPrem }, { quoted: msg });
+      await conn.sendMessage(chatId, { text: prem }, { quoted: msg });
       return false;
     }
   }
@@ -174,12 +200,76 @@ const updateBio = async conn => {
   }, 60000);
 };
 
-const parseMessage = (message, prefixes) => {
+const isAutoAiEnabled = (senderId, chatId) => {
+  const database = readDB();
+
+  if (chatId.endsWith('@s.whatsapp.net')) {
+    for (const key in database.Private) {
+      const user = database.Private[key];
+      if (user.Nomor === senderId) {
+        return user.autoai === true;
+      }
+    }
+  } else if (chatId.endsWith('@g.us')) {
+    for (const key in database.Grup) {
+      const group = database.Grup[key];
+      if (group.Id === chatId) {
+        return group.autoai === true;
+      }
+    }
+  }
+
+  return false;
+};
+
+const chtEmt = async (textMessage, message, senderId, chatId, conn) => {
+  const botRawId = conn.user?.id || '';
+  const botNumber = botRawId.split(':')[0] + '@s.whatsapp.net';
+  const botName = global.botName?.toLowerCase();
+
+  if (senderId === botRawId || message.key.fromMe) return false;
+
+  const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+  const mentionedJids = contextInfo?.mentionedJid || [];
+  const participant = contextInfo?.participant || '';
+  const isReplyToBot = participant === botNumber;
+  const isMentionedBot = mentionedJids.includes(botNumber);
+
+  if (contextInfo && participant && !isReplyToBot && !isMentionedBot) return false;
+
+  if (!isAutoAiEnabled(senderId, chatId)) return false;
+
+  if (
+    textMessage &&
+    (
+      textMessage.toLowerCase().includes(botName) ||
+      isReplyToBot ||
+      isMentionedBot
+    )
+  ) {
+    const aiReply = await global.ai(textMessage, message, senderId);
+
+    if (aiReply?.status && aiReply?.result) {
+      await conn.sendMessage(chatId, { text: aiReply.result }, { quoted: message });
+    } else {
+      await conn.sendMessage(chatId, { text: 'Maaf, saya tidak mengerti.' }, { quoted: message });
+    }
+    return true;
+  }
+
+  return false;
+};
+
+const exCht = (message) => {
   const chatId = message?.key?.remoteJid;
   const isGroup = chatId?.endsWith('@g.us');
   const senderId = isGroup ? message?.key?.participant : chatId;
+  const pushName = message.pushName || botName || 'User';
+  return { chatId, isGroup, senderId, pushName };
+};
 
-  const textMessage =
+const exTxtMsg = (message) => {
+  return (
     message.body ||
     message.message?.conversation ||
     message.message?.extendedTextMessage?.text ||
@@ -191,7 +281,13 @@ const parseMessage = (message, prefixes) => {
     message.message?.contactMessage?.displayName ||
     message.message?.pollCreationMessage?.name ||
     message.message?.reactionMessage?.text ||
-    '';
+    ''
+  );
+};
+
+const parseMessage = (message, prefixes) => {
+  const chatInfo = exCht(message);
+  const textMessage = exTxtMsg(message);
 
   if (!textMessage) return null;
 
@@ -202,9 +298,7 @@ const parseMessage = (message, prefixes) => {
   const commandText = args.shift()?.toLowerCase();
 
   return {
-    chatId,
-    isGroup,
-    senderId,
+    chatInfo,
     textMessage,
     prefix,
     commandText,
@@ -212,25 +306,48 @@ const parseMessage = (message, prefixes) => {
   };
 };
 
+const parseNoPrefix = (message) => {
+  const chatInfo = exCht(message);
+  const textMessage = exTxtMsg(message);
+
+  if (!textMessage) return null;
+
+  const args = textMessage.trim().split(/\s+/);
+  const commandText = args.shift()?.toLowerCase();
+
+  return {
+    chatInfo,
+    textMessage,
+    prefix: '',
+    commandText,
+    args
+  };
+};
+
 module.exports = {
   Connect,
-  createSticker,
   download,
   Format,
   target,
-  onlyOwner,
-  onlyPremium,
-  initializeDatabase,
+  chkOwner,
+  chkPrem,
+  getGroupData,
+  intDB,
   readDB,
   saveDB,
-  getWelcomeStatus,
-  getWelcomeText,
-  setWelcomeSettings,
-  getLeftStatus,
-  getLeftText,
-  setLeftSettings,
+  getUser,
+  enGcW,
+  enGcL,
+  getWelcTxt,
+  getLeftTxt,
+  stGcW,
+  stGcL,
   updateBio,
-  parseMessage
+  chtEmt,
+  exCht,
+  parseMessage,
+  parseNoPrefix,
+  exGrp
 };
 
 fs.watchFile(__filename, () => {
