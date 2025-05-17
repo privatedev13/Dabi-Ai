@@ -16,19 +16,23 @@ module.exports = {
     commandText,
     args
   }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
+    const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, message))) return;
 
+    const mtype = Object.keys(message.message || {})[0];
     let mediaMessage;
 
     if (mtype === "imageMessage") {
       mediaMessage = message.message.imageMessage;
-    } else if (mtype === "extendedTextMessage" && message.message.extendedTextMessage.contextInfo?.quotedMessage?.imageMessage) {
+    } else if (mtype === "extendedTextMessage" &&
+               message.message.extendedTextMessage.contextInfo?.quotedMessage?.imageMessage) {
       mediaMessage = message.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage;
     }
 
     if (!mediaMessage) {
-      return conn.sendMessage(chatId, { text: `📷 *Cara menggunakan perintah:*\n\nKirim gambar dengan caption atau reply gambar dengan perintah:\n\`${prefix}${commandText}\`` }, { quoted: message });
+      return conn.sendMessage(chatId, {
+        text: `📷 *Cara menggunakan perintah:*\n\nKirim gambar dengan caption atau reply gambar dengan perintah:\n\`${prefix}${commandText}\``
+      }, { quoted: message });
     }
 
     try {
