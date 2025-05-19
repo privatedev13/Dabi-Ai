@@ -3,6 +3,56 @@ const path = require('path');
 const moment = require('moment-timezone');
 const { exec } = require('child_process');
 const axios = require('axios');
+const chalk = require('chalk');
+
+const pluginDir = path.join(__dirname, '../plugins');
+const loadPlugins = () => {
+  if (!fs.existsSync(pluginDir)) {
+    console.log(chalk.yellow(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
+    return;
+  }
+
+  let loaded = 0;
+  let failed = 0;
+  const errors = [];
+
+  const pluginFolders = fs.readdirSync(pluginDir)
+    .filter(name => fs.statSync(path.join(pluginDir, name)).isDirectory());
+
+  for (const folder of pluginFolders) {
+    const folderPath = path.join(pluginDir, folder);
+    const files = fs.readdirSync(folderPath).filter(f => f.endsWith('.js'));
+
+    for (const file of files) {
+      const filePath = path.join(folderPath, file);
+      try {
+        const plugin = require(filePath);
+        if (plugin?.run) {
+          const name = path.basename(file, '.js');
+          global.plugins[name] = plugin;
+
+          const tag = plugin.tags || 'Uncategorized';
+          global.categories[tag] = global.categories[tag] || [];
+          global.categories[tag].push(plugin.command);
+
+          loaded++;
+        }
+      } catch (err) {
+        failed++;
+        errors.push(`❌ Gagal memuat plugin ${file}: ${err.message}`);
+      }
+    }
+  }
+
+  if (failed === 0) {
+    console.log(chalk.green(`✅ ${loaded} plugin berhasil dimuat.`));
+  } else {
+    errors.forEach(msg => console.log(msg));
+    console.log(chalk.yellow(`⚠️ ${loaded} plugin dimuat, ${failed} gagal.`));
+  }
+
+  return { loaded, errors: failed, messages: errors };
+};
 
 const tempFolder = path.join(__dirname, '../temp');
 if (!fs.existsSync(tempFolder)) fs.mkdirSync(tempFolder, { recursive: true });
@@ -39,7 +89,10 @@ const saveDB = (data) => {
 
 const getUser = (db, number) => {
   if (!db || typeof db !== 'object' || !db.Private) return null;
-  return Object.keys(db.Private).find(key => db.Private[key].Nomor === number);
+
+  const key = Object.keys(db.Private).find(k => db.Private[k].Nomor === number);
+  if (!key) return null;
+  return { key, value: db.Private[key] };
 };
 
 const getGroupData = (chatId) => {
@@ -338,6 +391,7 @@ const parseNoPrefix = (message) => {
 };
 
 module.exports = {
+  loadPlugins,
   Connect,
   download,
   Format,
@@ -357,6 +411,7 @@ module.exports = {
   stGcL,
   updateBio,
   chtEmt,
+  loadGroupDB,
   exCht,
   parseMessage,
   parseNoPrefix,

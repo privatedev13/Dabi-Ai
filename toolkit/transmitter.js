@@ -2,17 +2,19 @@ const fetch = require('node-fetch');
 const groupCache = new Map();
 
 async function mtData(id, conn) {
-  if (groupCache.has(id)) return groupCache.get(id);
+  if (!global.groupCache) global.groupCache = new Map();
+  if (global.groupCache.has(id)) return global.groupCache.get(id);
+
   try {
     const metadata = await conn.groupMetadata(id);
-    groupCache.set(id, metadata);
-    setTimeout(() => groupCache.delete(id), 2 * 60 * 1000); 
+    global.groupCache.set(id, metadata);
+    setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
     return metadata;
   } catch (e) {
     console.error('Gagal ambil metadata grup:', e);
     return null;
   }
-};
+}
 
 async function ai(textMessage, message, senderId) {
   const context = global.logic
@@ -47,32 +49,71 @@ async function gcFilter(conn, message, chatId, senderId, isGroup) {
   try {
     const db = readDB();
     const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
-    if (!groupData) return;
+    if (!groupData || !groupData.gbFilter) return;
 
     const metadata = await global.mtData(chatId, conn);
     const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
     const botRawId = conn.user?.id || '';
     const fromMe = senderId === botRawId || message.key.fromMe;
 
-    const textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    const hasGroupLink = await gbLink(textMessage);
-    if (groupData.gbFilter.link?.antilink && hasGroupLink && !isAdmin && !fromMe) {
-      await conn.sendMessage(chatId, {
-        text: `🚫 Link grup terdeteksi dari @${senderId.split('@')[0]}!\nPesan akan dihapus.`,
-        mentions: [senderId]
-      }, { quoted: message });
-      await conn.sendMessage(chatId, { delete: message.key });
-      return true;
-    }
+    if (isAdmin || fromMe) return;
 
+    let textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
     const msgType = Object.keys(message.message || {})[0];
-    if (groupData.gbFilter?.stiker.antistiker && msgType === 'stickerMessage' && !isAdmin && !fromMe) {
-      await conn.sendMessage(chatId, {
-        text: `🚫 Stiker terdeteksi dari @${senderId.split('@')[0]}!\nPesan akan dihapus.`,
-        mentions: [senderId]
-      }, { quoted: message });
-      await conn.sendMessage(chatId, { delete: message.key });
-      return true;
+    
+    const isTagSw =
+      !!message.message?.groupStatusMentionMessage ||
+      !!message.message?.extendedTextMessage?.contextInfo?.groupStatusMentionMessage ||
+      !!message.message?.ephemeralMessage?.message?.extendedTextMessage?.contextInfo?.groupStatusMentionMessage;
+
+    if (isTagSw) textMessage = 'Grup ini disebut dalam status';
+
+    const checks = [
+      {
+        enabled: groupData.gbFilter?.link?.antilink,
+        condition: await gbLink(textMessage),
+        reason: 'Link grup terdeteksi',
+      },
+      {
+        enabled: groupData.gbFilter?.stiker?.antistiker,
+        condition: msgType === 'stickerMessage',
+        reason: 'Stiker terdeteksi',
+      },
+      {
+      enabled: groupData.gbFilter?.antibot === true,
+      condition: (() => {
+        const context = message.message?.contextInfo || {};
+        const fwdScore = context.forwardingScore || 0;
+        const isForwardedFromChannel = !!context.externalAdReply || context.forwardedNewsletterMessage != null;
+        const isForwarded = fwdScore > 0 || isForwardedFromChannel;
+        const hasMenuWords = /menu|owner|allmenu/i.test(textMessage);
+        const hasPreview = !!(
+          message.message?.extendedTextMessage?.thumbnailUrl || 
+          message.message?.extendedTextMessage?.mediaUrl
+        );
+        const isDoc = msgType === 'documentMessage';
+
+        return isForwarded || hasMenuWords || hasPreview || isDoc;
+      })(),
+      reason: 'Deteksi konten mencurigakan',
+      },
+      {
+        enabled: groupData.gbFilter?.antiTagSw === true,
+        condition: isTagSw,
+        reason: 'Tag status terdeteksi',
+      }
+    ];
+
+    for (const check of checks) {
+      if (check.enabled && check.condition) {
+        await conn.sendMessage(chatId, {
+          text: `🚫 ${check.reason} dari @${senderId.split('@')[0]}!\nPesan akan dihapus.`,
+          mentions: [senderId],
+        }, { quoted: message });
+
+        await conn.sendMessage(chatId, { delete: message.key });
+        return true;
+      }
     }
 
   } catch (err) {
@@ -85,14 +126,14 @@ async function tryPrem(nomor) {
     intDB();
     const db = readDB();
 
-    const userKey = getUser(db, nomor);
-    if (!userKey) {
+    const user = getUser(db, nomor);
+    if (!user) {
       return { success: false, message: 'Pengguna belum terdaftar di database.', claimable: false };
     }
 
-    const userData = db.Private[userKey];
+    const { key, value } = user;
 
-    if (userData.claim) {
+    if (value.claim) {
       return {
         success: false,
         message: '⚠️ Kamu sudah pernah claim trial premium.',
@@ -101,12 +142,12 @@ async function tryPrem(nomor) {
     }
 
     const durationMs = 3 * 24 * 60 * 60 * 1000;
-    db.Private[userKey].isPremium = {
+    db.Private[key].isPremium = {
       isPrem: true,
       time: durationMs,
       activatedAt: Date.now()
     };
-    db.Private[userKey].claim = true;
+    db.Private[key].claim = true;
 
     saveDB(db);
 

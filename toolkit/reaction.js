@@ -1,5 +1,6 @@
 const { run: kickRun } = require('../plugins/Menu_Group/kick');
 const { run: promoteRun } = require('../plugins/Menu_Group/promote');
+const { run: demoteRun } = require('../plugins/Menu_Group/demote');
 
 async function rctKey(message, conn) {
   try {
@@ -69,6 +70,19 @@ async function rctKey(message, conn) {
           textMessage: '',
           prefix: '.',
           commandText: 'promote',
+          args: []
+        });
+      }
+    }
+
+    if (reaction === '💨') {
+      if (userAdmin && botAdmin) {
+        dummyMessage.message.extendedTextMessage.contextInfo.mentionedJid = [participant];
+        await demoteRun(conn, dummyMessage, {
+          chatInfo,
+          textMessage: '',
+          prefix: '.',
+          commandText: 'demote',
           args: []
         });
       }

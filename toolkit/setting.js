@@ -44,6 +44,7 @@ global.exCht = Sys.exCht;
 global.getUser = Sys.getUser;
 global.gcData = Sys.getGroupData;
 global.parseMessage = Sys.parseMessage;
+global.loadGroupDB = Sys.loadGroupDB;
 global.parseNoPrefix = Sys.parseNoPrefix;
 global.chtEmt = Sys.chtEmt;
 global.stGrup = Sys.exGrp;
