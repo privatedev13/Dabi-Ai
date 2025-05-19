@@ -49,15 +49,18 @@ module.exports = {
 
     try {
       await conn.groupParticipantsUpdate(chatId, [fullTargetId], 'demote');
-      const groupCache = new Map();
-      groupCache.delete(chatId);
+
+      if (!global.groupCache) global.groupCache = new Map();
+
+      global.groupCache.delete(chatId);
       await mtData(chatId, conn);
+
       conn.sendMessage(chatId, {
         text: `✅ Berhasil menurunkan @${targetId} dari admin grup!`,
         mentions: [fullTargetId]
       }, { quoted: message });
     } catch (err) {
-      console.error(err);
+      console.error('Error saat demote:', err);
       conn.sendMessage(chatId, {
         text: '❌ Gagal menurunkan admin. Pastikan bot adalah admin dan ID yang dimaksud valid.'
       }, { quoted: message });

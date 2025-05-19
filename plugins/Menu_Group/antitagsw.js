@@ -1,12 +1,13 @@
 module.exports = {
-  name: 'antistiker',
-  command: ['antistiker'],
+  name: 'antitagsw',
+  command: ['antitagsw'],
   tags: 'Group Menu',
-  desc: 'Mengaktifkan atau menonaktifkan fitur anti stiker spam',
+  desc: 'Fitur anti tag status WhatsApp (Tag SW)',
   prefix: true,
 
   run: async (conn, message, {
     chatInfo,
+    textMessage,
     prefix,
     commandText,
     args
@@ -20,9 +21,7 @@ module.exports = {
     const db = readDB();
     const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
     if (!groupData) {
-      return conn.sendMessage(chatId, {
-        text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar."
-      }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: message });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
@@ -43,13 +42,12 @@ module.exports = {
     }
 
     groupData.gbFilter = groupData.gbFilter || {};
-    groupData.gbFilter.stiker = groupData.gbFilter.stiker || {};
-    groupData.gbFilter.stiker.antistiker = input === 'on';
+    groupData.gbFilter.antiTagSw = input === 'on';
 
     saveDB(db);
 
     return conn.sendMessage(chatId, {
-      text: `✅ Fitur antistiker berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
+      text: `✅ Fitur antiTag SW berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
     }, { quoted: message });
   }
 };

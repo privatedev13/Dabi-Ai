@@ -1,7 +1,3 @@
-const fs = require('fs');
-const path = require("path");
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
 module.exports = {
   name: 'antilink',
   command: ['antilink'],
@@ -17,12 +13,13 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
+
     if (!isGroup) {
       return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
     }
 
     const db = readDB();
-    const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
+    const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
     if (!groupData) {
       return conn.sendMessage(chatId, { text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: message });
     }
@@ -34,22 +31,24 @@ module.exports = {
     }
 
     if (!botAdmin) {
-    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
     }
 
-    if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
+    const input = args[0]?.toLowerCase();
+    if (!input || !['on', 'off'].includes(input)) {
       return conn.sendMessage(chatId, {
         text: `Penggunaan: ${prefix}${commandText} <on/off>`
       }, { quoted: message });
     }
 
     groupData.gbFilter = groupData.gbFilter || {};
-    groupData.gbFilter.link.antilink = args[0].toLowerCase() === 'on';
+    groupData.gbFilter.link = groupData.gbFilter.link || {};
+    groupData.gbFilter.link.antilink = input === 'on';
 
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+    saveDB(db);
 
     return conn.sendMessage(chatId, {
-      text: `✅ Fitur antilink berhasil di-${args[0].toLowerCase() === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
+      text: `✅ Fitur antilink berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
     }, { quoted: message });
   }
 };
