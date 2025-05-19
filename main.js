@@ -3,15 +3,15 @@
  * © 2025
  */
 
-require('./toolkit/setting.js');
+const settingModule = require('./toolkit/setting');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const chalk = require('chalk');
 const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { getMenuText, handleMenuCommand } = require('./plugins/Main_Menu/menu');
-const { isPrefix } = require('./toolkit/setting');
+const { isPrefix } = settingModule;
+const { loadPlugins } = require('./toolkit/helper');
 
 const logger = pino({ level: 'silent' });
 
@@ -23,60 +23,6 @@ fs.mkdir(folderName, (err) => {
 global.plugins = {};
 global.categories = {};
 
-global.autoBio = false;
-
-const pluginFolder = path.join(__dirname, './plugins');
-const loadPlugins = () => {
-  if (!fs.existsSync(pluginFolder)) {
-    return console.log(chalk.yellow(`⚠️ Folder plugin tidak ditemukan: ${pluginFolder}`));
-  }
-
-  let loadedCount = 0;
-  let errorCount = 0;
-  const errorMessages = [];
-
-  const folders = fs.readdirSync(pluginFolder).filter(name => {
-    const fullPath = path.join(pluginFolder, name);
-    return fs.statSync(fullPath).isDirectory();
-  });
-
-  folders.forEach(folder => {
-    const folderPath = path.join(pluginFolder, folder);
-    const files = fs.readdirSync(folderPath);
-
-    files.forEach(file => {
-      const fullPath = path.join(folderPath, file);
-      if (!file.endsWith('.js')) return;
-
-      try {
-        const pluginName = path.basename(fullPath, '.js');
-        const plugin = require(fullPath);
-        if (plugin?.run) {
-          global.plugins[pluginName] = plugin;
-
-          const category = plugin.tags || 'Uncategorized';
-          if (!global.categories[category]) global.categories[category] = [];
-          global.categories[category].push(plugin.command);
-
-          loadedCount++;
-        }
-      } catch (err) {
-        errorCount++;
-        errorMessages.push(`❌ Plugin tidak berhasil dimuat: ${file} error: ${err.message}`);
-      }
-    });
-  });
-
-  if (errorCount === 0) {
-    console.log(chalk.green(`✅ Semua plugins (${loadedCount}) berhasil dimuat`));
-  } else {
-    errorMessages.forEach(msg => console.log(msg));
-    console.log(chalk.yellow(`⚠️ Total plugins berhasil dimuat: ${loadedCount}, gagal: ${errorCount}`));
-  }
-
-  return { loaded: loadedCount, errors: errorCount, messages: errorMessages };
-};
-
 intDB();
 
 setInterval(() => {
@@ -84,10 +30,11 @@ setInterval(() => {
 
   Object.keys(db.Private).forEach((key) => {
     const user = db.Private[key];
-    if (user.premium?.prem && user.premium.time > 0) {
-      user.premium.time -= 60000;
-      if (user.premium.time <= 0) {
-        user.premium.prem = false;
+    if (user.isPremium?.isPrem && user.isPremium.time > 0) {
+      user.isPremium.time -= 60000;
+      if (user.isPremium.time <= 0) {
+        user.isPremium.isPrem = false;
+        user.isPremium.time = 0;
       }
     }
   });
@@ -145,7 +92,11 @@ const startBot = async () => {
 
     if (!state.creds?.me?.id) {
       console.log(chalk.blue('📱 Masukkan nomor bot WhatsApp Anda:'));
-      const phoneNumber = await question('> ');
+      let phoneNumber = await question('> ');
+
+      phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+      phoneNumber = phoneNumber.replace(/^0/, '62');
+      if (!phoneNumber.startsWith('62')) phoneNumber = '62' + phoneNumber;
 
       const code = await conn.requestPairingCode(phoneNumber);
       console.log(chalk.green('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
@@ -154,12 +105,10 @@ const startBot = async () => {
     if (!conn.reactionCache) conn.reactionCache = new Map();
 
     conn.ev.on('connection.update', ({ connection }) => {
-      const statusMessage = {
+      const messages = {
         open: () => {
           console.log(chalk.green.bold('✅ Bot online!'));
-          if (global.autoBio) {
-            updateBio(conn);
-          }
+          global.autoBio && updateBio(conn);
         },
         connecting: () => console.log(chalk.yellow('🔄 Menghubungkan kembali...')),
         close: () => {
@@ -167,7 +116,7 @@ const startBot = async () => {
           startBot();
         }
       };
-      statusMessage[connection]?.();
+      messages[connection]?.();
     });
 
     conn.ev.on('messages.upsert', async ({ messages }) => {
@@ -186,13 +135,8 @@ const startBot = async () => {
         setTimeout(() => conn.reactionCache.delete(message.key.id), 3 * 60 * 1000);
       }
 
-      if (message.message.reactionMessage) {
-        await rctKey(message, conn);
-      }
-
       const { chatId, isGroup, senderId, pushName } = exCht(message);
       const time = Format.time();
-
       let displayName = pushName || 'Pengguna';
 
       if (isGroup && chatId.endsWith('@g.us')) {
@@ -204,6 +148,11 @@ const startBot = async () => {
 
       let textMessage = '';
       let mediaInfo = '';
+
+      if (message.message.groupStatusMentionMessage) {
+        mediaInfo = '[ Status Grup ]';
+        textMessage = 'Grup ini disebut dalam status';
+      }
 
       if (message.message.conversation) {
         textMessage = message.message.conversation;
@@ -257,8 +206,8 @@ const startBot = async () => {
       if (global.setting?.botSetting?.Mode === 'group' && !isGroup) return;
       if (global.setting?.botSetting?.Mode === 'private' && isGroup) return;
 
-      const filtered = await gcFilter(conn, message, chatId, senderId, isGroup);
-      if (filtered) return;
+      const flter = await gcFilter(conn, message, chatId, senderId, isGroup);
+      if (flter) return;
 
       const { ownerSetting } = setting;
       global.lastGreet = global.lastGreet || {};
@@ -267,15 +216,15 @@ const startBot = async () => {
         console.error('Gagal mendapatkan nomor pengirim.');
         return;
       }
-      
+
       if (chatId.endsWith('@g.us') && ownerSetting.forOwner && ownerSetting.ownerNumber.includes(senderNumber)) {
         const now = Date.now();
         const last = global.lastGreet[senderId] || 0;
-      
+
         if (now - last > 5 * 60 * 1000) {
           global.lastGreet[senderId] = now;
-          const greetText = msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
-      
+          const greetText = setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
+
           await conn.sendMessage(chatId, {
             text: greetText,
             mentions: [senderId]
@@ -285,6 +234,10 @@ const startBot = async () => {
 
       if (await isMuted(chatId, senderId, conn)) return;
       if (isPublicMode(senderId)) return;
+
+      if (message.message.reactionMessage) {
+        await rctKey(message, conn);
+      }
 
       if ((isGroup && global.readGroup) || (!isGroup && global.readPrivate)) {
         await conn.readMessages([message.key]);
@@ -332,33 +285,33 @@ const startBot = async () => {
 
     conn.ev.on('group-participants.update', async (event) => {
       const { id: chatId, participants, action } = event;
-    
+
       try {
         if (enGcW(chatId) && action === 'add') {
           const welcomeText = getWlcTxt(chatId);
-    
+
           for (const participant of participants) {
             const userTag = `@${participant.split('@')[0]}`;
             const text = welcomeText
               .replace(/@user/g, userTag)
               .replace(/%user/g, userTag);
-    
+
             await conn.sendMessage(chatId, {
               text,
               mentions: [participant]
             });
           }
         }
-    
+
         if (enGcL(chatId) && (action === 'remove' || action === 'leave')) {
           const leftText = getLftTxt(chatId);
-    
+
           for (const participant of participants) {
             const userTag = `@${participant.split('@')[0]}`;
             const text = leftText
               .replace(/@user/g, userTag)
               .replace(/%user/g, userTag);
-    
+
             await conn.sendMessage(chatId, {
               text,
               mentions: [participant]
@@ -370,15 +323,15 @@ const startBot = async () => {
       }
     });
 
-        conn.ev.on('creds.update', saveCreds);
-    
+    conn.ev.on('creds.update', saveCreds);
+
       } catch (error) {
         console.error(chalk.red('❌ Error saat menjalankan bot:'), error);
       }
     };
 
 console.log(chalk.cyan.bold('Create By Dabi\n'));
-loadPlugins(pluginFolder);
+loadPlugins();
 startBot();
 
 let file = require.resolve(__filename);
