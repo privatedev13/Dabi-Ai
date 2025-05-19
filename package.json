@@ -1,6 +1,6 @@
 {
   "name": "Dabi-Ai",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Hari yang menyenangkan teman-teman. Kali ini saya akan memberikan sebuah informasi tentang script BaseBot ini, ini adalah sebuah script BaseBot/Base Bot WhatsApp, dalam rangkaian kali ini saya benar-benar berterima kasih kepada kalian yang menggunakan script ini.",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/MaouDabi0/Dabi-Ai.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Kaju",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/MaouDabi0/Dabi-Ai/issues"
