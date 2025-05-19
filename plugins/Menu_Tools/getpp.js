@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengambil foto profil pengguna',
   prefix: true,
   owner: false,
-  premium: false,
+  isPremium: true,
 
   run: async (conn, message, {
     chatInfo,
@@ -14,6 +14,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
     const defaultPP = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png?q=60';
 
     if (!isGroup) {
