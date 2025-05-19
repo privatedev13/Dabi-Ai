@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = {
   name: 'listisPrem',
-  command: ['listisPrem', 'listisPremium'],
+  command: ['listprem', 'listisPremium'],
   tags: 'Info Menu',
   desc: 'Menampilkan daftar pengguna isPremium.',
   prefix: true,

@@ -55,7 +55,9 @@ module.exports = {
             },
             stiker: {
               antistiker: false
-            }
+            },
+            antibot: false,
+            antiTagSw: false
           }
         };
 

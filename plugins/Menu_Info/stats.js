@@ -1,4 +1,5 @@
 const os = require('os');
+const fs = require('fs');
 const { execSync } = require('child_process');
 const { Format } = require('../../toolkit/helper');
 const { performance } = require('perf_hooks');
@@ -19,7 +20,7 @@ module.exports = {
   }) => {
     const startTime = performance.now();
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
+      const { chatId } = chatInfo;
       const chatList = conn.store?.chats ? Object.values(conn.store.chats) : [];
       const totalChat = chatList.length;
       const totalGroupChat = chatList.filter(c => c.id.endsWith('@g.us')).length;
@@ -39,6 +40,17 @@ module.exports = {
       const botName = global.botName || 'Bot';
       const botFullName = global.botFullName || botName;
       const cpuInfo = os.cpus()[0]?.model || 'Tidak diketahui';
+
+      let deviceUptimeStr = 'Tidak diketahui';
+      try {
+        const deviceUptime = os.uptime();
+        const days = Math.floor(deviceUptime / 86400);
+        const hrs = Math.floor((deviceUptime % 86400) / 3600);
+        const mins = Math.floor((deviceUptime % 3600) / 60);
+        deviceUptimeStr = `${days} hari ${hrs} jam ${mins} menit`;
+      } catch (e) {
+        console.error('❌ Gagal mendapatkan uptime device:', e.message);
+      }
 
       let totalDisk = 'Tidak diketahui';
       let usedDisk = 'Tidak diketahui';
@@ -74,6 +86,7 @@ Stats Chat
 
 Stats System
 ┃
+┣ ${btn} *Uptime Device:* ${deviceUptimeStr}
 ┣ ${btn} *Platform:* ${platform} (${architecture})
 ┣ ${btn} *Cpu:* ${cpuInfo}
 ┣ ${btn} *Ram:* ${(usedMemory / 1024 / 1024).toFixed(2)} MB / ${(totalMemory / 1024 / 1024).toFixed(2)} MB

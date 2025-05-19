@@ -4,7 +4,7 @@ module.exports = {
   tags: 'Info Menu',
   desc: 'Melihat semua grup yang bot masuki',
   prefix: true,
-  premium: true,
+  isPremium: true,
 
   run: async (conn, message, {
     chatInfo,

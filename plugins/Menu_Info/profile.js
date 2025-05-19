@@ -9,23 +9,24 @@ module.exports = {
     chatInfo,
     prefix,
     commandText,
+    args
   }) => {
+    const { chatId, senderId, pushName } = chatInfo;
     try {
-      const { chatId, senderId, pushName } = chatInfo;
       const targetId = target(message, senderId);
       const mentionTarget = `${targetId}@s.whatsapp.net`;
 
       intDB();
       const db = readDB();
 
-      const userKey = getUser(db, mentionTarget);
-      if (!userKey) {
+      const userData = getUser(db, mentionTarget);
+      if (!userData) {
         return conn.sendMessage(chatId, {
           text: `⚠️ Kamu belum terdaftar di database!\n\nKetik *${prefix}daftar* untuk mendaftar.`,
         }, { quoted: message });
       }
 
-      const userData = db.Private[userKey];
+      const user = userData.value;
 
       if (commandText.toLowerCase() === 'claim') {
         const result = await tryFree(mentionTarget);
@@ -35,10 +36,10 @@ module.exports = {
       }
 
       let isPremiumText = "Tidak ❌";
-      if (userData.isPremium?.isPrem) {
+      if (user.isPremium?.isPrem) {
         const now = Date.now();
-        const activated = userData.isPremium.activatedAt || now;
-        const expired = activated + userData.isPremium.time;
+        const activated = user.isPremium.activatedAt || now;
+        const expired = activated + user.isPremium.time;
 
         if (expired > now) {
           const remaining = expired - now;
@@ -55,18 +56,18 @@ module.exports = {
         }
       }
 
-      const claimText = !userData.claim
+      const claimText = !user.claim
         ? `Kamu bisa claim trial premium dengan *${prefix}claim*`
         : `Kamu sudah claim trial`;
 
       let profileText = `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n`;
-      profileText += `${side} ${btn} *Nomor:* ${userData.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n`;
-      profileText += `${side} ${btn} *Auto AI:* ${userData.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n`;
-      profileText += `${side} ${btn} *Total Chat:* ${userData.chat}\n`;
-      profileText += `${side} ${btn} *Umur:* ${userData.umur}\n`;
-      profileText += `${side} ${btn} *Status Premium:* ${userData.isPremium?.isPrem ? "Ya ✅" : "Tidak ❌"}\n`;
+      profileText += `${side} ${btn} *Nomor:* ${user.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n`;
+      profileText += `${side} ${btn} *Auto AI:* ${user.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n`;
+      profileText += `${side} ${btn} *Total Chat:* ${user.chat || 0}\n`;
+      profileText += `${side} ${btn} *Umur:* ${user.umur || "Tidak diatur"}\n`;
+      profileText += `${side} ${btn} *Status Premium:* ${user.isPremium?.isPrem ? "Ya ✅" : "Tidak ❌"}\n`;
       profileText += `${side} ${btn} *Premium Tersisa:* ${isPremiumText}\n`;
-      profileText += `${side} ${btn} *Nomor Id:* ${userData.noId || "Tidak ada"}\n`;
+      profileText += `${side} ${btn} *Nomor Id:* ${user.noId || "Tidak ada"}\n`;
       profileText += `${foot}${garis}\n\n`;
       profileText += `${claimText}`;
 
@@ -92,7 +93,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Error di plugin profile.js:", error);
-      conn.sendMessage(chatId, {
+      await conn.sendMessage(chatInfo.chatId, {
         text: "⚠️ Terjadi kesalahan saat mengambil profil!"
       }, { quoted: message });
     }
