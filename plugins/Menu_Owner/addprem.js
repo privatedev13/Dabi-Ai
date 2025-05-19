@@ -50,7 +50,8 @@ module.exports = {
         case 'm': durationMs = value * 60 * 1000; break;
       }
 
-      const userKey = getUser(db, targetNumber);
+      const userKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === targetNumber);
+
       if (!userKey) {
         return conn.sendMessage(chatId, {
           text: `❌ Pengguna tidak ada di database!`

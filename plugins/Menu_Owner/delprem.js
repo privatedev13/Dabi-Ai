@@ -12,8 +12,8 @@ module.exports = {
     commandText,
     args
   }) => {
+    const { chatId } = chatInfo;
     try {
-      const { chatId } = chatInfo;
       if (!(await isOwner(module.exports, conn, message))) return;
 
       if (args.length === 0 && !message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
@@ -32,7 +32,7 @@ module.exports = {
         targetNumber = args[0].replace(/\D/g, '') + '@s.whatsapp.net';
       }
 
-      const userKey = getUser(db, targetNumber);
+      const userKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === targetNumber);
 
       if (!userKey) {
         return conn.sendMessage(chatId, {
@@ -40,7 +40,7 @@ module.exports = {
         }, { quoted: message });
       }
 
-      if (!db.Private[userKey].isPremium || !db.Private[userKey].isPremium.isPrem) {
+      if (!db.Private[userKey].isPremium?.isPrem) {
         return conn.sendMessage(chatId, {
           text: `⚠️ Pengguna *${userKey}* tidak memiliki status isPremium.`
         }, { quoted: message });
