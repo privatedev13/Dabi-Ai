@@ -30,8 +30,9 @@ module.exports = {
     args
   }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
+      const { chatId } = chatInfo;
       if (!(await isPrem(module.exports, conn, message))) return;
+
       const text = args.join(" ");
       if (!text) {
         return conn.sendMessage(chatId, {
@@ -40,7 +41,9 @@ module.exports = {
       }
 
       if (processedAudio.has(text)) {
-        return conn.sendMessage(chatId, { text: 'Masih ada proses yang belum selesai untuk lagu ini.' }, { quoted: message });
+        return conn.sendMessage(chatId, {
+          text: 'Masih ada proses yang belum selesai untuk lagu ini.'
+        }, { quoted: message });
       }
       processedAudio.add(text);
 
@@ -51,13 +54,14 @@ module.exports = {
         return conn.sendMessage(chatId, { text: 'Video tidak ditemukan.' }, { quoted: message });
       }
 
-      let durationInSeconds = (video?.timestamp || video?.duration?.timestamp)?.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
+      const durationInSeconds = video.timestamp?.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
       if (durationInSeconds >= 3600) {
         processedAudio.delete(text);
         return conn.sendMessage(chatId, { text: 'Video berdurasi lebih dari 1 jam!' }, { quoted: message });
       }
 
       const thumbnailBuffer = await getBuffer(video.thumbnail);
+
       let caption = `*Y O U T U B E - P L A Y*\n\n`;
       caption += `${head}\n`;
       caption += `${side} ${btn} Title : ${video.title || '-'}\n`;
@@ -78,7 +82,7 @@ module.exports = {
       await conn.sendMessage(chatId, {
         audio: { url: downloadUrl },
         mimetype: 'audio/mpeg',
-        fileName: video.title + '.mp3'
+        fileName: `${video.title}.mp3`
       }, { quoted: message });
 
       processedAudio.delete(text);
@@ -86,7 +90,9 @@ module.exports = {
     } catch (error) {
       console.error('Error:', error);
       processedAudio.delete(text);
-      return conn.sendMessage(message.key.remoteJid, { text: `Terjadi kesalahan: ${error.message}` }, { quoted: message });
+      return conn.sendMessage(message.key.remoteJid, {
+        text: `Terjadi kesalahan: ${error.message}`
+      }, { quoted: message });
     }
   }
 };
