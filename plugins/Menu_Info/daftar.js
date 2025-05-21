@@ -37,7 +37,6 @@ module.exports = {
         db.Grup[groupName] = {
           Id: chatId,
           autoai: false,
-          chat: 0,
           mute: false,
           setWarn: 0,
           gbFilter: {
@@ -102,7 +101,7 @@ module.exports = {
         umur: umur.toString(),
         noId: generateRandomId(),
         autoai: false,
-        chat: 0,
+        cmd: 0,
         claim: false,
         isPremium: {
           isPrem: false,

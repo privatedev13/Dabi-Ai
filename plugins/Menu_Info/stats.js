@@ -20,14 +20,9 @@ module.exports = {
   }) => {
     const startTime = performance.now();
     try {
-      const { chatId } = chatInfo;
-      const chatList = conn.store?.chats ? Object.values(conn.store.chats) : [];
-      const totalChat = chatList.length;
-      const totalGroupChat = chatList.filter(c => c.id.endsWith('@g.us')).length;
-      const totalPrivateChat = totalChat - totalGroupChat;
+      const { chatId, senderId } = chatInfo;
 
       global.commandCount = (global.commandCount || 0) + 1;
-      const totalCmd = global.commandCount;
 
       const thumbnail = global.thumbnail;
 
@@ -64,34 +59,54 @@ module.exports = {
         console.error('❌ Gagal mendapatkan informasi penyimpanan:', e.message);
       }
 
+      const db = global.readDB();
+
+      let privateCmd = '-';
+      let maxCmd = 0;
+
+      if (db && db.Private) {
+        for (const key in db.Private) {
+          const user = db.Private[key];
+          const nomor = user.Nomor;
+          const cmd = user.cmd || 0;
+
+          if (nomor === senderId) {
+            privateCmd = cmd;
+          }
+
+          if (cmd > maxCmd) {
+            maxCmd = cmd;
+          }
+        }
+      }
+
       const endTime = performance.now();
       const responseTime = (endTime - startTime).toFixed(2);
 
       const statsMessage = `
+
 Ini adalah status dari bot ${botName}
 
-Stats Bot ${Obrack} *${botFullName}* ${Cbrack}
+Stats Bot ${Obrack} ${botFullName} ${Cbrack}
 ┃
-┣ ${btn} *Bot Name:* ${botName}
-┣ ${btn} *Time Server:* ${Format.time()}
-┣ ${btn} *Uptime:* ${Format.uptime(uptime)}
-┖ ${btn} *Respon:* ${responseTime} ms
+┣ ${btn} Bot Name: ${botName}
+┣ ${btn} Time Server: ${Format.time()}
+┣ ${btn} Uptime: ${Format.uptime(uptime)}
+┖ ${btn} Respon: ${responseTime} ms
 
 Stats Chat
 ┃
-┖ ${btn} *Total Chat:* ${totalChat}
-   ┣ ${btn} *Private:* ${totalPrivateChat}
-   ┣ ${btn} *Group:* ${totalGroupChat}
-   ┖ ${btn} *Total Cmd:* ${totalCmd}
+┣ ${btn} Private (cmd): ${privateCmd}
+┖ ${btn} Total Cmd (terbesar): ${maxCmd}
 
 Stats System
 ┃
-┣ ${btn} *Uptime Device:* ${deviceUptimeStr}
-┣ ${btn} *Platform:* ${platform} (${architecture})
-┣ ${btn} *Cpu:* ${cpuInfo}
-┣ ${btn} *Ram:* ${(usedMemory / 1024 / 1024).toFixed(2)} MB / ${(totalMemory / 1024 / 1024).toFixed(2)} MB
-┖ ${btn} *Storage:* ${usedDisk} / ${totalDisk} (Free: ${freeDisk})
-      `.trim();
+┣ ${btn} Uptime Device: ${deviceUptimeStr}
+┣ ${btn} Platform: ${platform} (${architecture})
+┣ ${btn} Cpu: ${cpuInfo}
+┣ ${btn} Ram: ${(usedMemory / 1024 / 1024).toFixed(2)} MB / ${(totalMemory / 1024 / 1024).toFixed(2)} MB
+┖ ${btn} Storage: ${usedDisk} / ${totalDisk} (Free: ${freeDisk})
+`.trim();
 
       const adReply = {
         text: statsMessage,
