@@ -1,4 +1,4 @@
-const { meFire } = require('../../toolkit/scrape/mediaFire.js');
+const { meFire } = require('../../toolkit/scrape/mediafire.js');
 
 module.exports = {
   name: 'MediaFire',
