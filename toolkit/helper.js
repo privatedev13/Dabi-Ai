@@ -6,7 +6,7 @@ const axios = require('axios');
 const chalk = require('chalk');
 
 const pluginDir = path.join(__dirname, '../plugins');
-const loadPlugins = () => {
+const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
     console.log(chalk.yellow(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
     return;
@@ -97,7 +97,7 @@ const getUser = (db, number) => {
 
 const getGroupData = (chatId) => {
   const db = readDB();
-  return Object.values(db.Grup || {}).find(g => g.Id === chatId);
+  return Object.values(db.Grup || {}).find(g => (g.Id || '').toString() === chatId.toString());
 };
 
 const enGcW = (chatId) => {
@@ -204,11 +204,13 @@ const download = async (url, filePath) => {
 };
 
 const target = (message, senderId) => {
-  const ctx = message.message?.extendedTextMessage?.contextInfo || {};
-  const mentioned = ctx.mentionedJid?.[0];
-  const replied = ctx.participant;
-  const id = mentioned || replied || senderId;
-  return id.replace(/@s.whatsapp.net$/, '');
+  const context = message.message?.extendedTextMessage?.contextInfo || {};
+  const isReply = context.quotedMessage && context.participant;
+  const isMention = context.mentionedJid?.length;
+
+  if (isReply) return context.participant.replace(/@s\.whatsapp\.net$/, '');
+  if (isMention) return context.mentionedJid[0].replace(/@s\.whatsapp\.net$/, '');
+  return senderId.replace(/@s\.whatsapp\.net$/, '');
 };
 
 const getSenderId = (message) => {
@@ -391,7 +393,7 @@ const parseNoPrefix = (message) => {
 };
 
 module.exports = {
-  loadPlugins,
+  loadPlug,
   Connect,
   download,
   Format,
