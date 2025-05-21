@@ -14,6 +14,7 @@ module.exports = {
   }) => {
     try {
       const { chatId, isGroup } = chatInfo;
+
       if (!isGroup) {
         return conn.sendMessage(chatId, {
           text: '⚠️ Perintah ini hanya dapat digunakan di grup.'
