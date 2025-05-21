@@ -11,7 +11,7 @@ const chalk = require('chalk');
 const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { isPrefix } = settingModule;
-const { loadPlugins } = require('./toolkit/helper');
+const { loadPlug } = require('./toolkit/helper');
 
 const logger = pino({ level: 'silent' });
 
@@ -256,22 +256,31 @@ const startBot = async () => {
       if (!parsedPrefix && !parsedNoPrefix) return;
 
       const runPlugin = async (parsed, prefixUsed) => {
-        const { commandText } = parsed;
-
+        const { commandText, chatInfo } = parsed;
+        const sender = chatInfo.senderId;
+      
         for (const [file, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
-
+      
           const exPrx = plugin.prefix;
-
           const allowRun =
             exPrx === 'both' ||
             (exPrx === false && !prefixUsed) ||
             ((exPrx === true || exPrx === undefined) && prefixUsed);
-
+      
           if (!allowRun) continue;
-
+      
           try {
             await plugin.run(conn, message, { ...parsed, isPrefix });
+      
+            const db = readDB();
+            const user = getUser(db, sender);
+      
+            if (user) {
+              db.Private[user.key].cmd = (db.Private[user.key].cmd || 0) + 1;
+              saveDB(db);
+            }
+      
           } catch (err) {
             console.log(chalk.red(`❌ Error pada plugin: ${file}\n${err.message}`));
           }
@@ -331,7 +340,7 @@ const startBot = async () => {
     };
 
 console.log(chalk.cyan.bold('Create By Dabi\n'));
-loadPlugins();
+loadPlug();
 startBot();
 
 let file = require.resolve(__filename);
