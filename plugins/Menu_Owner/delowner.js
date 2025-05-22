@@ -17,7 +17,7 @@ module.exports = {
     commandText,
     args
   }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
+    const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, message))) return;
 
     let config;
@@ -29,13 +29,12 @@ module.exports = {
       return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: message });
     }
 
-    if (!args[1]) {
+    const rawInput = args.join(' ');
+    if (!rawInput) {
       return conn.sendMessage(chatId, { text: 'Masukkan nomor owner yang ingin dihapus' }, { quoted: message });
     }
 
-    let number = args[1].replace(/\D/g, '');
-    if (!number.startsWith('62')) number = '62' + number;
-
+    const number = await colNumb(rawInput);
     const index = config.ownerSetting.ownerNumber.indexOf(number);
     if (index === -1) {
       return conn.sendMessage(chatId, { text: 'Nomor tidak ditemukan dalam daftar owner' }, { quoted: message });
