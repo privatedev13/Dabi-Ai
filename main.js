@@ -52,7 +52,7 @@ fs.watchFile(configPath, () => {
   }
 });
 
-const isMuted = async (chatId, senderId, conn) => {
+const mute = async (chatId, senderId, conn) => {
   const db = readDB();
   const groupData = Object.values(db.Grup).find((g) => g.Id === chatId);
 
@@ -67,7 +67,7 @@ const isMuted = async (chatId, senderId, conn) => {
   return false;
 };
 
-const isPublicMode = (senderId) => {
+const modePublic = (senderId) => {
   if (!global.public) {
     const senderNumber = senderId.replace(/\D/g, '');
     return !global.ownerNumber.includes(senderNumber);
@@ -94,9 +94,7 @@ const startBot = async () => {
       console.log(chalk.blue('📱 Masukkan nomor bot WhatsApp Anda:'));
       let phoneNumber = await question('> ');
 
-      phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-      phoneNumber = phoneNumber.replace(/^0/, '62');
-      if (!phoneNumber.startsWith('62')) phoneNumber = '62' + phoneNumber;
+      phoneNumber = await global.calNumber(phoneNumber);
 
       const code = await conn.requestPairingCode(phoneNumber);
       console.log(chalk.green('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
@@ -217,23 +215,23 @@ const startBot = async () => {
         return;
       }
 
-      if (chatId.endsWith('@g.us') && ownerSetting.forOwner && ownerSetting.ownerNumber.includes(senderNumber)) {
-        const now = Date.now();
-        const last = global.lastGreet[senderId] || 0;
+      if (
+        chatId.endsWith('@g.us') &&
+        ownerSetting.forOwner &&
+        ownerSetting.ownerNumber.includes(senderNumber) &&
+        Date.now() - (global.lastGreet[senderId] || 0) > 5 * 60 * 1000
+      ) {
+        global.lastGreet[senderId] = Date.now();
+        const greetText = setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
 
-        if (now - last > 5 * 60 * 1000) {
-          global.lastGreet[senderId] = now;
-          const greetText = setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
-
-          await conn.sendMessage(chatId, {
-            text: greetText,
-            mentions: [senderId]
-          }, { quoted: message });
-        }
+        await conn.sendMessage(chatId, {
+          text: greetText,
+          mentions: [senderId]
+        }, { quoted: message });
       }
 
-      if (await isMuted(chatId, senderId, conn)) return;
-      if (isPublicMode(senderId)) return;
+      if (await mute(chatId, senderId, conn)) return;
+      if (modePublic(senderId)) return;
 
       if (message.message.reactionMessage) {
         await rctKey(message, conn);
@@ -267,20 +265,20 @@ const startBot = async () => {
             exPrx === 'both' ||
             (exPrx === false && !prefixUsed) ||
             ((exPrx === true || exPrx === undefined) && prefixUsed);
-      
+
           if (!allowRun) continue;
-      
+
           try {
             await plugin.run(conn, message, { ...parsed, isPrefix });
-      
+
             const db = readDB();
             const user = getUser(db, sender);
-      
+
             if (user) {
               db.Private[user.key].cmd = (db.Private[user.key].cmd || 0) + 1;
               saveDB(db);
             }
-      
+
           } catch (err) {
             console.log(chalk.red(`❌ Error pada plugin: ${file}\n${err.message}`));
           }
