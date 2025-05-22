@@ -174,11 +174,19 @@ async function translate(q, tl = 'id') {
   }
 }
 
+async function colNumb(input) {
+  let number = input.replace(/[^0-9]/g, '');
+  number = number.replace(/^0/, '62');
+  if (!number.startsWith('62')) number = '62' + number;
+  return number;
+}
+
 module.exports = { 
   ai,
   mtData,
   gbLink,
   gcFilter,
   tryPrem,
-  translate
+  translate,
+  colNumb
 };

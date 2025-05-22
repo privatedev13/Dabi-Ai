@@ -319,17 +319,9 @@ const exCht = (message = {}) => {
   const chatId = message?.key?.remoteJid || '';
   const isGroup = chatId.endsWith('@g.us');
 
-  let senderId = '';
-  if (isGroup) {
-    senderId = message?.key?.participant 
-            || message?.participant 
-            || message?.sender 
-            || '';
-  } else {
-    senderId = message?.key?.fromMe
-      ? global.botNumber || ''
-      : chatId;
-  }
+  const senderId = message?.key?.fromMe
+    ? message?.key?.remoteJid
+    : message?.key?.participant || message?.key?.remoteJid;
 
   const pushName = message?.pushName || global.botName || 'User';
 
