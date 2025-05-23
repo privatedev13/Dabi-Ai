@@ -1,7 +1,7 @@
-const { uploadToCatbox } = require("../../toolkit/scrape/uploader");
-const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
-const fs = require("fs").promises;
+const fs = require("fs");
 const path = require("path");
+const { exec } = require("child_process");
+const { mediaMessage } = require("../../toolkit/exif");
 
 module.exports = {
   name: 'toimg',
@@ -11,48 +11,43 @@ module.exports = {
   prefix: true,
   isPremium: true,
 
-  run: async (conn, message, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
+  run: async (conn, message, { chatInfo }) => {
+    const { chatId } = chatInfo;
+    if (!(await isPrem(module.exports, conn, message))) return;
+
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
-
       const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-      const stickerMessage = quotedMessage?.stickerMessage || message.message?.stickerMessage;
+      const sticker = quotedMessage?.stickerMessage || message.message?.stickerMessage;
 
-      if (!stickerMessage) {
-        return conn.sendMessage(chatId, { text: "⚠️ Harap balas atau kutip stiker untuk dikonversi ke gambar!" }, { quoted: message });
+      if (!sticker) {
+        return conn.sendMessage(chatId, { text: "⚠️ Balas stiker atau kirim stiker dengan caption *toimg* untuk mengonversi!" }, { quoted: message });
       }
 
-      const stream = await downloadContentFromMessage(stickerMessage, "sticker");
-      let buffer = Buffer.alloc(0);
+      const tempDir = path.join(__dirname, "../../temp/");
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-      for await (const chunk of stream) {
-        buffer = Buffer.concat([buffer, chunk]);
-      }
+      const baseName = `${Date.now()}`;
+      const webpPath = await mediaMessage(
+        { message: quotedMessage || message.message },
+        path.join(tempDir, baseName)
+      );
 
-      if (!buffer.length) throw new Error("Gagal mengunduh stiker!");
+      const outputPath = `${webpPath}.png`;
 
-      const tempDir = path.join(__dirname, "../../temp");
-      await fs.mkdir(tempDir, { recursive: true });
+      exec(`ffmpeg -i "${webpPath}" "${outputPath}"`, async (err) => {
+        fs.unlinkSync(webpPath);
+        if (err || !fs.existsSync(outputPath)) {
+          return conn.sendMessage(chatId, { text: `❌ Konversi gagal: ${err?.message || 'Tidak diketahui'}` }, { quoted: message });
+        }
 
-      const tempFile = path.join(tempDir, "sticker.webp");
-      await fs.writeFile(tempFile, buffer);
-
-      const imageUrl = await uploadToCatbox(tempFile);
-      await fs.unlink(tempFile).catch(() => {});
-
-      if (!imageUrl) throw new Error("Gagal mengunggah gambar ke Catbox!");
-
-      return conn.sendMessage(chatId, { image: { url: imageUrl }, caption: "🎉 Stiker berhasil dikonversi ke gambar!" }, { quoted: message });
+        const buffer = fs.readFileSync(outputPath);
+        await conn.sendMessage(chatId, { image: buffer, caption: "🎉 Berhasil dikonversi!" }, { quoted: message });
+        fs.unlinkSync(outputPath);
+      });
 
     } catch (error) {
-      return conn.sendMessage(message.key.remoteJid, { text: `❌ Gagal mengonversi stiker: ${error.message}` }, { quoted: message });
+      console.error("[ERROR] toimg:", error);
+      return conn.sendMessage(chatId, { text: `❌ Gagal mengonversi: ${error.message}` }, { quoted: message });
     }
   }
 };
