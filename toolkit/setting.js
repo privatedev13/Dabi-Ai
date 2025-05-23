@@ -56,7 +56,8 @@ global.tryFree = emtData.tryPrem;
 global.translate = emtData.translate;
 global.rctKey = reactId.rctKey;
 global.gcFilter = emtData.gcFilter;
-global.calNumber = emtData.colNumb
+global.calNumber = emtData.colNumb;
+global.bdWrd = emtData.bdWord;
 
 Object.assign(global, {
     Format: Sys.Format,

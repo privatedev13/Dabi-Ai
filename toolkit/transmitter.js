@@ -181,6 +181,46 @@ async function colNumb(input) {
   return number;
 }
 
+async function bdWord(conn, message, chatId, senderId, isGroup) {
+  if (!isGroup) return;
+
+  try {
+    const db = readDB();
+    const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
+    if (!groupData || !groupData.antibadword || !groupData.antibadword.badword) return;
+
+    const metadata = await global.mtData(chatId, conn);
+    const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
+    const botRawId = conn.user?.id || '';
+    const fromMe = senderId === botRawId || message.key.fromMe;
+
+    if (isAdmin || fromMe) return;
+
+    const badwords = groupData.antibadword.badwordText?.toLowerCase().split(',').map(v => v.trim()).filter(Boolean);
+    if (!badwords || badwords.length === 0) return;
+
+    const textMsg = (
+      message.message?.conversation ||
+      message.message?.extendedTextMessage?.text ||
+      message.message?.imageMessage?.caption ||
+      message.message?.videoMessage?.caption ||
+      ''
+    ).toLowerCase();
+
+    const detected = badwords.some(word => textMsg.includes(word));
+    if (detected) {
+      await conn.sendMessage(chatId, {
+        text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
+        mentions: [senderId]
+      }, { quoted: message });
+
+      await conn.sendMessage(chatId, { delete: message.key });
+    }
+  } catch (err) {
+    console.error('Error in bdWord:', err);
+  }
+}
+
 module.exports = { 
   ai,
   mtData,
@@ -188,5 +228,6 @@ module.exports = {
   gcFilter,
   tryPrem,
   translate,
-  colNumb
+  colNumb,
+  bdWord
 };

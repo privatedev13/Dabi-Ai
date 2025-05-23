@@ -6,6 +6,8 @@ const ffmpeg = require('fluent-ffmpeg');
 const webp = require('node-webpmux');
 const { exec } = require('child_process');
 const axios = require('axios');
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const FileType = require('file-type');
 
 const tmpPath = (ext) => path.join(os.tmpdir(), `${randomBytes(6).readUIntLE(0, 6).toString(36)}.${ext}`);
 
@@ -20,6 +22,45 @@ const readAndDelete = (filePath) => {
     fs.unlinkSync(filePath);
     return data;
 };
+
+async function mediaMessage(message, filename, attachExtension = true) {
+  try {
+    const msgContent = message.message || message;
+    const mediaMsg =
+      msgContent.imageMessage ||
+      msgContent.videoMessage ||
+      msgContent.stickerMessage ||
+      msgContent.documentMessage ||
+      msgContent.audioMessage;
+
+    if (!mediaMsg || !mediaMsg.mimetype) {
+      throw new Error("Media tidak valid atau tidak ditemukan.");
+    }
+
+    const mime = mediaMsg.mimetype;
+    const messageType = mime.split("/")[0];
+
+    const stream = await downloadContentFromMessage(mediaMsg, messageType);
+    let buffer = Buffer.from([]);
+
+    for await (const chunk of stream) {
+      buffer = Buffer.concat([buffer, chunk]);
+    }
+
+    if (!buffer.length) {
+      throw new Error("Buffer kosong, media mungkin belum terunduh.");
+    }
+
+    const type = await FileType.fromBuffer(buffer);
+    const trueFileName = attachExtension ? `${filename}.${type.ext}` : filename;
+
+    fs.writeFileSync(trueFileName, buffer);
+    return trueFileName;
+
+  } catch (err) {
+    throw new Error(`Gagal mengambil media: ${err.message}`);
+  }
+}
 
 function imageToWebp(media) {
     return new Promise((resolve, reject) => {
@@ -158,5 +199,6 @@ module.exports = {
     writeExifVid,
     generateQuotly,
     convertToWebp,
-    sendImageAsSticker
+    sendImageAsSticker,
+    mediaMessage
 };
