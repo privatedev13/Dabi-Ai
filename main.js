@@ -207,6 +207,9 @@ const startBot = async () => {
       const flter = await gcFilter(conn, message, chatId, senderId, isGroup);
       if (flter) return;
 
+      const bd = await bdWrd(conn, message, chatId, senderId, isGroup);
+      if(bd) return;
+
       const { ownerSetting } = setting;
       global.lastGreet = global.lastGreet || {};
       const senderNumber = senderId?.split('@')[0];
