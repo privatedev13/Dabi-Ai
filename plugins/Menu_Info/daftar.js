@@ -57,6 +57,10 @@ module.exports = {
             },
             antibot: false,
             antiTagSw: false
+          },
+          antibadword: {
+            badword: false,
+            badwordText: ''
           }
         };
 
