@@ -25,14 +25,14 @@ module.exports = {
     }
 
     let isVideo = commandText === "bratvid";
-    let bratUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(args.join(" "))}&isVideo=${isVideo}&delay=500`;
+    let bratUrl = `https://api.hamsoffc.me/tools/brat?apikey=hamsoffc&text=${encodeURIComponent(args.join(" "))}`;
 
     try {
       let response = await axios.get(bratUrl, { 
         responseType: "arraybuffer",
         headers: {
           "User-Agent": "Mozilla/5.0",
-          "Accept": isVideo ? "video/mp4,video/webm,video/*,*/*;q=0.8" : "image/png,image/jpeg,image/*,*/*;q=0.8"
+          "Accept": isVideo ? "video/mp4" : "image/png"
         }
       });
 
