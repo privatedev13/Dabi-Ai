@@ -1,10 +1,10 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "6285725892962"
+      "62857xxx"
     ],
     "ownerName": "Kaju",
-    "contact": "6285725892962",
+    "contact": "",
     "ownerLink": {
       "tt": "",
       "yt": "",
@@ -12,14 +12,14 @@
       "fb": ""
     },
     "ownerStore": {
-      "dana": "6285725892962",
+      "dana": "",
       "gopay": "",
       "ovo": ""
     },
     "forOwner": false
   },
   "botSetting": {
-    "botName": "dabi",
+    "botName": "Dabi",
     "botFullName": "Dabi Chan Ai",
     "type": "plugin",
     "thumbnail": "https://files.catbox.moe/qvescq.jpg",
@@ -33,7 +33,7 @@
       "group": true,
       "private": false
     },
-    "Mode": "group",
+    "Mode": "off",
     "autoTyping": false,
     "public": true,
     "autoBio": true,
