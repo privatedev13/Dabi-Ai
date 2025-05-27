@@ -245,7 +245,9 @@ async function afkCencel(senderId, chatId, message, conn) {
   const afkSince = db.Private[senderKey].afk.afkTime;
   const reason = db.Private[senderKey].afk.reason || 'Tidak ada alasan';
   const now = Math.floor(Date.now() / 1000);
-  const waktu = Format.duration(afkSince, now);
+
+  let waktu = Format.duration(afkSince, now);
+  if (!waktu) waktu = 'Baru saja';
 
   db.Private[senderKey].afk = {};
   saveDB(db);
@@ -254,6 +256,36 @@ async function afkCencel(senderId, chatId, message, conn) {
     text: `✅ *Kamu telah kembali dari AFK!*\n⏱️ Durasi: ${waktu}\n📌 Alasan sebelumnya: ${reason}`,
     mentions: [senderId]
   }, { quoted: message });
+}
+
+async function afkTgR(message, conn) {
+  const db = readDB();
+  const botNumber = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
+  const { remoteJid: chatId, participant, fromMe } = message.key;
+  const sender = participant || chatId;
+
+  if (fromMe || sender === botNumber) return;
+
+  const ctx = message.message?.extendedTextMessage?.contextInfo || {};
+  const mentions = ctx.mentionedJid || [];
+  const quoted = ctx.participant;
+
+  const checkAFK = (jid, tagType) => {
+    const data = Object.values(db.Private).find(u => u.Nomor === jid && u.afk?.afkTime);
+    if (!data) return;
+    const waktu = Format.duration(data.afk.afkTime, Math.floor(Date.now() / 1000)) || 'Baru saja';
+    const alasan = data.afk.reason || 'Tidak ada alasan';
+    const text = tagType === 'reply'
+      ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`
+      : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`;
+    return conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: message });
+  };
+
+  if (quoted && quoted !== botNumber) return checkAFK(quoted, 'reply');
+
+  for (const jid of mentions) {
+    if (jid !== botNumber) return checkAFK(jid, 'mention');
+  }
 }
 
 module.exports = {
@@ -265,5 +297,6 @@ module.exports = {
   translate,
   colNumb,
   bdWord,
-  afkCencel
+  afkCencel,
+  afkTgR
 };
