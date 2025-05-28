@@ -141,41 +141,23 @@ async function tryPrem(nomor) {
   try {
     intDB();
     const db = readDB();
+    const u = getUser(db, nomor);
+    if (!u) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
+    const { key, value } = u;
+    if (value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
 
-    const user = getUser(db, nomor);
-    if (!user) {
-      return { success: false, message: 'Pengguna belum terdaftar di database.', claimable: false };
-    }
-
-    const { key, value } = user;
-
-    if (value.claim) {
-      return {
-        success: false,
-        message: '⚠️ Kamu sudah pernah claim trial premium.',
-        claimable: false
-      };
-    }
-
-    const durationMs = 3 * 24 * 60 * 60 * 1000;
     db.Private[key].isPremium = {
       isPrem: true,
-      time: durationMs,
+      time: 3 * 24 * 60 * 60 * 1000,
       activatedAt: Date.now()
     };
     db.Private[key].claim = true;
-
     saveDB(db);
 
-    return {
-      success: true,
-      message: '✅ Trial Premium 3 hari berhasil diberikan.',
-      claimable: false
-    };
-
-  } catch (error) {
-    console.error('Error di fungsi tryPrem:', error);
-    return { success: false, message: 'Terjadi kesalahan internal.', claimable: false };
+    return { success: true, message: '✅ Trial Premium 3 hari diberikan.', claimable: false };
+  } catch (e) {
+    console.error('tryPrem error:', e);
+    return { success: false, message: 'Terjadi kesalahan.', claimable: false };
   }
 }
 
