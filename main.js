@@ -90,16 +90,19 @@ const startBot = async () => {
       printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
+      messageCache: 3750,
       logger: logger,
       browser: ['Ubuntu', 'Chrome', '20.0.04'],
     });
+
+    conn.ev.on('creds.update', saveCreds);
 
     if (!state.creds?.me?.id) {
       console.log(chalk.blue('📱 Masukkan nomor bot WhatsApp Anda:'));
       let phoneNumber = await question('> ');
 
       phoneNumber = await global.calNumber(phoneNumber);
-
+ 
       const code = await conn.requestPairingCode(phoneNumber);
       console.log(chalk.green('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
     }
@@ -266,7 +269,7 @@ const startBot = async () => {
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
         const sender = chatInfo.senderId;
-      
+
         for (const [file, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
@@ -339,11 +342,8 @@ const startBot = async () => {
         console.error('❌ Error saat kirim pesan masuk/keluar grup:', error);
       }
     });
-
-    conn.ev.on('creds.update', saveCreds);
-
   } catch (error) {
-        console.error(chalk.red('❌ Error saat menjalankan bot:'), error);
+    console.error(chalk.red('❌ Error saat menjalankan bot:'), error);
   }
 };
 
