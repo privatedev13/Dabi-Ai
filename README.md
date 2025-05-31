@@ -83,11 +83,11 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    langkah selanjutnya anda perlu melakukan input promt pada termux dengan mengetik/menyalin ini
    
    ```bash
-   cd BaseBot
+   cd Dabi-Ai
    ```
 
    jika tampilan termux sudah seperti ini<br>
-   `~/BaseBot $`,<br> maka langkah selanjutnya adalah
+   `~/Dabi-Ai $`,<br> maka langkah selanjutnya adalah
 
 2. Node Package Meneger
 
