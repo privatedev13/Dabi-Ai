@@ -53,7 +53,7 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
  5. Repo Clone
 
    ```bash
-   git clone https://github.com/MaouDabi0/BaseBot
+   git clone https://github.com/MaouDabi0/Dabi-Ai
    ```
 
 ## Cara Memasangnya
