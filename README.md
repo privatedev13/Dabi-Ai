@@ -53,7 +53,7 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
  5. Repo Clone
 
    ```bash
-   git clone https://github.com/MaouDabi0/Dabi-Ai
+   git clone https://github.com/MaouDabi0/BaseBot
    ```
 
 ## Cara Memasangnya
@@ -83,11 +83,11 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    langkah selanjutnya anda perlu melakukan input promt pada termux dengan mengetik/menyalin ini
    
    ```bash
-   cd Dabi-Ai
+   cd BaseBot
    ```
 
    jika tampilan termux sudah seperti ini<br>
-   `~/Dabi-Ai $`,<br> maka langkah selanjutnya adalah
+   `~/BaseBot $`,<br> maka langkah selanjutnya adalah
 
 2. Node Package Meneger
 
