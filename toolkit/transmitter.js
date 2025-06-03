@@ -1,6 +1,8 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
+const vm = require('vm');
 
 const groupCache = new Map();
 
@@ -270,6 +272,19 @@ async function afkTgR(message, conn) {
   }
 }
 
+const funcUrl = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/assets/funcFile/function.js';
+
+const loadFunc = async () => {
+  const response = await axios.get(funcUrl);
+  const code = response.data;
+
+  const sandbox = { module: {}, exports: {}, require, console };
+  vm.createContext(sandbox);
+  vm.runInContext(code, sandbox);
+
+  return sandbox.module.exports;
+};
+
 module.exports = {
   ai,
   mtData,
@@ -280,5 +295,6 @@ module.exports = {
   colNumb,
   bdWord,
   afkCencel,
-  afkTgR
+  afkTgR,
+  loadFunc
 };
