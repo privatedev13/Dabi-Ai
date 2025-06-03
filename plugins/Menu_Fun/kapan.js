@@ -1,5 +1,3 @@
-const { when } = require('../../toolkit/function.js');
-
 module.exports = {
   name: 'kapan',
   command: ['kapan yah', 'kapan'],
@@ -14,6 +12,7 @@ module.exports = {
     args
   }) => {
     try {
+      const { when } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
       const kapan = when[Math.floor(Math.random() * when.length)];
 

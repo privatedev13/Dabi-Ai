@@ -1,5 +1,3 @@
-const { cekKuat } = require('../../toolkit/function.js');
-
 module.exports = {
   name: 'Cek kekuatan',
   command: ['cekkekuatan', 'cekkuat'],
@@ -15,6 +13,7 @@ module.exports = {
     args
   }) => {
     try {
+      const { cekKuat } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;

@@ -1,5 +1,3 @@
-const { cekKhodam } = require('../../toolkit/function.js');
-
 module.exports = {
   name: 'CekKhodam',
   command: ['cekkodam', 'cekkhodam'],
@@ -15,23 +13,25 @@ module.exports = {
     args
   }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
+      const { cekKhodam } = await global.loadFunc();
+
+      const { chatId, senderId } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;
 
       const cek = cekKhodam[Math.floor(Math.random() * cekKhodam.length)];
       const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+      const teks2 = `Bentar tak terawang dulu...`;
       const teks = `_Pengecekan Khodam untuk @${mentionTarget}⁩ telah berhasil_!\n\nSetelah melalui penelusuran spiritual yang mendalam, diketahui bahwa Khodam yang mendampingi @${mentionTarget} adalah *${cek}*`;
 
-      const teks2 = `Bentar tak terawang dulu...`;
-
-      conn.sendMessage(chatId, {
+      await conn.sendMessage(chatId, {
         text: teks2,
         mentions: [`${targetId}@s.whatsapp.net`]
       }, { quoted: message });
 
       await delay(3000);
+
       await conn.sendMessage(chatId, {
         text: teks,
         mentions: [`${targetId}@s.whatsapp.net`]
@@ -44,4 +44,4 @@ module.exports = {
       });
     }
   }
-}
+};

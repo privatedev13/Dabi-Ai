@@ -1,5 +1,3 @@
-const { sifatlist } = require('../../toolkit/function.js');
-
 module.exports = {
   name: 'ceksifat',
   command: ['ceksifat'],
@@ -15,6 +13,7 @@ module.exports = {
     args
   }) => {
     try {
+      const { sifatlist } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(message, senderId);
       const mentionTarget = targetId;

@@ -1,5 +1,3 @@
-const { ask } = require('../../toolkit/function.js');
-
 module.exports = {
   name: 'Tanya jawab',
   command: ['apakah', 'Apakah', 'Bukan kah', 'Bukankah', 'Benarkah', 'Benar kah', 'bukan kah', 'bukankah', 'benarkah', 'benar kah'],
@@ -15,6 +13,7 @@ module.exports = {
     args
   }) => {
     try {
+      const { ask } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
       const tanya = ask[Math.floor(Math.random() * ask.length)];
 
