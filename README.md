@@ -1,4 +1,4 @@
-# <div align='center'>BaseBot-WhastApp</div>
+# <div align='center'>Dabi-Ai-WhastApp</div>
 
 <p align="center">
  <img src="https://raw.githubusercontent.com/maoudabi0/Dabi-Ai-Documentation/main/assets/Dabi-Ai.png">
@@ -7,16 +7,16 @@
 - - -
 
 ## Salam
-   Hari yang menyenangkan teman-teman. Kali ini saya akan memberikan sebuah informasi tentang Script BaseBot ini, ini adalah sebuah Script BaseBot/Base Bot WhatsApp,  dalam rangkaian kali ini saya benar-benar berterima kasih kepada kalian yang menggunakan Script ini.
+   Hari yang menyenangkan teman-teman. Kali ini saya akan memberikan sebuah informasi tentang Script Dabi-Ai ini, ini adalah sebuah Script Dabi-Ai/Base Bot WhatsApp,  dalam rangkaian kali ini saya benar-benar berterima kasih kepada kalian yang menggunakan Script ini.
 
-   Tentu saja Script ini bisa terhubung dengan akun/nomor WhatsApp anda, Berikut adalah beberapa spesifikasi tentang Script BaseBot ini:
+   Tentu saja Script ini bisa terhubung dengan akun/nomor WhatsApp anda, Berikut adalah beberapa spesifikasi tentang Script Dabi-Ai ini:
 
 - Suport Termux
 - Ringan
 - Type Plugins
 - Menggunakan Code CJS
 
-[![MaouDabi GitHub](https://github-readme-stats.vercel.app/api?username=maoudabi0\&show_icons=true\&theme=default#gh-light-mode-only)](https://github.com/maoudabi0/BaseBot#responsive-card-theme#gh-light-mode-only)
+[![MaouDabi GitHub](https://github-readme-stats.vercel.app/api?username=maoudabi0\&show_icons=true\&theme=default#gh-light-mode-only)](https://github.com/maoudabi0/Dabi-Ai#responsive-card-theme#gh-light-mode-only)
 
 <br>
 
@@ -53,7 +53,7 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
  5. Repo Clone
 
    ```bash
-   git clone https://github.com/MaouDabi0/BaseBot
+   git clone https://github.com/MaouDabi0/Dabi-Ai
    ```
 
 ## Cara Memasangnya
@@ -83,11 +83,11 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    langkah selanjutnya anda perlu melakukan input promt pada termux dengan mengetik/menyalin ini
    
    ```bash
-   cd BaseBot
+   cd Dabi-Ai
    ```
 
    jika tampilan termux sudah seperti ini<br>
-   `~/BaseBot $`,<br> maka langkah selanjutnya adalah
+   `~/Dabi-Ai $`,<br> maka langkah selanjutnya adalah
 
 2. Node Package Meneger
 
