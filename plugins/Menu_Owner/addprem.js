@@ -18,7 +18,7 @@ module.exports = {
 
       if (args.length < 2) {
         return conn.sendMessage(chatId, {
-          text: `📌 Gunakan format yang benar:\n\n*${prefix}${commandText} @tag 7h*\natau\n*${prefix}${commandText} nomor 7h*`
+          text: `📌 Gunakan format:\n\n*${prefix}${commandText} @tag 7h*\natau\n*${prefix}${commandText} 628xxxx 7h*`
         }, { quoted: message });
       }
 
@@ -29,50 +29,56 @@ module.exports = {
       if (message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
         targetNumber = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
       } else {
-        targetNumber = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        const raw = args[0].replace(/[^0-9]/g, '');
+        if (!raw) return conn.sendMessage(chatId, { text: '❗ Nomor tidak valid!' }, { quoted: message });
+        targetNumber = raw + '@s.whatsapp.net';
       }
 
       const durationInput = args[1];
       const match = durationInput.match(/^(\d+)([hmd])$/);
       if (!match) {
         return conn.sendMessage(chatId, {
-          text: `❗ Format durasi tidak valid! Gunakan format seperti 7h (jam), 1d (hari), atau 30m (menit).`
+          text: `❗ Format durasi salah! Contoh: 7h (jam), 1d (hari), 30m (menit).`
         }, { quoted: message });
       }
 
-      const value = parseInt(match[1]);
-      const unit = match[2];
-
+      const [_, valueStr, unit] = match;
+      const value = parseInt(valueStr);
       let durationMs;
+
       switch (unit) {
-        case 'h': durationMs = value * 60 * 60 * 1000; break;
-        case 'd': durationMs = value * 24 * 60 * 60 * 1000; break;
-        case 'm': durationMs = value * 60 * 1000; break;
+        case 'h': durationMs = value * 3600000; break;
+        case 'd': durationMs = value * 86400000; break;
+        case 'm': durationMs = value * 60000; break;
+        default:
+          return conn.sendMessage(chatId, {
+            text: '❗ Satuan waktu tidak dikenal.'
+          }, { quoted: message });
       }
 
       const userKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === targetNumber);
-
       if (!userKey) {
         return conn.sendMessage(chatId, {
-          text: `❌ Pengguna tidak ada di database!`
+          text: `❌ Pengguna tidak ditemukan di database!`
         }, { quoted: message });
       }
 
       db.Private[userKey].isPremium = {
         isPrem: true,
-        time: durationMs
+        time: durationMs,
+        activatedAt: Date.now()
       };
 
       saveDB(db);
 
       conn.sendMessage(chatId, {
-        text: `✅ Pengguna *${userKey}* (${targetNumber}) telah menjadi *Premium* selama ${value} ${unit === 'h' ? 'jam' : unit === 'd' ? 'hari' : 'menit'}!`
+        text: `✅ *${userKey}* (${targetNumber}) sekarang *Premium* selama ${value} ${unit === 'h' ? 'jam' : unit === 'd' ? 'hari' : 'menit'}.`
       }, { quoted: message });
 
     } catch (error) {
       console.error('Error di plugin addisPrem.js:', error);
       conn.sendMessage(chatId, {
-        text: '⚠️ Terjadi kesalahan saat menambahkan status isPremium!'
+        text: '⚠️ Terjadi kesalahan saat menambahkan status Premium!'
       }, { quoted: message });
     }
   },
