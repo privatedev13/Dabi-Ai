@@ -25,26 +25,23 @@ global.categories = {};
 
 intDB();
 
-let counter = 0;
-
 setInterval(() => {
   const db = readDB();
-  if (counter % 60 === 0) {
-    Object.keys(db.Private).forEach((key) => {
-      const user = db.Private[key];
-      if (user.isPremium?.isPrem && user.isPremium.time > 0) {
+
+  Object.keys(db.Private).forEach((key) => {
+    const user = db.Private[key];
+    if (user.isPremium?.isPrem) {
+      if (user.isPremium.time > 60000) {
         user.isPremium.time -= 60000;
-        if (user.isPremium.time <= 0) {
-          user.isPremium.isPrem = false;
-          user.isPremium.time = 0;
-        }
+      } else {
+        user.isPremium.isPrem = false;
+        user.isPremium.time = 0;
       }
-    });
-  }
+    }
+  });
 
   saveDB(db);
-  counter++;
-}, 1000);
+}, 60000);
 
 const configPath = path.join(__dirname, './toolkit/set/config.json');
 fs.watchFile(configPath, () => {
