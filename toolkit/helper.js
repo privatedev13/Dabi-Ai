@@ -183,15 +183,15 @@ const Format = {
   date: ts => moment(ts * 1000).format('DD-MM-YYYY'),
   uptime: () => {
     const sec = process.uptime();
-    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
-    return `${h}h ${m}m ${s}s`;
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    return `${h}h ${m}m`;
   },
   duration: (start, end) => {
     const dur = end - start;
-    const d = Math.floor(dur / 86400);
-    const h = Math.floor((dur % 86400) / 3600);
-    const m = Math.floor((dur % 3600) / 60);
-    return `${d ? `${d} hari ` : ''}${h ? `${h} jam ` : ''}${m ? `${m} menit` : ''}`.trim();
+    const d = Math.floor(dur / (1000 * 60 * 60 * 24));
+    const h = Math.floor((dur % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((dur % (1000 * 60 * 60)) / (1000 * 60));
+    return `${d ? `${d}H ` : ''}${h ? `${h}J ` : ''}${m ? `${m}M ` : ''}`.trim();
   }
 };
 
