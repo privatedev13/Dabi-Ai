@@ -37,9 +37,9 @@ module.exports = {
 
       let isPremiumText = "Tidak ❌";
       if (user.isPremium?.isPrem) {
-        const now = Math.floor(Date.now() / 1000);
-        const activated = Math.floor((user.isPremium.activatedAt || Date.now()) / 1000);
-        const expired = activated + Math.floor(user.isPremium.time / 1000);
+        const now = Date.now();
+        const activated = user.isPremium.activatedAt || now;
+        const expired = activated + user.isPremium.time;
 
         if (expired > now) {
           const remaining = Format.duration(now, expired);
