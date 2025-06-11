@@ -3,21 +3,22 @@
  * © 2025
  */
 
-const settingModule = require('./toolkit/setting');
+const globalSetting = require('./toolkit/setting');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
 const chalk = require('chalk');
 const readline = require('readline');
-const { makeWASocket, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { isPrefix } = settingModule;
+const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const { isPrefix } = globalSetting;
 const { loadPlug } = require('./toolkit/helper');
+const { set, get, delete: del, reset, memoryCache } = require('./toolkit/transmitter.js');
 
 const logger = pino({ level: 'silent' });
 
 const folderName = 'temp';
 fs.mkdir(folderName, (err) => {
-  if (!err) console.log(chalk.green.bold('Berhasil membuat folder :', folderName));
+  if (!err) console.log(chalk.greenBright.bold('Berhasil membuat folder :', folderName));
 });
 
 global.plugins = {};
@@ -49,7 +50,7 @@ fs.watchFile(configPath, () => {
     delete require.cache[require.resolve(configPath)];
     global.setting = require(configPath);
   } catch (err) {
-    console.error(chalk.red('❌ Gagal memuat ulang config.json:'), err);
+    console.error(chalk.redBright.bold('❌ Gagal memuat ulang config.json:'), err);
   }
 });
 
@@ -95,13 +96,13 @@ const startBot = async () => {
     conn.ev.on('creds.update', saveCreds);
 
     if (!state.creds?.me?.id) {
-      console.log(chalk.blue('📱 Masukkan nomor bot WhatsApp Anda:'));
+      console.log(chalk.blueBright.bold('📱 Masukkan nomor bot WhatsApp Anda:'));
       let phoneNumber = await question('> ');
 
       phoneNumber = await global.calNumber(phoneNumber);
  
       const code = await conn.requestPairingCode(phoneNumber);
-      console.log(chalk.green('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
+      console.log(chalk.greenBright.bold('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
     }
 
     if (!conn.reactionCache) conn.reactionCache = new Map();
@@ -109,12 +110,12 @@ const startBot = async () => {
     conn.ev.on('connection.update', ({ connection }) => {
       const messages = {
         open: () => {
-          console.log(chalk.green.bold('✅ Bot online!'));
+          console.log(chalk.greenBright.bold('✅ Bot online!'));
           global.autoBio && updateBio(conn);
         },
-        connecting: () => console.log(chalk.yellow('🔄 Menghubungkan kembali...')),
+        connecting: () => console.log(chalk.yellowBright.bold('🔄 Menghubungkan kembali...')),
         close: () => {
-          console.log(chalk.red('❌ Koneksi terputus, mencoba menyambung ulang...'));
+          console.log(chalk.redBright.bold('❌ Koneksi terputus, mencoba menyambung ulang...'));
           startBot();
         }
       };
@@ -200,10 +201,10 @@ const startBot = async () => {
         }
       }
 
-      console.log(chalk.yellow.bold(`【 ${displayName} 】:`) + chalk.cyan.bold(` [ ${time} ]`));
-      if (mediaInfo && textMessage) console.log(chalk.white(`  ${mediaInfo} | [ ${textMessage} ]`));
-      else if (mediaInfo) console.log(chalk.white(`  ${mediaInfo}`));
-      else if (textMessage) console.log(chalk.white(`  [ ${textMessage} ]`));
+      console.log(chalk.yellowBright.bold(`【 ${displayName} 】:`) + chalk.cyanBright.bold(` [ ${time} ]`));
+      if (mediaInfo && textMessage) console.log(chalk.whiteBright.bold(`  ${mediaInfo} | [ ${textMessage} ]`));
+      else if (mediaInfo) console.log(chalk.whiteBright.bold(`  ${mediaInfo}`));
+      else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
       if (global.setting?.botSetting?.Mode === 'group' && !isGroup) return;
       if (global.setting?.botSetting?.Mode === 'private' && isGroup) return;
@@ -218,7 +219,7 @@ const startBot = async () => {
       global.lastGreet = global.lastGreet || {};
       const senderNumber = senderId?.split('@')[0];
       if (!senderNumber) {
-        console.error('Gagal mendapatkan nomor pengirim.');
+        console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
         return;
       }
 
@@ -248,9 +249,9 @@ const startBot = async () => {
         await conn.readMessages([message.key]);
       }
 
-      if ((isGroup && global.autoTyping) || (!isGroup && global.autoTyping)) {
+      if (global.autoTyping) {
         await conn.sendPresenceUpdate("composing", chatId);
-        setTimeout(async () => await conn.sendPresenceUpdate("paused", chatId), 3000);
+        setTimeout(() => conn.sendPresenceUpdate("paused", chatId), 3000);
       }
 
       await afkCencel(senderId, chatId, message, conn);
@@ -290,7 +291,7 @@ const startBot = async () => {
             }
 
           } catch (err) {
-            console.log(chalk.red(`❌ Error pada plugin: ${file}\n${err.message}`));
+            console.log(chalk.redBright.bold(`❌ Error pada plugin: ${file}\n${err.message}`));
           }
           break;
         }
@@ -336,19 +337,19 @@ const startBot = async () => {
           }
         }
       } catch (error) {
-        console.error('❌ Error saat kirim pesan masuk/keluar grup:', error);
+        console.error(chalk.redBright.bold('❌ Error saat kirim pesan masuk/keluar grup:', error));
       }
     });
   } catch (error) {
-    console.error(chalk.red('❌ Error saat menjalankan bot:'), error);
+    console.error(chalk.redBright.bold('❌ Error saat menjalankan bot:'), error);
   }
 };
 
-console.log(chalk.cyan.bold('Create By Dabi\n'));
+console.log(chalk.cyanBright.bold('Create By Dabi\n'));
 loadPlug();
 startBot();
 
 let file = require.resolve(__filename);
 fs.watchFile(file, () => {
-  console.log(chalk.yellow(`[PERUBAHAN TERDETEKSI] ${__filename}, harap restart bot manual.`));
+  console.log(chalk.yellowBright.inverse.italic(`[ PERUBAHAN TERDETEKSI ] ${__filename}, harap restart bot manual.`));
 });
