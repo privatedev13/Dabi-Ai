@@ -61,7 +61,6 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 <details>
 <summary>❗ Penting</summary>
 
-> [!Important] 
 > Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui. Jika anda belum mengetahui semua dan masih tidak faham, maka klik link yang ada di [Sini](https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m/906) dan pelajari baik-baik.
 
 </details>
@@ -71,7 +70,6 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 <details>
 <summary>💡 Tip</summary>
 
-> [!Tip]  
 > Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
 
 </details>
