@@ -3,7 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const vm = require('vm');
+const chalk = require('chalk');
 
+const memoryCache = {};
 const groupCache = new Map();
 
 async function mtData(id, conn) {
@@ -16,7 +18,7 @@ async function mtData(id, conn) {
     setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
     return metadata;
   } catch (e) {
-    console.error('Gagal ambil metadata grup:', e);
+    console.error(chalk.redBright.bold('Gagal ambil metadata grup:', e));
     return null;
   }
 }
@@ -57,7 +59,7 @@ async function ai(textMessage, message, senderId) {
     }
     throw new Error("Invalid response");
   } catch (e) {
-    console.error("AI error:", e.message);
+    console.error(chalk.redBright.bold('Ai Error: ', e.message));
     return "Maaf, terjadi kesalahan saat menghubungi AI.";
   }
 }
@@ -285,6 +287,19 @@ const loadFunc = async () => {
   return sandbox.module.exports;
 };
 
+const cache = {
+  set: (key, value) => (memoryCache[key] = value),
+  get: key => memoryCache[key],
+  delete: key => delete memoryCache[key],
+  reset: () => {
+    for (const key in memoryCache) delete memoryCache[key];
+    console.log(chalk.yellowBright.bold(`[ CACHE ] Semua cache dihapus dari memori pada ${new Date().toLocaleString()}`));
+  }
+};
+
+setInterval(cache.reset, 60 * 60 * 1000);
+cache.reset();
+
 module.exports = {
   ai,
   mtData,
@@ -296,5 +311,7 @@ module.exports = {
   bdWord,
   afkCencel,
   afkTgR,
-  loadFunc
+  loadFunc,
+  cache,
+  memoryCache
 };

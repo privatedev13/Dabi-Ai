@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const pluginDir = path.join(__dirname, '../plugins');
 const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
-    console.log(chalk.yellow(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
+    console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
     return;
   }
 
@@ -39,16 +39,16 @@ const loadPlug = () => {
         }
       } catch (err) {
         failed++;
-        errors.push(`❌ Gagal memuat plugin ${file}: ${err.message}`);
+        errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
       }
     }
   }
 
   if (failed === 0) {
-    console.log(chalk.green(`✅ ${loaded} plugin berhasil dimuat.`));
+    console.log(chalk.greenBright.bold(`✅ ${loaded} plugin berhasil dimuat.`));
   } else {
     errors.forEach(msg => console.log(msg));
-    console.log(chalk.yellow(`⚠️ ${loaded} plugin dimuat, ${failed} gagal.`));
+    console.log(chalk.yellowBright.bold(`⚠️ ${loaded} plugin dimuat, ${failed} gagal.`));
   }
 
   return { loaded, errors: failed, messages: errors };
@@ -74,14 +74,14 @@ const readDB = () => {
     const data = fs.readFileSync(dbFile, 'utf-8');
     return data ? JSON.parse(data) : { Private: {}, Grup: {} };
   } catch (error) {
-    console.error('Error membaca database:', error);
+    console.error(chalk.redBright.bold('Error membaca database:', error));
     return { Private: {}, Grup: {} };
   }
 };
 
 const saveDB = (data) => {
   if (typeof data !== 'object' || data === null) {
-    console.error('Data yang disimpan harus berupa objek.');
+    console.error(chalk.redBright.bold('Data yang disimpan harus berupa objek.'));
     return;
   }
   fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
@@ -242,7 +242,7 @@ const updateBio = async conn => {
     try {
       await conn.updateProfileStatus(`${botName} Aktif ${Format.uptime()}`);
     } catch (err) {
-      console.error('❌ Gagal memperbarui bio:', err);
+      console.error(chalk.redBright.bold('❌ Gagal memperbarui bio:', err));
     }
   }, 60000);
 };

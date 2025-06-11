@@ -142,7 +142,7 @@ const writeExifVid = (media, metadata, converted) => writeExif(media, metadata, 
 
 async function generateQuotly(text, name, color = '') {
     try {
-        const url = `https://apizell.web.id/tools/qc?text=${encodeURIComponent(text)}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`;
+        const url = `${global.zellApi}/tools/qc?text=${encodeURIComponent(text)}&name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`;
         const { data } = await axios.get(url, { headers: { Accept: 'application/json' }, timeout: 30000 });
 
         if (!data?.status || !data?.result?.image) {

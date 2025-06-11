@@ -98,6 +98,8 @@ Object.assign(global, {
     zellApi: setting.apiKey.zellApi.web,
     ytKey: setting.apiKey.ytKey.key,
     siptzKey: setting.apiKey.siputKey.web,
+    HamzKey: setting.apiKey.HamzApi.key,
+    HamzWeb: setting.apiKey.HamzApi.web,
 
     ownerStore: {
         dana: setting.ownerSetting.ownerStore?.dana || 'Tidak tersedia',
