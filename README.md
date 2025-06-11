@@ -56,15 +56,25 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    git clone https://github.com/MaouDabi0/Dabi-Ai
    ```
 
-## Cara Memasangnya
+## Cara Pemasangan
 
->  [!Important] 
->  Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui. Jika anda belum mengetahui semua dan masih tidak faham, maka klik link yang ada di [Sini](https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m/906) dan pelajari baik-baik.
+<details>
+<summary>❗ Penting</summary>
+
+> [!Important] 
+> Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui. Jika anda belum mengetahui semua dan masih tidak faham, maka klik link yang ada di [Sini](https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m/906) dan pelajari baik-baik.
+
+</details>
 
   Pada dasarnya, Semua Script Bot WhatsApp mendukung termux, tetapi karena keterbatasan device, akhirnya beberapa **Dev** menyarankan untuk menggunakan Penel/Server.
 
->  [!Tip] 
->  Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
+<details>
+<summary>💡 Tip</summary>
+
+> [!Tip]  
+> Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
+
+</details>
 
 ### <div align='center'>Spesifikasi Yang Di Sarankan</div> 
   Ini adalah spesifikasi device yang saya sarankan untuk menjalankan Bot WhatsApp di Termux: 
@@ -130,12 +140,17 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 
 - - -
 
-## Request & Fix 
-   laporkan Bug ke [sini](https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug)
+<details>
+  <summary>Request & Fix</summary>
+  <p>
+    Laporkan Bug ke <a href="https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug" target="_blank">sini</a>
+  </p>
+</details>
 
-# (C)
+<br>
+
 <div align="left">
     <img src="https://img.shields.io/badge/Realese%3A-2025-0?logoSize=12&labelColor=orange&color=gray" alt="Release Badge">
-    <br>
+    <br><br>
     <img src="https://img.shields.io/badge/Create%3A-Maou_Dabi-0?logoSize=12&label=Create%3A&labelColor=green&color=grey" alt="Create Badge">
 </div>
