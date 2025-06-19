@@ -23,9 +23,9 @@ const readAndDelete = (filePath) => {
     return data;
 };
 
-async function mediaMessage(message, filename, attachExtension = true) {
+async function mediaMessage(msg, filename, attachExtension = true) {
   try {
-    const msgContent = message.message || message;
+    const msgContent = msg.message || {};
     const mediaMsg =
       msgContent.imageMessage ||
       msgContent.videoMessage ||
@@ -180,14 +180,14 @@ async function convertToWebp(buffer) {
     });
 }
 
-async function sendImageAsSticker(conn, chatId, webpBuffer, message) {
+async function sendImageAsSticker(conn, chatId, webpBuffer, msg) {
     try {
         await conn.sendMessage(chatId, {
             sticker: webpBuffer,
             mimetype: "image/webp",
             packname: "Dabi Chan",
             author: "Quoted Sticker"
-        }, { quoted: message });
+        }, { quoted: msg });
     } catch (err) {
         console.error('Error sending sticker:', err);
         throw err;

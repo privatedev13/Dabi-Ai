@@ -34,7 +34,7 @@ function saveSesiAi(session) {
   fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
 }
 
-async function ai(textMessage, message, senderId) {
+async function ai(textMessage, msg, senderId) {
   const ctx = global.logic;
   const url = `${global.siptzKey}/api/ai/gpt3`;
   const ses = loadSesiAi();
@@ -70,7 +70,7 @@ async function gbLink(text) {
   return regex.test(text);
 }
 
-async function gcFilter(conn, message, chatId, senderId, isGroup) {
+async function gcFilter(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
@@ -81,14 +81,14 @@ async function gcFilter(conn, message, chatId, senderId, isGroup) {
     const metadata = await global.mtData(chatId, conn);
     const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
     const botRawId = conn.user?.id || '';
-    const fromMe = senderId === botRawId || message.key.fromMe;
+    const fromMe = senderId === botRawId || msg.key.fromMe;
 
     if (isAdmin || fromMe) return;
 
-    let textMessage = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    const msgType = Object.keys(message.message || {})[0];
+    let textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+    const msgType = Object.keys(msg.message || {})[0];
 
-    const isTagSw = !!message.message?.groupStatusMentionMessage;
+    const isTagSw = !!msg.message?.groupStatusMentionMessage;
 
     if (isTagSw) textMessage = 'Grup ini disebut dalam status';
 
@@ -106,7 +106,7 @@ async function gcFilter(conn, message, chatId, senderId, isGroup) {
       {
         enabled: groupData.gbFilter?.antibot === true,
         condition: (() => {
-          const context = message.message?.contextInfo || {};
+          const context = msg.message?.contextInfo || {};
           const fwdScore = context.forwardingScore || 0;
           const isForwardedFromChannel = !!context.externalAdReply || context.forwardedNewsletterMessage != null;
           const isForwarded = fwdScore > 0 || isForwardedFromChannel;
@@ -129,9 +129,9 @@ async function gcFilter(conn, message, chatId, senderId, isGroup) {
         await conn.sendMessage(chatId, {
           text: `🚫 ${check.reason} dari @${senderId.split('@')[0]}!\nPesan akan dihapus.`,
           mentions: [senderId],
-        }, { quoted: message });
+        }, { quoted: msg });
 
-        await conn.sendMessage(chatId, { delete: message.key });
+        await conn.sendMessage(chatId, { delete: msg.key });
         return true;
       }
     }
@@ -183,7 +183,7 @@ async function colNumb(input) {
   return number;
 }
 
-async function bdWord(conn, message, chatId, senderId, isGroup) {
+async function bdWord(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
@@ -194,7 +194,7 @@ async function bdWord(conn, message, chatId, senderId, isGroup) {
     const metadata = await global.mtData(chatId, conn);
     const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
     const botRawId = conn.user?.id || '';
-    const fromMe = senderId === botRawId || message.key.fromMe;
+    const fromMe = senderId === botRawId || msg.key.fromMe;
 
     if (isAdmin || fromMe) return;
 
@@ -202,10 +202,10 @@ async function bdWord(conn, message, chatId, senderId, isGroup) {
     if (!badwords || badwords.length === 0) return;
 
     const textMsg = (
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      message.message?.imageMessage?.caption ||
-      message.message?.videoMessage?.caption ||
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      msg.message?.imageMessage?.caption ||
+      msg.message?.videoMessage?.caption ||
       ''
     ).toLowerCase();
 
@@ -214,16 +214,16 @@ async function bdWord(conn, message, chatId, senderId, isGroup) {
       await conn.sendMessage(chatId, {
         text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
         mentions: [senderId]
-      }, { quoted: message });
+      }, { quoted: msg });
 
-      await conn.sendMessage(chatId, { delete: message.key });
+      await conn.sendMessage(chatId, { delete: msg.key });
     }
   } catch (err) {
     console.error('Error in bdWord:', err);
   }
 }
 
-async function afkCencel(senderId, chatId, message, conn) {
+async function afkCencel(senderId, chatId, msg, conn) {
   const db = readDB();
   const senderKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === senderId);
   if (!senderKey || !db.Private[senderKey].afk?.afkTime) return;
@@ -241,18 +241,18 @@ async function afkCencel(senderId, chatId, message, conn) {
   await conn.sendMessage(chatId, {
     text: `✅ *Kamu telah kembali dari AFK!*\n⏱️ Durasi: ${waktu}\n📌 Alasan sebelumnya: ${reason}`,
     mentions: [senderId]
-  }, { quoted: message });
+  }, { quoted: msg });
 }
 
-async function afkTgR(message, conn) {
+async function afkTgR(msg, conn) {
   const db = readDB();
   const botNumber = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
-  const { remoteJid: chatId, participant, fromMe } = message.key;
+  const { remoteJid: chatId, participant, fromMe } = msg.key;
   const sender = participant || chatId;
 
   if (fromMe || sender === botNumber) return;
 
-  const ctx = message.message?.extendedTextMessage?.contextInfo || {};
+  const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
   const mentions = ctx.mentionedJid || [];
   const quoted = ctx.participant;
 
@@ -264,7 +264,7 @@ async function afkTgR(message, conn) {
     const text = tagType === 'reply'
       ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`
       : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`;
-    return conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: message });
+    return conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
   };
 
   if (quoted && quoted !== botNumber) return checkAFK(quoted, 'reply');

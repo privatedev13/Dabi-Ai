@@ -3,18 +3,18 @@ const { run: promoteRun } = require('../plugins/Menu_Group/promote');
 const { run: demoteRun } = require('../plugins/Menu_Group/demote');
 const { run: playRun } = require('../plugins/Menu_Download/play');
 
-async function rctKey(message, conn) {
+async function rctKey(msg, conn) {
   try {
-    const reaction = message.message.reactionMessage?.text;
+    const reaction = msg.message.reactionMessage?.text;
     if (!reaction) return;
 
-    const reactedKey = message.message.reactionMessage?.key;
+    const reactedKey = msg.message.reactionMessage?.key;
     if (!reactedKey?.id || !reactedKey?.remoteJid) return;
 
     const chatId = reactedKey.remoteJid;
     const participant = reactedKey.participant;
     const isFromMe = reactedKey.fromMe;
-    const senderId = message.key.participant || message.key.remoteJid;
+    const senderId = msg.key.participant || msg.key.remoteJid;
     const isGroup = chatId.endsWith('@g.us');
     if (!isGroup) return;
 
@@ -90,18 +90,18 @@ async function rctKey(message, conn) {
     }
 
     if (['🔍', '🔎'].includes(reaction)) {
-      const msg = conn.reactionCache?.get(reactedKey.id);
-      if (!msg) return;
+      const Msg = conn.reactionCache?.get(reactedKey.id);
+      if (!Msg) return;
 
       const searchText =
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text ||
-        msg.message?.imageMessage?.caption ||
-        msg.message?.videoMessage?.caption;
+        Msg.message?.conversation ||
+        Msg.message?.extendedTextMessage?.text ||
+        Msg.message?.imageMessage?.caption ||
+        Msg.message?.videoMessage?.caption;
 
       if (!searchText) return;
 
-      await playRun(conn, msg, {
+      await playRun(conn, Msg, {
         chatInfo,
         textMessage: searchText,
         prefix: '.',
@@ -111,20 +111,20 @@ async function rctKey(message, conn) {
     }
 
     if (['🌐', '🌏', '🌍', '🌎'].includes(reaction)) {
-      const msg = conn.reactionCache?.get(reactedKey.id);
-      if (!msg) return;
+      const Msg = conn.reactionCache?.get(reactedKey.id);
+      if (!Msg) return;
 
       const quotedText =
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text ||
-        msg.message?.imageMessage?.caption ||
-        msg.message?.videoMessage?.caption;
+        Msg.message?.conversation ||
+        Msg.message?.extendedTextMessage?.text ||
+        Msg.message?.imageMessage?.caption ||
+        Msg.message?.videoMessage?.caption;
 
       if (!quotedText) return;
-    
+
       const translated = await translate(quotedText, 'id');
       if (translated) {
-        await conn.sendMessage(chatId, { text: `*Translate:* ${translated}` }, { quoted: msg });
+        await conn.sendMessage(chatId, { text: `*Translate:* ${translated}` }, { quoted: Msg });
       }
     }
 
