@@ -7,7 +7,7 @@ module.exports = {
   tags: 'Toko Menu',
   desc: 'Menampilkan toko sewa',
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -20,12 +20,12 @@ module.exports = {
     try {
       tokoData = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
     } catch (err) {
-      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: msg });
     }
 
     const items = tokoData.storeSetting['sewa'];
     if (!items || items.length === 0) {
-      return conn.sendMessage(chatId, { text: "Toko ini belum memiliki barang." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "Toko ini belum memiliki barang." }, { quoted: msg });
     }
 
     const sortedItems = items.sort((a, b) => a.name.localeCompare(b.name));
@@ -38,6 +38,6 @@ module.exports = {
 
 ${head}${Obrack} Daftar sewa ${Cbrack}
 ${itemList}${foot}`
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };
