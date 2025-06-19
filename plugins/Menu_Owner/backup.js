@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,7 +18,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
     const botName = global.botName.replace(/\s+/g, "_");
     const vers = global.version.replace(/\s+/g, ".");
     const zipFileName = `${botName}-${vers}.zip`;
@@ -54,7 +54,7 @@ module.exports = {
         mimetype: "application/zip",
         fileName: zipFileName,
         caption: `📦 *Backup berhasil dibuat!*\nBerikut adalah arsip ZIP dari bot.`
-      }, { quoted: message });
+      }, { quoted: msg });
 
       setTimeout(() => fs.unlinkSync(zipFilePath), 5000);
     } catch (error) {

@@ -11,7 +11,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -20,13 +20,13 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
 
       if (!args.length) {
         return conn.sendMessage(
           chatId,
           { text: "❌ Masukkan nama baru untuk bot!" },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
@@ -36,7 +36,7 @@ module.exports = {
         return conn.sendMessage(
           chatId,
           { text: "⚠️ Config bot tidak ditemukan!" },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
@@ -55,7 +55,7 @@ module.exports = {
       conn.sendMessage(
         chatId,
         { text: `✅ *Nama bot berhasil diubah!*\n📌 Nama baru: *${newName}*` },
-        { quoted: message }
+        { quoted: msg }
       );
 
       setTimeout(() => {
@@ -64,9 +64,9 @@ module.exports = {
     } catch (err) {
       console.error(err);
       conn.sendMessage(
-        message.key.remoteJid,
+        msg.key.remoteJid,
         { text: "⚠️ Terjadi kesalahan saat mengubah nama bot!" },
-        { quoted: message }
+        { quoted: msg }
       );
     }
   }

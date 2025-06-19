@@ -9,7 +9,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,22 +17,22 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
-    const mtype = Object.keys(message.message || {})[0];
+    const mtype = Object.keys(msg.message || {})[0];
     let mediaMessage;
 
     if (mtype === "imageMessage") {
-      mediaMessage = message.message.imageMessage;
+      mediaMessage = msg.message.imageMessage;
     } else if (mtype === "extendedTextMessage" &&
-               message.message.extendedTextMessage.contextInfo?.quotedMessage?.imageMessage) {
-      mediaMessage = message.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage;
+               msg.message.extendedTextMessage.contextInfo?.quotedMessage?.imageMessage) {
+      mediaMessage = msg.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage;
     }
 
     if (!mediaMessage) {
       return conn.sendMessage(chatId, {
         text: `📷 *Cara menggunakan perintah:*\n\nKirim gambar dengan caption atau reply gambar dengan perintah:\n\`${prefix}${commandText}\``
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     try {
@@ -44,10 +44,10 @@ module.exports = {
       }
 
       await conn.updateProfilePicture(conn.user.id, buffer);
-      conn.sendMessage(chatId, { text: "✅ Foto profil bot berhasil diperbarui!" }, { quoted: message });
+      conn.sendMessage(chatId, { text: "✅ Foto profil bot berhasil diperbarui!" }, { quoted: msg });
     } catch (error) {
       console.error(error);
-      conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat memperbarui foto profil bot." }, { quoted: message });
+      conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat memperbarui foto profil bot." }, { quoted: msg });
     }
   }
 };

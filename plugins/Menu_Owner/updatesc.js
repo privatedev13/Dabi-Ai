@@ -11,12 +11,12 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, { chatInfo, args }) => {
+  run: async (conn, msg, { chatInfo, args }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     if (args.length < 2) {
-      return conn.sendMessage(chatId, { text: '⚠️ Contoh penggunaan:\n.update main.js https://github.com/user/repo' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Contoh penggunaan:\n.update main.js https://github.com/user/repo' }, { quoted: msg });
     }
 
     const targetPath = args[0];
@@ -25,11 +25,11 @@ module.exports = {
     const fullFilePath = path.resolve(baseDir, targetPath);
 
     if (!fullFilePath.startsWith(baseDir)) {
-      return conn.sendMessage(chatId, { text: '⚠️ Akses file di luar direktori bot tidak diizinkan!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Akses file di luar direktori bot tidak diizinkan!' }, { quoted: msg });
     }
 
     if (!fs.existsSync(fullFilePath)) {
-      return conn.sendMessage(chatId, { text: '⚠️ File tidak ditemukan di direktori lokal!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ File tidak ditemukan di direktori lokal!' }, { quoted: msg });
     }
 
     const fileName = path.basename(targetPath);
@@ -43,7 +43,7 @@ module.exports = {
 
       https.get(rawUrl, (res) => {
         if (res.statusCode !== 200) {
-          return conn.sendMessage(chatId, { text: `⚠️ Gagal mengunduh file dari GitHub. Status: ${res.statusCode}` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `⚠️ Gagal mengunduh file dari GitHub. Status: ${res.statusCode}` }, { quoted: msg });
         }
 
         let data = '';
@@ -64,19 +64,19 @@ module.exports = {
 
           conn.sendMessage(chatId, {
             text: `✅ File berhasil diperbarui dari GitHub!\n📂 *Path:* ${targetPath}${reloadMessage}`
-          }, { quoted: message });
+          }, { quoted: msg });
 
           await new Promise(r => setTimeout(r, 2000));
-          await conn.sendMessage(chatId, { text: '🔄 Bot akan restart dalam 3 detik...' }, { quoted: message });
+          await conn.sendMessage(chatId, { text: '🔄 Bot akan restart dalam 3 detik...' }, { quoted: msg });
           setTimeout(() => process.exit(1), 3000);
         });
       }).on('error', err => {
         console.error(err);
-        conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mengunduh file!' }, { quoted: message });
+        conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mengunduh file!' }, { quoted: msg });
       });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '⚠️ URL GitHub tidak valid atau struktur salah.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '⚠️ URL GitHub tidak valid atau struktur salah.' }, { quoted: msg });
     }
   }
 };

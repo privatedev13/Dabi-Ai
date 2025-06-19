@@ -6,7 +6,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -14,7 +14,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     let targetGroup = chatId;
 
@@ -23,7 +23,7 @@ module.exports = {
       const groupList = Object.values(groups);
 
       if (!groupList.length) {
-        return conn.sendMessage(chatId, { text: '📌 Bot tidak tergabung dalam grup mana pun.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '📌 Bot tidak tergabung dalam grup mana pun.' }, { quoted: msg });
       }
 
       const input = args[0];
@@ -39,14 +39,14 @@ module.exports = {
       }
 
       if (!selectedGroup) {
-        return conn.sendMessage(chatId, { text: '❌ Grup tidak ditemukan. Gunakan nomor dari perintah *listgc* atau ID grup yang valid.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Grup tidak ditemukan. Gunakan nomor dari perintah *listgc* atau ID grup yang valid.' }, { quoted: msg });
       }
 
       targetGroup = selectedGroup;
     }
 
     if (!targetGroup.endsWith('@g.us')) {
-      return conn.sendMessage(chatId, { text: '❌ ID grup tidak valid!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ ID grup tidak valid!' }, { quoted: msg });
     }
 
     try {
@@ -54,7 +54,7 @@ module.exports = {
       await conn.groupLeave(targetGroup);
     } catch (err) {
       console.error(err);
-      return conn.sendMessage(chatId, { text: '❌ Gagal keluar dari grup. Coba lagi nanti.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal keluar dari grup. Coba lagi nanti.' }, { quoted: msg });
     }
   }
 };

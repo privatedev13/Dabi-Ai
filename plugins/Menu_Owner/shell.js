@@ -8,7 +8,7 @@ module.exports = {
   prefix: false,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,27 +17,27 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
 
       if (args.length === 0) {
-        return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan perintah shell yang valid!' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan perintah shell yang valid!' }, { quoted: msg });
       }
 
       const shellCommand = args.join(' ');
 
       exec(shellCommand, (error, stdout, stderr) => {
         if (error) {
-          return conn.sendMessage(chatId, { text: `❌ *Error:* ${error.message}` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `❌ *Error:* ${error.message}` }, { quoted: msg });
         }
         if (stderr) {
-          return conn.sendMessage(chatId, { text: `⚠️ *Stderr:* ${stderr}` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `⚠️ *Stderr:* ${stderr}` }, { quoted: msg });
         }
-        conn.sendMessage(chatId, { text: `✅ *Output:*\n${stdout || 'Perintah berhasil dijalankan tanpa output.'}` }, { quoted: message });
+        conn.sendMessage(chatId, { text: `✅ *Output:*\n${stdout || 'Perintah berhasil dijalankan tanpa output.'}` }, { quoted: msg });
       });
 
     } catch (error) {
       console.error('Shell Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `❌ *Gagal menjalankan perintah!*\nError: ${error.message}`
       });
     }

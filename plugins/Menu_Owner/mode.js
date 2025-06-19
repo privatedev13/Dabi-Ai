@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,13 +18,13 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const Mode = args[0]?.toLowerCase();
     if (!['group', 'private', 'off'].includes(Mode)) {
       return conn.sendMessage(chatId, {
         text: `⚠️ Mode tidak valid!\n\nContoh penggunaan:\n${prefix}${commandText} group\n${prefix}${commandText} private\n${prefix}off\n\nMode saat ini: *${global.setting?.botSetting?.Mode || 'unknown'}*`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     try {
@@ -33,10 +33,10 @@ module.exports = {
       config.botSetting.Mode = Mode;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-      conn.sendMessage(chatId, { text: `✅ Mode bot berhasil diubah menjadi *${Mode}*.` }, { quoted: message });
+      conn.sendMessage(chatId, { text: `✅ Mode bot berhasil diubah menjadi *${Mode}*.` }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal mengubah mode bot.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '❌ Gagal mengubah mode bot.' }, { quoted: msg });
     }
   }
 };

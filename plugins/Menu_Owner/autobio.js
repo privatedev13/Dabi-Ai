@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-   run: async (conn, message, {
+   run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,11 +18,11 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const option = args[0]?.toLowerCase();
     if (!option || !['on', 'off'].includes(option)) {
-      return conn.sendMessage(chatId, { text: `Gunakan: ${prefix}${commandText} on/off\n\nStatus autobio: ${autoBio}` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Gunakan: ${prefix}${commandText} on/off\n\nStatus autobio: ${autoBio}` }, { quoted: msg });
     }
 
     const status = option === 'on';
@@ -35,13 +35,13 @@ module.exports = {
     try {
       fs.writeFileSync(configPath, JSON.stringify(global.setting, null, 2));
     } catch (e) {
-      return conn.sendMessage(chatId, { text: 'Gagal menyimpan pengaturan ke config.json' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Gagal menyimpan pengaturan ke config.json' }, { quoted: msg });
     }
 
     await conn.sendMessage(
       chatId,
       { text: `Auto Bio telah ${status ? 'diaktifkan' : 'dimatikan'}` },
-      { quoted: message }
+      { quoted: msg }
     );
 
     if (status) global.updateBio?.(conn);

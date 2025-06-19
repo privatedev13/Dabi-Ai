@@ -9,7 +9,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,37 +17,37 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     if (!args.length) {
-      return conn.sendMessage(chatId, { text: '⚠️ Masukkan path file yang ingin diambil!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Masukkan path file yang ingin diambil!' }, { quoted: msg });
     }
 
     const baseDir = path.join(__dirname, '../../');
     const filePath = path.resolve(baseDir, args.join(' '));
 
     if (!filePath.startsWith(baseDir)) {
-      return conn.sendMessage(chatId, { text: '⚠️ Akses file di luar direktori BaseBot tidak diizinkan!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Akses file di luar direktori BaseBot tidak diizinkan!' }, { quoted: msg });
     }
 
     if (!fs.existsSync(filePath) || fs.lstatSync(filePath).isDirectory()) {
-      return conn.sendMessage(chatId, { text: '❌ File tidak ditemukan atau path adalah direktori!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ File tidak ditemukan atau path adalah direktori!' }, { quoted: msg });
     }
 
     try {
       const fileContent = fs.readFileSync(filePath, 'utf8');
       const filePathDisplay = filePath.replace(baseDir + '/', '');
 
-      await conn.sendMessage(chatId, { text: `📄 *Path File:* ${filePathDisplay}` }, { quoted: message });
+      await conn.sendMessage(chatId, { text: `📄 *Path File:* ${filePathDisplay}` }, { quoted: msg });
 
       const maxLength = 4000;
       for (let i = 0; i < fileContent.length; i += maxLength) {
         const chunk = fileContent.slice(i, i + maxLength);
-        await conn.sendMessage(chatId, { text: chunk }, { quoted: message });
+        await conn.sendMessage(chatId, { text: chunk }, { quoted: msg });
       }
     } catch (error) {
       console.error('Terjadi kesalahan saat membaca file:', error);
-      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat membaca file!' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat membaca file!' }, { quoted: msg });
     }
   }
 };

@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,18 +18,18 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const tempDir = path.join(__dirname, '../../temp');
 
     if (!fs.existsSync(tempDir)) {
-      return conn.sendMessage(chatId, { text: '📂 Folder temp tidak ditemukan.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '📂 Folder temp tidak ditemukan.' }, { quoted: msg });
     }
 
     try {
       const files = fs.readdirSync(tempDir);
       if (files.length === 0) {
-        return conn.sendMessage(chatId, { text: '✅ Folder temp sudah bersih.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '✅ Folder temp sudah bersih.' }, { quoted: msg });
       }
 
       files.forEach(file => {
@@ -37,10 +37,10 @@ module.exports = {
         fs.rmSync(filePath, { recursive: true, force: true });
       });
 
-      return conn.sendMessage(chatId, { text: '✅ Semua file dalam folder temp berhasil dihapus.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '✅ Semua file dalam folder temp berhasil dihapus.' }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      return conn.sendMessage(chatId, { text: '❌ Gagal membersihkan folder temp.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal membersihkan folder temp.' }, { quoted: msg });
     }
   }
 };

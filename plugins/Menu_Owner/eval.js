@@ -6,18 +6,18 @@ module.exports = {
   prefix: false,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     commandText,
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const code = args.join(' ').trim();
     if (!code) {
-      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: msg });
     }
 
     try {
@@ -36,7 +36,7 @@ module.exports = {
         const resultText = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
         const output = [logText, resultText].filter(Boolean).join('\n') || '✅ *Kode dijalankan tanpa output.*';
 
-        await conn.sendMessage(chatId, { text: `✅ *Output:*\n\`\`\`${output}\`\`\`` }, { quoted: message });
+        await conn.sendMessage(chatId, { text: `✅ *Output:*\n\`\`\`${output}\`\`\`` }, { quoted: msg });
 
       } else if (commandText === '=>') {
         result = await eval(`(async () => { return (${code}); })()`);
@@ -49,11 +49,11 @@ module.exports = {
         const response = output && output !== 'undefined'
           ? `✅ *Output:*\n\`\`\`${output}\`\`\``
           : '✅ *Kode berhasil dijalankan tanpa output.*';
-        await conn.sendMessage(chatId, { text: response }, { quoted: message });
+        await conn.sendMessage(chatId, { text: response }, { quoted: msg });
       }
 
     } catch (err) {
-      conn.sendMessage(chatId, { text: `❌ *Error:* ${err.message}` }, { quoted: message });
+      conn.sendMessage(chatId, { text: `❌ *Error:* ${err.message}` }, { quoted: msg });
     }
   }
 };

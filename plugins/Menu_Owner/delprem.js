@@ -6,7 +6,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     prefix,
     commandText,
@@ -14,20 +14,20 @@ module.exports = {
   }) => {
     const { chatId } = chatInfo;
     try {
-      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
 
-      if (args.length === 0 && !message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+      if (args.length === 0 && !msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
         return conn.sendMessage(chatId, {
           text: `📌 Gunakan format yang benar:\n\n*${prefix}${commandText} @tag*\natau\n*${prefix}${commandText} nomor*`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       intDB();
       const db = readDB();
 
       let targetNumber;
-      if (message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
-        targetNumber = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+      if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length) {
+        targetNumber = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
       } else {
         targetNumber = args[0].replace(/\D/g, '') + '@s.whatsapp.net';
       }
@@ -37,13 +37,13 @@ module.exports = {
       if (!userKey) {
         return conn.sendMessage(chatId, {
           text: `❌ Pengguna tidak ada di database!`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       if (!db.Private[userKey].isPremium?.isPrem) {
         return conn.sendMessage(chatId, {
           text: `⚠️ Pengguna *${userKey}* tidak memiliki status isPremium.`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       db.Private[userKey].isPremium.isPrem = false;
@@ -53,13 +53,13 @@ module.exports = {
 
       conn.sendMessage(chatId, {
         text: `✅ Status isPremium *${userKey}* telah dihapus.`
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error('Error di plugin delisPrem.js:', error);
       conn.sendMessage(chatId, {
         text: `⚠️ Terjadi kesalahan saat menghapus status isPremium!`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   },
 };

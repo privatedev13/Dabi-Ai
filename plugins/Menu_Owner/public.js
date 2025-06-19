@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -19,13 +19,13 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
 
       if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
         return conn.sendMessage(
           chatId,
           { text: `⚠ Gunakan perintah:\n${prefix}${commandText} on/off\n\nStatus: ${public}` },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
@@ -40,11 +40,11 @@ module.exports = {
       conn.sendMessage(
         chatId,
         { text: `✅ Mode publik telah ${status ? 'diaktifkan' : 'dimatikan'}` },
-        { quoted: message }
+        { quoted: msg }
       );
     } catch (error) {
       console.error('Error mengubah mode publik:', error);
-      conn.sendMessage(chatId, { text: '❌ Terjadi kesalahan!' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '❌ Terjadi kesalahan!' }, { quoted: msg });
     }
   }
 };

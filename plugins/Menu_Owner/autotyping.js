@@ -9,7 +9,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,7 +17,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 
@@ -25,19 +25,19 @@ module.exports = {
     try {
       config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } catch (error) {
-      return conn.sendMessage(chatId, { text: '❌ Gagal membaca konfigurasi bot.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal membaca konfigurasi bot.' }, { quoted: msg });
     }
 
     if (!args[0]) {
       return conn.sendMessage(chatId, {
         text: `🔹 *Status Auto Typing:* ${config.botSetting.autoTyping ? '✅ Aktif' : '❌ Nonaktif'}\n\n➤ *Gunakan:*\n${prefix}${commandText} on/off ➝ Atur Auto Typing`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     let state = args[0].toLowerCase();
 
     if (!['on', 'off'].includes(state)) {
-      return conn.sendMessage(chatId, { text: `❌ Gunakan *on* atau *off*` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `❌ Gunakan *on* atau *off*` }, { quoted: msg });
     }
 
     config.botSetting.autoTyping = state === 'on';
@@ -45,11 +45,11 @@ module.exports = {
     try {
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     } catch (error) {
-      return conn.sendMessage(chatId, { text: '❌ Gagal menyimpan konfigurasi.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal menyimpan konfigurasi.' }, { quoted: msg });
     }
 
     global.autoTyping = config.botSetting.autoTyping;
 
-    conn.sendMessage(chatId, { text: `✅ Auto Typing telah *${state === 'on' ? 'diaktifkan' : 'dinonaktifkan'}*!` }, { quoted: message });
+    conn.sendMessage(chatId, { text: `✅ Auto Typing telah *${state === 'on' ? 'diaktifkan' : 'dinonaktifkan'}*!` }, { quoted: msg });
   }
 };

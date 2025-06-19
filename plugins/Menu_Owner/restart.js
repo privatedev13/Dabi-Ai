@@ -8,7 +8,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -16,11 +16,11 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
-    await cleartemp.run(conn, message, { chatInfo, textMessage, prefix, commandText, args });
+    await cleartemp.run(conn, msg, { chatInfo, textMessage, prefix, commandText, args });
 
-    await conn.sendMessage(chatId, { text: "🔄 Membersihkan folder temp selesai. Bot akan restart dalam 2 detik..." }, { quoted: message });
+    await conn.sendMessage(chatId, { text: "🔄 Membersihkan folder temp selesai. Bot akan restart dalam 2 detik..." }, { quoted: msg });
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 

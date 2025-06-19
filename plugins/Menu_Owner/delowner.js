@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,7 +18,7 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     let config;
     try {
@@ -26,18 +26,18 @@ module.exports = {
       config = JSON.parse(configData);
     } catch (err) {
       console.error('Gagal membaca config:', err);
-      return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: msg });
     }
 
     const rawInput = args.join(' ');
     if (!rawInput) {
-      return conn.sendMessage(chatId, { text: 'Masukkan nomor owner yang ingin dihapus' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Masukkan nomor owner yang ingin dihapus' }, { quoted: msg });
     }
 
     const number = await calNumber(rawInput);
     const index = config.ownerSetting.ownerNumber.indexOf(number);
     if (index === -1) {
-      return conn.sendMessage(chatId, { text: 'Nomor tidak ditemukan dalam daftar owner' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Nomor tidak ditemukan dalam daftar owner' }, { quoted: msg });
     }
 
     config.ownerSetting.ownerNumber.splice(index, 1);
@@ -48,10 +48,10 @@ module.exports = {
       fs.fsyncSync(fd);
       fs.closeSync(fd);
 
-      conn.sendMessage(chatId, { text: `Nomor ${number} telah dihapus dari daftar owner` }, { quoted: message });
+      conn.sendMessage(chatId, { text: `Nomor ${number} telah dihapus dari daftar owner` }, { quoted: msg });
     } catch (err) {
       console.error('Gagal menyimpan config:', err);
-      conn.sendMessage(chatId, { text: 'Gagal menyimpan perubahan ke config.json' }, { quoted: message });
+      conn.sendMessage(chatId, { text: 'Gagal menyimpan perubahan ke config.json' }, { quoted: msg });
     }
   }
 };

@@ -9,7 +9,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,7 +17,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 
@@ -25,7 +25,7 @@ module.exports = {
     try {
       config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } catch (error) {
-      return conn.sendMessage(chatId, { text: '❌ Gagal membaca konfigurasi bot.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal membaca konfigurasi bot.' }, { quoted: msg });
     }
 
     if (!args[0]) {
@@ -37,18 +37,18 @@ module.exports = {
               `${prefix}autoread group on/off\n` +
               `${prefix}autoread private on/off\n\n` +
               `Contoh:\n${prefix}autoread group on\n${prefix}autoread private off`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     let type = args[0].toLowerCase();
     let state = args[1]?.toLowerCase();
 
     if (!['group', 'private'].includes(type)) {
-      return conn.sendMessage(chatId, { text: `❌ Gunakan *${prefix}autoread group on/off* atau *${prefix}autoread private on/off*` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `❌ Gunakan *${prefix}autoread group on/off* atau *${prefix}autoread private on/off*` }, { quoted: msg });
     }
 
     if (!['on', 'off'].includes(state)) {
-      return conn.sendMessage(chatId, { text: `❌ Gunakan *on* atau *off*` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `❌ Gunakan *on* atau *off*` }, { quoted: msg });
     }
 
     config.botSetting.autoread[type] = state === 'on';
@@ -56,12 +56,12 @@ module.exports = {
     try {
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     } catch (error) {
-      return conn.sendMessage(chatId, { text: '❌ Gagal menyimpan konfigurasi.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal menyimpan konfigurasi.' }, { quoted: msg });
     }
 
     global.readGroup = config.botSetting.autoread.group;
     global.readPrivate = config.botSetting.autoread.private;
 
-    conn.sendMessage(chatId, { text: `✅ Auto Read untuk *${type}* telah *${state === 'on' ? 'diaktifkan' : 'dinonaktifkan'}*!` }, { quoted: message });
+    conn.sendMessage(chatId, { text: `✅ Auto Read untuk *${type}* telah *${state === 'on' ? 'diaktifkan' : 'dinonaktifkan'}*!` }, { quoted: msg });
   }
 };

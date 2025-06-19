@@ -10,14 +10,17 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo, 
+    args
+  }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     if (args.length < 1) {
       return conn.sendMessage(chatId, {
         text: '⚠️ Contoh penggunaan:\n.updateall https://github.com/user/repo',
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     const githubUrl = args[0];
@@ -28,7 +31,7 @@ module.exports = {
     try {
       if (fs.existsSync(tempDir)) fs.rmSync(tempDir, { recursive: true, force: true });
 
-      conn.sendMessage(chatId, { text: '📥 Mengkloning repository...' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '📥 Mengkloning repository...' }, { quoted: msg });
 
       execSync(`git clone --depth=1 ${githubUrl} ${tempDir}`);
 
@@ -52,17 +55,17 @@ module.exports = {
 
       copyRecursiveSync(tempDir, baseDir);
 
-      conn.sendMessage(chatId, { text: '✅ Semua file berhasil diperbarui dari GitHub.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '✅ Semua file berhasil diperbarui dari GitHub.' }, { quoted: msg });
 
       fs.rmSync(tempDir, { recursive: true, force: true });
 
       await new Promise(res => setTimeout(res, 2000));
-      conn.sendMessage(chatId, { text: '♻️ Bot akan restart dalam 3 detik...' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '♻️ Bot akan restart dalam 3 detik...' }, { quoted: msg });
       setTimeout(() => process.exit(1), 3000);
 
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat proses update.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat proses update.' }, { quoted: msg });
     }
   }
 };

@@ -15,7 +15,7 @@ module.exports = {
   prefix: true,
   isPremium: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -23,27 +23,27 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, message))) return;
+    if (!(await isPrem(module.exports, conn, msg))) return;
 
     const commandWithPrefix = `${prefix}${commandText}`;
     const broadcastMessage = textMessage.slice(commandWithPrefix.length).trim();
 
     if (!broadcastMessage) {
-      return conn.sendMessage(chatId, { text: `❌ Pesan broadcast tidak boleh kosong! Gunakan format:\n\`${commandWithPrefix} [pesan]\`` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `❌ Pesan broadcast tidak boleh kosong! Gunakan format:\n\`${commandWithPrefix} [pesan]\`` }, { quoted: msg });
     }
 
     if (isBroadcasting) {
-      return conn.sendMessage(chatId, { text: "⏳ Harap tunggu! Anda harus menunggu sebelum menjalankan perintah ini lagi." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "⏳ Harap tunggu! Anda harus menunggu sebelum menjalankan perintah ini lagi." }, { quoted: msg });
     }
 
     const groups = await conn.groupFetchAllParticipating();
     const groupIds = Object.keys(groups);
     if (groupIds.length === 0) {
-      return conn.sendMessage(chatId, { text: "❌ Bot tidak tergabung dalam grup mana pun." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Bot tidak tergabung dalam grup mana pun." }, { quoted: msg });
     }
 
     isBroadcasting = true;
-    conn.sendMessage(chatId, { text: `📢 Mengirim broadcast ke ${groupIds.length} grup...` }, { quoted: message });
+    conn.sendMessage(chatId, { text: `📢 Mengirim broadcast ke ${groupIds.length} grup...` }, { quoted: msg });
 
     let success = 0, failed = 0;
     let failedGroups = [];
@@ -68,7 +68,7 @@ module.exports = {
               newsletterJid: '120363310100263711@newsletter'
             }
           }
-        }, { quoted: message });
+        }, { quoted: msg });
 
         success++;
       } catch {
@@ -85,11 +85,11 @@ module.exports = {
       resultText += `\n\n*Daftar Grup Gagal:*\n${failedGroups.join("\n")}`;
     }
 
-    conn.sendMessage(chatId, { text: resultText }, { quoted: message });
+    conn.sendMessage(chatId, { text: resultText }, { quoted: msg });
 
     setTimeout(() => {
       isBroadcasting = false;
-      conn.sendMessage(chatId, { text: "✅ Perintah broadcast sekarang bisa digunakan lagi." }, { quoted: message });
+      conn.sendMessage(chatId, { text: "✅ Perintah broadcast sekarang bisa digunakan lagi." }, { quoted: msg });
     }, delayTime);
   }
 };

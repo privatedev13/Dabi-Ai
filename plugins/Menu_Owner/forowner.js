@@ -18,7 +18,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -26,35 +26,35 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return
+    if (!(await isOwner(module.exports, conn, msg))) return
 
     if (args[0] === "on") {
       config.ownerSetting.forOwner = true;
       saveConfig(config);
-      return conn.sendMessage(chatId, { text: "✅ Fitur sambutan untuk Owner diaktifkan!" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "✅ Fitur sambutan untuk Owner diaktifkan!" }, { quoted: msg });
 
     } else if (args[0] === "off") {
       config.ownerSetting.forOwner = false;
       saveConfig(config);
-      return conn.sendMessage(chatId, { text: "❌ Fitur sambutan untuk Owner dinonaktifkan!" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Fitur sambutan untuk Owner dinonaktifkan!" }, { quoted: msg });
 
     } else if (args[0] === "set") {
       let forOwnerTeks = textMessage.slice((prefix + commandText + ' set').length).trim();
-      if (!forOwnerTeks) return conn.sendMessage(chatId, { text: `⚠️ Gunakan perintah:\n${prefix}${commandText} set <teks sambutan>` }, { quoted: message });
+      if (!forOwnerTeks) return conn.sendMessage(chatId, { text: `⚠️ Gunakan perintah:\n${prefix}${commandText} set <teks sambutan>` }, { quoted: msg });
 
       config.msg.rejectMsg.forOwnerText = forOwnerTeks;
       saveConfig(config);
-      return conn.sendMessage(chatId, { text: `✅ Pesan sambutan diperbarui:\n\n${forOwnerTeks}` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `✅ Pesan sambutan diperbarui:\n\n${forOwnerTeks}` }, { quoted: msg });
 
     } else if (args[0] === "reset") {
       config.msg.rejectMsg.forOwnerText = "";
       saveConfig(config);
-      return conn.sendMessage(chatId, { text: "✅ Pesan sambutan berhasil direset!" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "✅ Pesan sambutan berhasil direset!" }, { quoted: msg });
 
     } else {
       return conn.sendMessage(chatId, {
         text: `⚙️ Penggunaan:\n${prefix}${commandText} on → Aktifkan sambutan Owner\n${prefix}${commandText} off → Nonaktifkan sambutan Owner\n${prefix}${commandText} set <teks> → Atur teks sambutan\n${prefix}${commandText} reset → Reset teks sambutan`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };
