@@ -247,10 +247,10 @@ const startBot = async () => {
 
       if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) return;
 
-      const mode = global.setting?.botSetting?.Mode;
-      if (mode === 'group' && !isGroup && !isPrem) return;
-      if (mode === 'private' && isGroup && !isPrem) return;
-      if (mode === 'off' && !isPrem) return;
+      if (!isPrem) {
+        if (mode === 'group' && !isGroup) return;
+        if (mode === 'private' && isGroup) return;
+      }
 
       const parsedPrefix = parseMessage(msg, isPrefix);
       const parsedNoPrefix = parseNoPrefix(msg);
