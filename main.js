@@ -69,7 +69,7 @@ const mute = async (chatId, senderId, conn) => {
   return false;
 };
 
-const modePublic = (senderId) => {
+const Public = (senderId) => {
   if (!global.public) {
     const senderNumber = senderId.replace(/\D/g, '');
     return !global.ownerNumber.includes(senderNumber);
@@ -124,24 +124,33 @@ const startBot = async () => {
 
     conn.ev.on('messages.upsert', async ({ messages }) => {
       if (!messages?.length) return;
-      const message = messages[0];
-      if (!message?.message) return;
+      const msg = messages[0];
+      if (!msg?.message) return;
 
-      const msgType = message.message;
+      const msgType = msg.message;
       if (
         msgType?.conversation ||
         msgType?.extendedTextMessage ||
         msgType?.imageMessage ||
         msgType?.videoMessage
       ) {
-        conn.reactionCache.set(message.key.id, message);
-        setTimeout(() => conn.reactionCache.delete(message.key.id), 3 * 60 * 1000);
+        conn.reactionCache.set(msg.key.id, msg);
+        setTimeout(() => conn.reactionCache.delete(msg.key.id), 3 * 60 * 1000);
       }
 
-      const { chatId, isGroup, senderId, pushName } = exCht(message);
+      const { chatId, isGroup, senderId, pushName } = exCht(msg);
       const time = Format.time();
-      let displayName = pushName || 'Pengguna';
 
+      const db = readDB();
+      const userDb = Object.values(db?.Private || {}).find(user => user.Nomor === senderId) || {};
+      const isPrem = userDb.isPremium?.isPrem;
+      const senderNumber = senderId?.split('@')[0];
+      if (!senderNumber) {
+        console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
+        return;
+      }
+
+      let displayName = pushName || 'Pengguna';
       if (isGroup && chatId.endsWith('@g.us')) {
         const metadata = await mtData(chatId, conn);
         displayName = metadata ? `${metadata.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
@@ -152,30 +161,30 @@ const startBot = async () => {
       let textMessage = '';
       let mediaInfo = '';
 
-      if (message.message.groupStatusMentionMessage) {
+      if (msg.message.groupStatusMentionMessage) {
         mediaInfo = '[ Status Grup ]';
         textMessage = 'Grup ini disebut dalam status';
       }
 
-      if (message.message.conversation) {
-        textMessage = message.message.conversation;
-      } else if (message.message.extendedTextMessage?.text) {
-        textMessage = message.message.extendedTextMessage.text;
-      } else if (message.message.imageMessage?.caption) {
-        textMessage = message.message.imageMessage.caption;
-      } else if (message.message.videoMessage?.caption) {
-        textMessage = message.message.videoMessage.caption;
-      } else if (message.message.reactionMessage) {
-        const reactedText = message.message.reactionMessage.text;
+      if (msg.message.conversation) {
+        textMessage = msg.message.conversation;
+      } else if (msg.message.extendedTextMessage?.text) {
+        textMessage = msg.message.extendedTextMessage.text;
+      } else if (msg.message.imageMessage?.caption) {
+        textMessage = msg.message.imageMessage.caption;
+      } else if (msg.message.videoMessage?.caption) {
+        textMessage = msg.message.videoMessage.caption;
+      } else if (msg.message.reactionMessage) {
+        const reactedText = msg.message.reactionMessage.text;
         textMessage = `Memberi reaksi ${reactedText}`;
-      } else if (message.message.protocolMessage?.type === 14) {
+      } else if (msg.message.protocolMessage?.type === 14) {
         textMessage = `Pesan Diedit ${textMessage}`;
-      } else if (message.message.protocolMessage?.type === 0) {
+      } else if (msg.message.protocolMessage?.type === 0) {
         textMessage = 'Pesan Dihapus';
-      } else if (message.message.ephemeralMessage?.message?.conversation) {
-        textMessage = message.message.ephemeralMessage.message.conversation;
-      } else if (message.message.ephemeralMessage?.message?.extendedTextMessage?.text) {
-        textMessage = message.message.ephemeralMessage.message.extendedTextMessage.text;
+      } else if (msg.message.ephemeralMessage?.message?.conversation) {
+        textMessage = msg.message.ephemeralMessage.message.conversation;
+      } else if (msg.message.ephemeralMessage?.message?.extendedTextMessage?.text) {
+        textMessage = msg.message.ephemeralMessage.message.extendedTextMessage.text;
       }
 
       const mediaTypes = {
@@ -194,9 +203,9 @@ const startBot = async () => {
       };
 
       for (const [key, value] of Object.entries(mediaTypes)) {
-        if (message.message[key]) mediaInfo = value;
-        if (key === 'ephemeralMessage' && message.message.ephemeralMessage?.message) {
-          const nestedKey = Object.keys(message.message.ephemeralMessage.message)[0];
+        if (msg.message[key]) mediaInfo = value;
+        if (key === 'ephemeralMessage' && msg.message.ephemeralMessage?.message) {
+          const nestedKey = Object.keys(msg.message.ephemeralMessage.message)[0];
           if (nestedKey && mediaTypes[nestedKey]) mediaInfo = mediaTypes[nestedKey];
         }
       }
@@ -206,23 +215,14 @@ const startBot = async () => {
       else if (mediaInfo) console.log(chalk.whiteBright.bold(`  ${mediaInfo}`));
       else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
-      if (global.setting?.botSetting?.Mode === 'group' && !isGroup) return;
-      if (global.setting?.botSetting?.Mode === 'private' && isGroup) return;
-
-      const flter = await gcFilter(conn, message, chatId, senderId, isGroup);
-      if (flter) return;
-
-      const bd = await bdWrd(conn, message, chatId, senderId, isGroup);
-      if(bd) return;
+      if (await gcFilter(conn, msg, chatId, senderId, isGroup)) return;
+      if (await bdWrd(conn, msg, chatId, senderId, isGroup)) return;
+      if (await mute(chatId, senderId, conn)) return;
+      if (Public(senderId)) return;
+      if (msg.message.reactionMessage) await rctKey(msg, conn);
 
       const { ownerSetting } = setting;
       global.lastGreet = global.lastGreet || {};
-      const senderNumber = senderId?.split('@')[0];
-      if (!senderNumber) {
-        console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
-        return;
-      }
-
       if (
         chatId.endsWith('@g.us') &&
         ownerSetting.forOwner &&
@@ -231,37 +231,29 @@ const startBot = async () => {
       ) {
         global.lastGreet[senderId] = Date.now();
         const greetText = setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
-
-        await conn.sendMessage(chatId, {
-          text: greetText,
-          mentions: [senderId]
-        }, { quoted: message });
-      }
-
-      if (await mute(chatId, senderId, conn)) return;
-      if (modePublic(senderId)) return;
-
-      if (message.message.reactionMessage) {
-        await rctKey(message, conn);
+        await conn.sendMessage(chatId, { text: greetText, mentions: [senderId] }, { quoted: msg });
       }
 
       if ((isGroup && global.readGroup) || (!isGroup && global.readPrivate)) {
-        await conn.readMessages([message.key]);
+        await conn.readMessages([msg.key]);
       }
-
       if (global.autoTyping) {
         await conn.sendPresenceUpdate("composing", chatId);
         setTimeout(() => conn.sendPresenceUpdate("paused", chatId), 3000);
       }
 
-      await afkCencel(senderId, chatId, message, conn);
-      await afkTgR(message, conn);
+      await afkCencel(senderId, chatId, msg, conn);
+      await afkTgR(msg, conn);
 
-      if (await global.chtEmt(textMessage, message, senderId, chatId, conn)) return;
+      if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) return;
 
-      const parsedPrefix = parseMessage(message, isPrefix);
-      const parsedNoPrefix = parseNoPrefix(message);
+      const mode = global.setting?.botSetting?.Mode;
+      if (mode === 'group' && !isGroup && !isPrem) return;
+      if (mode === 'private' && isGroup && !isPrem) return;
+      if (mode === 'off' && !isPrem) return;
 
+      const parsedPrefix = parseMessage(msg, isPrefix);
+      const parsedNoPrefix = parseNoPrefix(msg);
       if (!parsedPrefix && !parsedNoPrefix) return;
 
       const runPlugin = async (parsed, prefixUsed) => {
@@ -279,12 +271,12 @@ const startBot = async () => {
 
           if (!allowRun) continue;
 
+
           try {
-            await plugin.run(conn, message, { ...parsed, isPrefix });
+            await plugin.run(conn, msg, { ...parsed, isPrefix });
 
             const db = readDB();
             const user = getUser(db, sender);
-
             if (user) {
               db.Private[user.key].cmd = (db.Private[user.key].cmd || 0) + 1;
               saveDB(db);
