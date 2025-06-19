@@ -9,7 +9,7 @@ module.exports = {
   desc: 'Mereset sesi AI',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     args,
     prefix,
@@ -30,32 +30,32 @@ module.exports = {
         fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
         return conn.sendMessage(chatId, {
           text: `Sesi AI semua pengguna berhasil direset.`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       if (commandText === 'resetaichat') {
         if (!session[senderId]) {
           return conn.sendMessage(chatId, {
             text: 'Tidak ada sesi AI yang ditemukan untuk kamu.'
-          }, { quoted: message });
+          }, { quoted: msg });
         }
 
         session[senderId] = filterSystemOnly(session[senderId]);
         fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
         return conn.sendMessage(chatId, {
           text: 'Sesi AI kamu berhasil direset.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       return conn.sendMessage(chatId, {
         text: `Gunakan format:\n• ${prefix}resetaichat\n• ${prefix}resetai all`
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (err) {
       console.error(err);
       conn.sendMessage(chatInfo.chatId, {
         text: 'Terjadi kesalahan saat mereset sesi AI.'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

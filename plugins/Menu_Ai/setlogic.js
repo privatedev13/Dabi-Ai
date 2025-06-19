@@ -13,7 +13,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -21,7 +21,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     if (args.length === 0) {
       const config = getConfig();
@@ -30,7 +30,7 @@ module.exports = {
 
       return conn.sendMessage(chatId, {
         text: `⚙️ Gunakan perintah:\n${prefix}${commandText} [teks logika]\n\n📌 Contoh:\n${prefix}${commandText} Ini adalah logika baru.\n\n*Logika saat ini [ ${botName} ]:*\n${currentLogic}`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     const newLogic = args.join(" ");
@@ -40,9 +40,9 @@ module.exports = {
       config.botSetting.logic = newLogic;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-      conn.sendMessage(chatId, { text: `✅ Logika AI berhasil diubah menjadi:\n\n"${newLogic}"` }, { quoted: message });
+      conn.sendMessage(chatId, { text: `✅ Logika AI berhasil diubah menjadi:\n\n"${newLogic}"` }, { quoted: msg });
     } catch (error) {
-      conn.sendMessage(chatId, { text: "⚠️ Terjadi kesalahan saat menyimpan pengaturan!" }, { quoted: message });
+      conn.sendMessage(chatId, { text: "⚠️ Terjadi kesalahan saat menyimpan pengaturan!" }, { quoted: msg });
     }
   }
 };

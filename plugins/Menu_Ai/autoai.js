@@ -9,7 +9,7 @@ module.exports = {
   desc: 'Mengaktifkan atau menonaktifkan ai',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -21,7 +21,7 @@ module.exports = {
       if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
         return conn.sendMessage(chatId, {
           text: `Gunakan format: ${prefix + commandText} <on/off>`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
@@ -32,33 +32,33 @@ module.exports = {
         if (!groupData) {
           return conn.sendMessage(chatId, {
             text: 'Grup ini belum terdaftar dalam database.'
-          }, { quoted: message });
+          }, { quoted: msg });
         }
 
         groupData.autoai = settingValue;
         fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
         return conn.sendMessage(chatId, {
           text: `Fitur Auto-AI untuk grup ini telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
-        }, { quoted: message });
+        }, { quoted: msg });
 
       } else {
         const userKey = Object.keys(db.Private).find(name => db.Private[name].Nomor === senderId);
         if (!userKey) {
           return conn.sendMessage(chatId, {
             text: 'Nomor kamu belum terdaftar dalam database.'
-          }, { quoted: message });
+          }, { quoted: msg });
         }
 
         db.Private[userKey].autoai = settingValue;
         fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
         return conn.sendMessage(chatId, {
           text: `Fitur Auto-AI untuk kamu telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
     } catch (err) {
       console.error(err);
-      conn.sendMessage(message.chatId, { text: 'Terjadi kesalahan saat memproses perintah.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat memproses perintah.' }, { quoted: msg });
     }
   }
 };
