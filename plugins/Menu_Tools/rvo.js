@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   isPremium: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -19,11 +19,11 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, msg))) return;
 
-      const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       if (!quotedMsg) {
-        return conn.sendMessage(chatId, { text: 'Balas ke media (View Once atau biasa) yang mau diambil.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Balas ke media (View Once atau biasa) yang mau diambil.' }, { quoted: msg });
       }
 
       let viewOnce = 
@@ -44,7 +44,11 @@ module.exports = {
         mediaType = 'audio';
         mediaMessage = viewOnce.audioMessage;
       } else {
-        return conn.sendMessage(chatId, { text: 'Media tidak didukung untuk diekstrak.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Media tidak didukung untuk diekstrak.' }, { quoted: msg });
+      }
+
+      if (!mediaMessage?.mediaKey) {
+        return conn.sendMessage(chatId, { text: 'Media pernah dibuka dan tidak dapat diambil lagi.' }, { quoted: msg });
       }
 
       try {
@@ -56,7 +60,7 @@ module.exports = {
         );
 
         if (!buffer) {
-          return conn.sendMessage(chatId, { text: 'Gagal mengunduh media.' }, { quoted: message });
+          return conn.sendMessage(chatId, { text: 'Gagal mengunduh media.' }, { quoted: msg });
         }
 
         const tempDir = path.join(__dirname, '../../temp');
@@ -70,18 +74,18 @@ module.exports = {
         await conn.sendMessage(chatId, {
           [mediaType]: { url: filename },
           caption: caption ? `*Pesan:* ${caption}` : 'Media berhasil diambil.',
-        }, { quoted: message });
+        }, { quoted: msg });
       } catch (error) {
         console.error('Error processing media:', error);
         conn.sendMessage(chatId, { 
           text: `Gagal memproses media: ${error.message || error}` 
-        }, { quoted: message });
+        }, { quoted: msg });
       }
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

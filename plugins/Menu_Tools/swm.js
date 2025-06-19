@@ -8,7 +8,7 @@ module.exports = {
   desc: 'Mengubah watermark stiker',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,12 +18,12 @@ module.exports = {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
       const inputText = args.join(' ').trim();
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const quotedMessage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const stickerMessage = quotedMessage?.stickerMessage;
 
       if (!stickerMessage || !inputText) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           {
             text:
               'Gunakan:\n' +
@@ -31,7 +31,7 @@ module.exports = {
               '- *swn <author>* → Hanya mengubah author\n' +
               'Harus reply ke stiker!',
           },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
@@ -41,9 +41,9 @@ module.exports = {
         if (!media) throw new Error('Media tidak terunduh!');
       } catch (error) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           { text: `❌ Gagal mengunduh stiker! ${error.message}` },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
@@ -64,19 +64,19 @@ module.exports = {
         if (!stickerPath) throw new Error('Exif tidak berhasil ditulis!');
         const stickerBuffer = require('fs').readFileSync(stickerPath);
 
-        await conn.sendMessage(message.key.remoteJid, { sticker: stickerBuffer }, { quoted: message });
+        await conn.sendMessage(msg.key.remoteJid, { sticker: stickerBuffer }, { quoted: msg });
       } catch (error) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           { text: `❌ Gagal membuat stiker! ${error.message}` },
-          { quoted: message }
+          { quoted: msg }
         );
       }
     } catch (error) {
       conn.sendMessage(
-        message.key.remoteJid,
+        msg.key.remoteJid,
         { text: `❌ Terjadi kesalahan! ${error.message}` },
-        { quoted: message }
+        { quoted: msg }
       );
       console.error('❌ Error pada plugin swm/swn:', error);
     }

@@ -10,7 +10,7 @@ module.exports = {
   desc: 'Membuat quoted stiker',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -33,8 +33,8 @@ module.exports = {
       text = rest.join("|").trim();
     }
 
-    if (message.message.extendedTextMessage?.contextInfo?.quotedMessage) {
-      const quoted = message.message.extendedTextMessage.contextInfo;
+    if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
+      const quoted = msg.message.extendedTextMessage.contextInfo;
       const quotedMessage = quoted.quotedMessage;
       const quotedType = Object.keys(quotedMessage)[0];
 
@@ -53,12 +53,12 @@ module.exports = {
       }
     }
 
-    conn.sendMessage(chatId, { react: { text: "🕛", key: message.key } });
+    conn.sendMessage(chatId, { react: { text: "🕛", key: msg.key } });
 
     try {
       const buffer = await generateQuotly(text, pushName || 'User', color);
       const webpBuffer = await convertToWebp(buffer);
-      await sendImageAsSticker(conn, chatId, webpBuffer, message);
+      await sendImageAsSticker(conn, chatId, webpBuffer, msg);
     } catch (error) {
       console.error('Error in quoted sticker creation:', error);
       conn.sendMessage(chatId, { text: "Gagal membuat kutipan." });

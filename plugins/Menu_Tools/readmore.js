@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Membuat teks read more.',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,7 +18,7 @@ module.exports = {
       if (!fullText.includes('|')) {
         return conn.sendMessage(chatId, {
           text: `Format salah!\nGunakan: *${prefix}${commandText} text1 | text2*\nContoh: *${prefix}${commandText} halo | semuanya*`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const [text1, text2] = fullText.split('|').map(v => v.trim());
@@ -26,13 +26,13 @@ module.exports = {
       const readmore = more.repeat(4001);
 
       const result = `${text1} ${readmore} ${text2}`;
-      await conn.sendMessage(chatId, { text: result }, { quoted: message });
+      await conn.sendMessage(chatId, { text: result }, { quoted: msg });
 
     } catch (e) {
       console.error('Error in readmore command:', e);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: 'Terjadi kesalahan saat memproses perintah.'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

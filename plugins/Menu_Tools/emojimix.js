@@ -4,11 +4,11 @@ const { convertToWebp, sendImageAsSticker } = require('../../toolkit/exif');
 module.exports = {
   name: 'emojimix',
   command: ['emojimix', 'mix'],
-  tags: 'Tools',
+  tags: 'Tools Menu',
   desc: 'Gabungkan dua emoji dan kirim sebagai stiker',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     args,
     prefix,
@@ -19,7 +19,7 @@ module.exports = {
     if (args.length < 2) {
       return conn.sendMessage(chatId, {
         text: `Contoh penggunaan:\n${prefix}${commandText} 😹 😎`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     try {
@@ -33,19 +33,19 @@ module.exports = {
       if (!status || !data) {
         return conn.sendMessage(chatId, {
           text: 'Gagal menggabungkan emoji. Coba gunakan kombinasi emoji yang lain.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const imageBuffer = (await axios.get(data, { responseType: 'arraybuffer' })).data;
       const webpBuffer = await convertToWebp(imageBuffer);
 
-      await sendImageAsSticker(conn, chatId, webpBuffer, message);
+      await sendImageAsSticker(conn, chatId, webpBuffer, msg);
 
     } catch (err) {
       console.error('Error emojimix:', err);
       conn.sendMessage(chatId, {
         text: 'Terjadi kesalahan saat memproses permintaan.'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

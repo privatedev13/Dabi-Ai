@@ -8,7 +8,7 @@ module.exports = {
   desc: 'Membuat sticker',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,36 +17,36 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-      const isImage = quotedMessage?.imageMessage || message.message?.imageMessage;
-      const isVideo = quotedMessage?.videoMessage || message.message?.videoMessage;
+      const quotedMessage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const isImage = quotedMessage?.imageMessage || msg.message?.imageMessage;
+      const isVideo = quotedMessage?.videoMessage || msg.message?.videoMessage;
 
       if (!isImage && !isVideo) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           {
             text: `Balas gambar/video dengan caption *${prefix}s*, *${prefix}stiker*, atau *${prefix}sticker* ` +
                   `atau kirim langsung media dengan caption yang sama!`,
           },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
       let media;
       try {
-        media = await downloadMediaMessage({ message: quotedMessage || message.message }, 'buffer', {});
+        media = await downloadMediaMessage({ message: quotedMessage || msg.message }, 'buffer', {});
         if (!media) throw new Error('Media tidak terunduh!');
       } catch (error) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           { text: `❌ Gagal mengunduh media! ${error.message}` },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
       const metadata = {
         packname: footer,
-        author: message.pushName
+        author: msg.pushName
       };
 
       let stickerPath;
@@ -58,19 +58,19 @@ module.exports = {
         if (!stickerPath) throw new Error('Gagal membuat stiker!');
       } catch (error) {
         return conn.sendMessage(
-          message.key.remoteJid,
+          msg.key.remoteJid,
           { text: `❌ Gagal membuat stiker! ${error.message}` },
-          { quoted: message }
+          { quoted: msg }
         );
       }
 
       const stickerBuffer = require('fs').readFileSync(stickerPath);
-      await conn.sendMessage(message.key.remoteJid, { sticker: stickerBuffer }, { quoted: message });
+      await conn.sendMessage(msg.key.remoteJid, { sticker: stickerBuffer }, { quoted: msg });
     } catch (error) {
       conn.sendMessage(
-        message.key.remoteJid,
+        msg.key.remoteJid,
         { text: `❌ Terjadi kesalahan saat membuat stiker, coba lagi! ${error.message}` },
-        { quoted: message }
+        { quoted: msg }
       );
       console.error('❌ Error pada plugin stiker:', error);
     }

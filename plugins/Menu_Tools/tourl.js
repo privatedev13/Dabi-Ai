@@ -11,17 +11,13 @@ module.exports = {
   desc: 'Mengubah media menjadi URL.',
   prefix: true,
 
-  run: async (conn, message, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
+  run: async (conn, msg, {
+    chatInfo
   }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
-      const quoted = message.quoted;
-      const targetMsg = quoted || message;
+      const { chatId } = chatInfo;
+      const quoted = msg.quoted;
+      const targetMsg = quoted || msg;
 
       const mime =
         quoted?.mimetype ||
@@ -30,7 +26,7 @@ module.exports = {
         '';
 
       if (!/image|video/.test(mime)) {
-        return conn.sendMessage(chatId, { text: 'Reply atau kirim gambar/video dengan caption *.tourl*' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '⚠️ Balas atau kirim gambar/video dengan caption *.tourl*' }, { quoted: msg });
       }
 
       const buffer = await downloadMediaMessage(targetMsg, 'buffer', {}, {
@@ -55,13 +51,13 @@ module.exports = {
       fs.unlinkSync(tempPath);
 
       if (res.data && typeof res.data === 'string' && res.data.startsWith('https://')) {
-        return conn.sendMessage(chatId, { text: `✅ URL:\n${res.data}` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `✅ URL:\n${res.data}` }, { quoted: msg });
       } else {
         throw new Error('Gagal mengupload ke Catbox');
       }
     } catch (e) {
-      console.error(e);
-      conn.sendMessage(message.key.remoteJid, { text: '❌ Terjadi kesalahan saat mengupload media.' }, { quoted: message });
+      console.error('[ERROR] tourl:', e);
+      return conn.sendMessage(msg.key.remoteJid, { text: '❌ Terjadi kesalahan saat mengupload media.' }, { quoted: msg });
     }
   }
 };

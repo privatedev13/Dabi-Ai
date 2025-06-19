@@ -10,7 +10,7 @@ module.exports = {
   desc: 'Membuat stiker brat',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -21,15 +21,15 @@ module.exports = {
     if (!args.length) {
       return conn.sendMessage(chatId, { 
         text: `Masukkan teks untuk ${commandText === "bratvid" ? "Brat Video" : "Brat Sticker"}!` 
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     const isVideo = commandText === "bratvid";
     const baseUrl = isVideo 
-      ? "https://api.hamsoffc.me/tools/bratvid"
-      : "https://api.hamsoffc.me/tools/brat";
+      ? `${global.HamzWeb}/tools/bratvid`
+      : `${global.HamzWeb}/tools/brat`;
     
-    const bratUrl = `${baseUrl}?apikey=DabiKey&text=${encodeURIComponent(args.join(" "))}`;
+    const bratUrl = `${baseUrl}?apikey=${global.HamzKey}&text=${encodeURIComponent(args.join(" "))}`;
 
     try {
       const response = await axios.get(bratUrl, { 
@@ -41,7 +41,7 @@ module.exports = {
       });
 
       if (!response.data) {
-        return conn.sendMessage(chatId, { text: `Gagal mengambil ${isVideo ? "Brat Video" : "Brat Sticker"}. Coba lagi nanti.` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `Gagal mengambil ${isVideo ? "Brat Video" : "Brat Sticker"}. Coba lagi nanti.` }, { quoted: msg });
       }
 
       const inputExt = isVideo ? "mp4" : "png";
@@ -58,11 +58,11 @@ module.exports = {
           console.error("Error converting to WebP:", error);
           return conn.sendMessage(chatId, { 
             text: `Gagal mengubah ${isVideo ? "video" : "gambar"} ke stiker.` 
-          }, { quoted: message });
+          }, { quoted: msg });
         }
 
         const stickerBuffer = fs.readFileSync(outputPath);
-        await conn.sendMessage(chatId, { sticker: stickerBuffer }, { quoted: message });
+        await conn.sendMessage(chatId, { sticker: stickerBuffer }, { quoted: msg });
 
         fs.unlinkSync(inputPath);
         fs.unlinkSync(outputPath);
@@ -72,7 +72,7 @@ module.exports = {
       console.error(`Error fetching ${isVideo ? "Brat Video" : "Brat Sticker"}:`, error);
       await conn.sendMessage(chatId, { 
         text: `Gagal mengambil ${isVideo ? "Brat Video" : "Brat Sticker"}. Coba lagi nanti.` 
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };
