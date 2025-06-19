@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengatur fitur anti badword dalam grup',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     prefix,
     commandText,
@@ -14,7 +14,7 @@ module.exports = {
     const { chatId, senderId, isGroup } = chatInfo;
 
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
     }
 
     const db = readDB();
@@ -22,16 +22,16 @@ module.exports = {
     if (!groupData) {
       return conn.sendMessage(chatId, {
         text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar."
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
     if (!userAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
     }
 
     if (!botAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
     }
 
     const input = args[0]?.toLowerCase();
@@ -47,7 +47,7 @@ module.exports = {
 ${prefix}${commandText} <on/off>
 ${prefix}${commandText} set <kata>
 ${prefix}${commandText} reset`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     switch (input) {
@@ -57,32 +57,32 @@ ${prefix}${commandText} reset`
         saveDB(db);
         return conn.sendMessage(chatId, {
           text: `✅ Fitur antibadword berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
-        }, { quoted: message });
+        }, { quoted: msg });
 
       case 'set':
         if (!args[1]) {
-          return conn.sendMessage(chatId, { text: `❌ Masukkan kata yang ingin ditambahkan.` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `❌ Masukkan kata yang ingin ditambahkan.` }, { quoted: msg });
         }
         const newWord = args.slice(1).join(' ').toLowerCase();
         let current = groupData.antibadword.badwordText || '';
         const currentWords = current.split(',').filter(Boolean).map(w => w.trim());
         if (currentWords.includes(newWord)) {
-          return conn.sendMessage(chatId, { text: `❌ Kata "${newWord}" sudah ada di daftar.` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `❌ Kata "${newWord}" sudah ada di daftar.` }, { quoted: msg });
         }
         currentWords.push(newWord);
         groupData.antibadword.badwordText = currentWords.join(', ');
         saveDB(db);
-        return conn.sendMessage(chatId, { text: `✅ Kata "${newWord}" berhasil ditambahkan ke daftar badword.` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `✅ Kata "${newWord}" berhasil ditambahkan ke daftar badword.` }, { quoted: msg });
 
       case 'reset':
         groupData.antibadword.badwordText = '';
         saveDB(db);
-        return conn.sendMessage(chatId, { text: `✅ Daftar badword berhasil direset.` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `✅ Daftar badword berhasil direset.` }, { quoted: msg });
 
       default:
         return conn.sendMessage(chatId, {
           text: `❌ Perintah tidak dikenal.\nGunakan:\n${prefix}${commandText} <on/off>\n${prefix}${commandText} set <kata>\n${prefix}${commandText} reset`
-        }, { quoted: message });
+        }, { quoted: msg });
     }
   }
 };

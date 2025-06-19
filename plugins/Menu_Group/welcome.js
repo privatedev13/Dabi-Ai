@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengatur fitur welcome di grup',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -16,18 +16,18 @@ module.exports = {
       const { chatId, senderId, isGroup } = chatInfo;
 
       if (!isGroup)
-        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg });
 
       const db = readDB();
       const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
       if (!groupData)
         return conn.sendMessage(chatId, {
           text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar."
-        }, { quoted: message });
+        }, { quoted: msg });
 
       const { userAdmin } = await stGrup(conn, chatId, senderId);
       if (!userAdmin)
-        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
 
       const sub = args[0]?.toLowerCase();
 
@@ -37,19 +37,19 @@ module.exports = {
       if (sub === "on") {
         groupData.gbFilter.Welcome.welcome = true;
         saveDB(db);
-        return conn.sendMessage(chatId, { text: "✅ Fitur welcome diaktifkan!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "✅ Fitur welcome diaktifkan!" }, { quoted: msg });
 
       } else if (sub === "off") {
         groupData.gbFilter.Welcome.welcome = false;
         saveDB(db);
-        return conn.sendMessage(chatId, { text: "❌ Fitur welcome dinonaktifkan!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Fitur welcome dinonaktifkan!" }, { quoted: msg });
 
       } else if (sub === "set") {
         let welcomeText = textMessage.replace(`${prefix}welcome set`, "").trim();
         if (!welcomeText)
           return conn.sendMessage(chatId, {
             text: "⚠️ Gunakan perintah:\n.welcome set <teks selamat datang>"
-          }, { quoted: message });
+          }, { quoted: msg });
 
         groupData.gbFilter.Welcome.welcome = true;
         groupData.gbFilter.Welcome.welcomeText = welcomeText;
@@ -57,19 +57,19 @@ module.exports = {
 
         return conn.sendMessage(chatId, {
           text: `✅ Pesan selamat datang diperbarui:\n\n${welcomeText}`
-        }, { quoted: message });
+        }, { quoted: msg });
 
       } else {
         return conn.sendMessage(chatId, {
           text: `⚙️ Penggunaan:\n${prefix}welcome on → Aktifkan welcome\n${prefix}welcome off → Nonaktifkan welcome\n${prefix}welcome set <teks> → Atur teks welcome`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
     } catch (error) {
       console.error('Error:', error);
       return conn.sendMessage(chatId, {
         text: `Error: ${error.message || error}`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

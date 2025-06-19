@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengatur fitur pesan keluar grup',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -15,18 +15,18 @@ module.exports = {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
       if (!isGroup)
-        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg });
 
       const db = readDB();
       const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
       if (!groupData)
         return conn.sendMessage(chatId, {
           text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar."
-        }, { quoted: message });
+        }, { quoted: msg });
 
       const { userAdmin } = await stGrup(conn, chatId, senderId);
       if (!userAdmin)
-        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
 
       const sub = args[0]?.toLowerCase();
 
@@ -36,19 +36,19 @@ module.exports = {
       if (sub === "on") {
         groupData.gbFilter.Left.gcLeft = true;
         saveDB(db);
-        return conn.sendMessage(chatId, { text: "✅ Fitur pesan keluar diaktifkan!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "✅ Fitur pesan keluar diaktifkan!" }, { quoted: msg });
 
       } else if (sub === "off") {
         groupData.gbFilter.Left.gcLeft = false;
         saveDB(db);
-        return conn.sendMessage(chatId, { text: "❌ Fitur pesan keluar dinonaktifkan!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Fitur pesan keluar dinonaktifkan!" }, { quoted: msg });
 
       } else if (sub === "set") {
         let leftText = textMessage.replace(`${prefix}${commandText} set`, "").trim();
         if (!leftText)
           return conn.sendMessage(chatId, {
             text: "⚠️ Gunakan perintah:\n.left set <teks selamat tinggal>"
-          }, { quoted: message });
+          }, { quoted: msg });
 
         groupData.gbFilter.Left.gcLeft = true;
         groupData.gbFilter.Left.leftText = leftText;
@@ -56,7 +56,7 @@ module.exports = {
 
         return conn.sendMessage(chatId, {
           text: `✅ Pesan selamat tinggal diperbarui:\n\n${leftText}`
-        }, { quoted: message });
+        }, { quoted: msg });
 
       } else if (sub === "restart") {
         const defaultText = "👋 Selamat tinggal @user!";
@@ -64,19 +64,19 @@ module.exports = {
         groupData.gbFilter.Left.leftText = defaultText;
         saveDB(db);
 
-        return conn.sendMessage(chatId, { text: "✅ Pesan selamat tinggal direset ke default!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "✅ Pesan selamat tinggal direset ke default!" }, { quoted: msg });
 
       } else {
         return conn.sendMessage(chatId, {
           text: `⚙️ Penggunaan:\n${prefix}${commandText} on → Aktifkan pesan keluar\n${prefix}${commandText} off → Nonaktifkan pesan keluar\n${prefix}${commandText} set <teks> → Atur teks pesan keluar\n${prefix}${commandText} restart → Reset teks pesan keluar ke default`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
     } catch (error) {
       console.error('Error:', error);
       conn.sendMessage(chatId, {
         text: `Error: ${error.message || error}`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

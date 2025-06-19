@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Turunkan admin grup menjadi anggota',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -14,24 +14,24 @@ module.exports = {
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
-    if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
-    if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+    if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
+    if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
 
-    const targetId = target(message, senderId);
+    const targetId = target(msg, senderId);
     if (!targetId || targetId === senderId.replace(/@s\.whatsapp\.net$/, '')) {
       return conn.sendMessage(chatId, {
         text: `⚠️ Harap mention atau reply admin yang ingin diturunkan!\nContoh: ${prefix}demote @user`,
         mentions: []
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     const metadata = await mtData(chatId, conn);
     if (!metadata) {
-      return conn.sendMessage(chatId, { text: '❌ Gagal mengambil metadata grup.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Gagal mengambil metadata grup.' }, { quoted: msg });
     }
 
     const fullTargetId = `${targetId.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
@@ -44,7 +44,7 @@ module.exports = {
       return conn.sendMessage(chatId, {
         text: `❌ @${targetId} bukan admin grup!`,
         mentions: [fullTargetId]
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     try {
@@ -58,12 +58,12 @@ module.exports = {
       conn.sendMessage(chatId, {
         text: `✅ Berhasil menurunkan @${targetId} dari admin grup!`,
         mentions: [fullTargetId]
-      }, { quoted: message });
+      }, { quoted: msg });
     } catch (err) {
       console.error('Error saat demote:', err);
       conn.sendMessage(chatId, {
         text: '❌ Gagal menurunkan admin. Pastikan bot adalah admin dan ID yang dimaksud valid.'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

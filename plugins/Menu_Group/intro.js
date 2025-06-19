@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengirimkan intro grup',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,31 +18,31 @@ module.exports = {
       if (!isGroup) {
         return conn.sendMessage(chatId, {
           text: '⚠️ Perintah ini hanya dapat digunakan di grup.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       if (!enGcW(chatId)) {
         return conn.sendMessage(chatId, {
           text: '❌ Grup ini tidak terdaftar atau fitur welcome tidak aktif.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const welcomeText = getWlcTxt(chatId);
       if (!welcomeText || welcomeText.trim() === '' || welcomeText.includes('Selamat datang @user')) {
         return conn.sendMessage(chatId, {
           text: '⚠️ Pesan welcome belum diatur.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       await conn.sendMessage(chatId, {
         text: welcomeText
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error('Error di plugin intro.js:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: '⚠️ Terjadi kesalahan saat mengirim pesan intro!'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   },
 };

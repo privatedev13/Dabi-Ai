@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Menghapus pesan pengguna di group',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -15,16 +15,16 @@ module.exports = {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
       if (!isGroup) {
-        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: msg });
       }
 
-      const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+      const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
       const quotedMessage = contextInfo?.quotedMessage;
       const quotedKey = contextInfo?.stanzaId;
       const quotedSender = contextInfo?.participant;
 
       if (!quotedMessage || !quotedKey || !quotedSender) {
-        return conn.sendMessage(chatId, { text: "❌ Harap kutip pesan yang ingin dihapus!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Harap kutip pesan yang ingin dihapus!" }, { quoted: msg });
       }
 
       const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net';
@@ -33,11 +33,11 @@ module.exports = {
       const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
       if (!isQuotedFromBot && !userAdmin) {
-        return conn.sendMessage(chatId, { text: '❌ Kamu bukan admin dan hanya bisa menghapus pesan dari bot.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Kamu bukan admin dan hanya bisa menghapus pesan dari bot.' }, { quoted: msg });
       }
 
       if (!isQuotedFromBot && !botAdmin) {
-        return conn.sendMessage(chatId, { text: '❌ Bot bukan admin, tidak bisa menghapus pesan pengguna lain.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Bot bukan admin, tidak bisa menghapus pesan pengguna lain.' }, { quoted: msg });
       }
 
       await conn.sendMessage(chatId, {
@@ -51,7 +51,7 @@ module.exports = {
 
     } catch (error) {
       console.error('Delete command error:', error);
-      conn.sendMessage(message.key.remoteJid, { text: "⚠️ Gagal menghapus pesan." }, { quoted: message });
+      conn.sendMessage(msg.key.remoteJid, { text: "⚠️ Gagal menghapus pesan." }, { quoted: msg });
     }
   }
 };

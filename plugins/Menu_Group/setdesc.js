@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengatur deskripsi group',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -14,31 +14,31 @@ module.exports = {
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
     if (!userAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
     }
 
     if (!botAdmin) {
-    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
     }
 
     const description = args.join(' ');
     if (!description) {
-      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan deskripsi grup setelah perintah!' }, { quoted: message }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan deskripsi grup setelah perintah!' }, { quoted: msg }, { quoted: msg });
     }
 
     try {
       await conn.groupUpdateDescription(chatId, description);
 
-      conn.sendMessage(chatId, { text: `✅ Deskripsi grup berhasil diperbarui menjadi:\n${description}` }, { quoted: message }, { quoted: message });
+      conn.sendMessage(chatId, { text: `✅ Deskripsi grup berhasil diperbarui menjadi:\n${description}` }, { quoted: msg }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal memperbarui deskripsi grup.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '❌ Gagal memperbarui deskripsi grup.' }, { quoted: msg });
     }
   }
 };

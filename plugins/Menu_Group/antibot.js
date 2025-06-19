@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengaktifkan atau menonaktifkan filter antibot',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -15,30 +15,30 @@ module.exports = {
     const { chatId, senderId, isGroup } = chatInfo;
 
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
     }
 
     const db = readDB();
     const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
     if (!groupData) {
-      return conn.sendMessage(chatId, { text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
     if (!userAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
     }
 
     if (!botAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
     }
 
     const input = args[0]?.toLowerCase();
     if (!input || !['on', 'off'].includes(input)) {
       return conn.sendMessage(chatId, {
         text: `Penggunaan: ${prefix}${commandText} <on/off>`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
 
     groupData.gbFilter = groupData.gbFilter || {};
@@ -48,6 +48,6 @@ module.exports = {
 
     return conn.sendMessage(chatId, {
       text: `✅ Fitur antibot berhasil di-${input === 'on' ? 'aktifkan' : 'nonaktifkan'}.`
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };

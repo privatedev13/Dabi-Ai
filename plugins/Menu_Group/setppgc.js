@@ -10,7 +10,7 @@ module.exports = {
   desc: 'Mengatur foto profil group',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -19,22 +19,22 @@ module.exports = {
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
 
     if (!userAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
     }
 
     if (!botAdmin) {
-    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: message });
+    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
     }
 
-    const quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     if (!quoted || !quoted.imageMessage) {
-      return conn.sendMessage(chatId, { text: '⚠️ Balas gambar dengan perintah *setppgc* untuk mengubah foto grup.' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: '⚠️ Balas gambar dengan perintah *setppgc* untuk mengubah foto grup.' }, { quoted: msg });
     }
 
     try {
@@ -55,10 +55,10 @@ module.exports = {
 
       fs.unlinkSync(tempFilePath);
 
-      conn.sendMessage(chatId, { text: '✅ Foto profil grup berhasil diperbarui!' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '✅ Foto profil grup berhasil diperbarui!' }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal mengubah foto grup. Pastikan gambar yang dikirim tidak bermasalah.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '❌ Gagal mengubah foto grup. Pastikan gambar yang dikirim tidak bermasalah.' }, { quoted: msg });
     }
   }
 };
