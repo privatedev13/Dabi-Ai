@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Tag 10 anggota grup secara acak sebagai yapping',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -14,16 +14,22 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      const targetId = target(message, senderId);
+      const targetId = target(msg, senderId);
       const mentionTarget = targetId;
 
       if (!isGroup) {
         return await conn.sendMessage(chatId, {
           text: 'Perintah ini hanya bisa digunakan di grup.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
-      const metadata = await conn.groupMetadata(chatId);
+      const metadata = await mtData(chatId, conn);
+      if (!metadata) {
+        return await conn.sendMessage(chatId, {
+          text: 'Gagal mengambil metadata grup.'
+        }, { quoted: msg });
+      }
+
       const participants = metadata.participants
         .filter(p => !p.id.includes('g.us'))
         .map(p => p.id);
@@ -31,7 +37,7 @@ module.exports = {
       if (participants.length < 1) {
         return await conn.sendMessage(chatId, {
           text: 'Tidak ada peserta untuk di-tag.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const shuffled = participants.sort(() => 0.5 - Math.random());
@@ -46,13 +52,13 @@ module.exports = {
       await conn.sendMessage(chatId, {
         text: teks,
         mentions: topYapping
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (e) {
       console.error('Error di plugin topyapping:', e);
-      await conn.sendMessage(chatId, {
+      await conn.sendMessage(msg.chatId || msg.key.remoteJid, {
         text: 'Terjadi kesalahan saat menjalankan perintah.'
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

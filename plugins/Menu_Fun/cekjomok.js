@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Cek seberapa jomok seseorang',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -13,7 +13,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId } = chatInfo;
-    let targetId = target(message, senderId);
+    let targetId = target(msg, senderId);
     const tagJid = `${targetId}@s.whatsapp.net`;
     const persentase = Math.floor(Math.random() * 101);
 
@@ -29,6 +29,6 @@ module.exports = {
     await conn.sendMessage(chatId, {
       text: teks,
       mentions: [tagJid]
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };

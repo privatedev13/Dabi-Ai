@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Bertanya kepada bot',
   prefix: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,13 +17,13 @@ module.exports = {
       const { chatId, senderId, isGroup } = chatInfo;
       const tanya = ask[Math.floor(Math.random() * ask.length)];
 
-      await conn.sendMessage(chatId, { text: tanya }, { quoted: message });
+      await conn.sendMessage(chatId, { text: tanya }, { quoted: msg });
 
     } catch (error) {
       console.error('Error:', error);
-      await conn.sendMessage(message.key.remoteJid, {
+      await conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

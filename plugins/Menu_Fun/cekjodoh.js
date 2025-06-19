@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Cek jodoh antara dua orang secara random.',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -13,14 +13,16 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di grup.' }, { quoted: message });
+    if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di grup.' }, { quoted: msg });
 
-    const groupMetadata = await conn.groupMetadata(chatId);
+    const groupMetadata = await mtData(chatId, conn);
+    if (!groupMetadata) return conn.sendMessage(chatId, { text: 'Gagal mengambil metadata grup.' }, { quoted: msg });
+
     const participants = groupMetadata.participants.map(p => p.id).filter(id => id !== conn.user.id);
 
     let target1, target2;
-    const mentionedJid = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    const quotedParticipant = message.message?.extendedTextMessage?.contextInfo?.participant;
+    const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant;
 
     if (mentionedJid.length >= 2) {
       target1 = mentionedJid[0];
@@ -44,6 +46,6 @@ module.exports = {
     await conn.sendMessage(chatId, {
       text: `*Cek Jodoh*\n@${target1.split('@')[0]} ❤️ @${target2.split('@')[0]}\n*${persen}%*`,
       mentions: [target1, target2]
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };

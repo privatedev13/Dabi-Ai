@@ -7,7 +7,7 @@ module.exports = {
   isPremium: false,
   owner: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -16,9 +16,9 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
-      if (!(await isOwner(module.exports, conn, message))) return;
-      const targetId = target(message, senderId);
+      if (!(await isPrem(module.exports, conn, msg))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
+      const targetId = target(msg, senderId);
       const mentionTarget = targetId;
       const persentase = Math.floor(Math.random() * 101);
 
@@ -40,12 +40,12 @@ module.exports = {
       await conn.sendMessage(chatId, {
         text: teks,
         mentions: [`${targetId}@s.whatsapp.net`]
-      }, { quoted: message });
+      }, { quoted: msg });
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

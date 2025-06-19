@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengecek 10 dosa besar user',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -15,7 +15,7 @@ module.exports = {
     try {
       const { cekDosa } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
-      const targetId = target(message, senderId);
+      const targetId = target(msg, senderId);
       const mentionTarget = targetId;
       const tagJid = `${targetId}@s.whatsapp.net`;
 
@@ -29,13 +29,13 @@ module.exports = {
       await conn.sendMessage(chatId, {
         text: teks.trim(),
         mentions: [tagJid]
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

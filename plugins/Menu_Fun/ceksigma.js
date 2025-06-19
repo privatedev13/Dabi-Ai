@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Cek seberapa sigma seseorang',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -13,7 +13,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    let targetId = target(message, senderId);
+    let targetId = target(msg, senderId);
     const mentionTarget = targetId;
     const persentase = Math.floor(Math.random() * 101);
 
@@ -35,6 +35,6 @@ module.exports = {
     conn.sendMessage(chatId, {
       text: teks,
       mentions: [`${targetId}@s.whatsapp.net`]
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };

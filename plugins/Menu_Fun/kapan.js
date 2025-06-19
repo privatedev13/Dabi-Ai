@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Sambung kata dengan bot',
   prefix: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     commandText,
@@ -16,13 +16,13 @@ module.exports = {
       const { chatId, senderId, isGroup } = chatInfo;
       const kapan = when[Math.floor(Math.random() * when.length)];
 
-      await conn.sendMessage(chatId, { text: kapan }, { quoted: message });
+      await conn.sendMessage(chatId, { text: kapan }, { quoted: msg });
 
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }
