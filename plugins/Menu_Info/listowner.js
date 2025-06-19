@@ -10,7 +10,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,7 +18,7 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     let config;
     try {
@@ -26,12 +26,12 @@ module.exports = {
       config = JSON.parse(configData);
     } catch (err) {
       console.error('Gagal membaca config:', err);
-      return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: msg });
     }
 
     const owners = config.ownerSetting.ownerNumber;
     if (owners.length === 0) {
-      return conn.sendMessage(chatId, { text: 'Tidak ada owner yang terdaftar' }, { quoted: message });
+      return conn.sendMessage(chatId, { text: 'Tidak ada owner yang terdaftar' }, { quoted: msg });
     }
 
     let listText = `${head} ${Obrack} *DAFTAR OWNER* ${Cbrack}\n`;
@@ -40,6 +40,6 @@ module.exports = {
     });
     listText += `${foot}${garis}\n`;
 
-    conn.sendMessage(chatId, { text: listText }, { quoted: message });
+    conn.sendMessage(chatId, { text: listText }, { quoted: msg });
   }
 };

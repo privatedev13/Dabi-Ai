@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mengirim kontak owner bot',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -20,7 +20,7 @@ module.exports = {
 
       if (!ownerNumber) {
         console.error('❌ ownerNumber tidak ditemukan. Pastikan config.json terisi dengan benar.');
-        await conn.sendMessage(chatId, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: message });
+        await conn.sendMessage(chatId, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: msg });
         return;
       }
 
@@ -33,8 +33,8 @@ module.exports = {
         }
       };
 
-      await conn.sendMessage(chatId, contactInfo, { quoted: message });
-      await conn.sendMessage(chatId, { text: `Ini adalah kontak owner *${bot}*` }, { quoted: message });
+      await conn.sendMessage(chatId, contactInfo, { quoted: msg });
+      await conn.sendMessage(chatId, { text: `Ini adalah kontak owner *${bot}*` }, { quoted: msg });
 
     } catch (error) {
       console.error('❌ Terjadi kesalahan di plugin owner:', error);

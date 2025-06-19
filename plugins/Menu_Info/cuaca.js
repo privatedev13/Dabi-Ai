@@ -7,7 +7,7 @@ module.exports = {
   desc: 'Cek cuaca berdasarkan nama kota',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -22,7 +22,7 @@ module.exports = {
       const json = await res.json();
 
       if (!json.status || !json.data) {
-        return await conn.sendMessage(chatId, { text: `Gagal mendapatkan data cuaca untuk kota: ${kota}` }, { quoted: message });
+        return await conn.sendMessage(chatId, { text: `Gagal mendapatkan data cuaca untuk kota: ${kota}` }, { quoted: msg });
       }
 
       const data = json.data;
@@ -35,11 +35,11 @@ module.exports = {
                    `🌬️ *Kecepatan Angin:* ${data.angin} m/s\n\n` +
                    `Semoga harimu menyenangkan! Jangan lupa bawa payung kalau cuacanya mendung ya! ☂️`;
 
-      await conn.sendMessage(chatId, { text: teks }, { quoted: message });
+      await conn.sendMessage(chatId, { text: teks }, { quoted: msg });
 
     } catch (err) {
       console.error(err);
-      await conn.sendMessage(chatInfo.chatId, { text: 'Terjadi kesalahan saat mengambil data cuaca.' }, { quoted: message });
+      await conn.sendMessage(chatInfo.chatId, { text: 'Terjadi kesalahan saat mengambil data cuaca.' }, { quoted: msg });
     }
   }
 };

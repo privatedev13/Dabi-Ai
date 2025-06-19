@@ -5,7 +5,7 @@ module.exports = {
   desc: 'Mendaftarkan pengguna atau grup.',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -23,7 +23,7 @@ module.exports = {
 
       if (commandText === 'daftargc') {
         if (!isGroup) {
-          return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: message });
+          return conn.sendMessage(chatId, { text: '❌ Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: msg });
         }
 
         const metadata = await conn.groupMetadata(chatId);
@@ -31,7 +31,7 @@ module.exports = {
 
         const groupExists = Object.values(db.Grup).some(g => g.Id === chatId);
         if (groupExists) {
-          return conn.sendMessage(chatId, { text: '✅ Grup ini sudah terdaftar di database.' }, { quoted: message });
+          return conn.sendMessage(chatId, { text: '✅ Grup ini sudah terdaftar di database.' }, { quoted: msg });
         }
 
         db.Grup[groupName] = {
@@ -68,13 +68,13 @@ module.exports = {
 
         return conn.sendMessage(chatId, {
           text: `✅ Grup *${groupName}* berhasil didaftarkan ke dalam database.`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const teks = `📌 Cara daftar:\n\n*${prefix}daftar Nama Kamu Umur*\n\nContoh:\n*${prefix}daftar ${pushName} 15*`;
 
       if (args.length < 2) {
-        return conn.sendMessage(chatId, { text: teks }, { quoted: message });
+        return conn.sendMessage(chatId, { text: teks }, { quoted: msg });
       }
 
       const nama = args.slice(0, -1).join(' ');
@@ -82,12 +82,12 @@ module.exports = {
 
       if (isNaN(umur) || umur < 12 || umur > 100) {
         return conn.sendMessage(chatId, {
-          text: `❌ ️Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: message });
+          text: `❌ ️Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: msg });
       }
 
       if (getUser(db, senderId)) {
         return conn.sendMessage(chatId, {
-          text: `❌ Nama *${nama}* sudah terdaftar!\n\nGunakan nama lain atau cek profil dengan *${prefix}profile*.` }, { quoted: message });
+          text: `❌ Nama *${nama}* sudah terdaftar!\n\nGunakan nama lain atau cek profil dengan *${prefix}profile*.` }, { quoted: msg });
       }
 
       function generateRandomId() {
@@ -124,11 +124,11 @@ module.exports = {
 
       conn.sendMessage(chatId, {
         text: textMsg,
-        contextInfo: { mentionedJid: [senderId] } }, { quoted: message });
+        contextInfo: { mentionedJid: [senderId] } }, { quoted: msg });
 
     } catch (error) {
       console.error('Error di plugin daftar.js:', error);
-      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mendaftar!' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mendaftar!' }, { quoted: msg });
     }
   },
 };

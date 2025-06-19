@@ -9,7 +9,7 @@ module.exports = {
   desc: 'Menampilkan daftar atau isi catatan',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -19,29 +19,29 @@ module.exports = {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
       if (!fs.existsSync(catatanPath)) {
-        return conn.sendMessage(chatId, { text: 'Belum ada catatan.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Belum ada catatan.' }, { quoted: msg });
       }
       const catatan = JSON.parse(fs.readFileSync(catatanPath));
 
       if (commandText === 'listcatatan' || commandText === 'catatanlist') {
         const list = Object.keys(catatan).map((nama, idx) => `${idx + 1}. ${nama}`).join('\n');
-        conn.sendMessage(chatId, { text: `Daftar semua catatan:\n\n${list}` }, { quoted: message });
+        conn.sendMessage(chatId, { text: `Daftar semua catatan:\n\n${list}` }, { quoted: msg });
       } else if (commandText === 'liat') {
         const nama = args[0];
         if (!nama) {
-          return conn.sendMessage(chatId, { text: 'Masukkan nama catatan yang ingin dilihat.\nContoh: .liat catatan1' }, { quoted: message });
+          return conn.sendMessage(chatId, { text: 'Masukkan nama catatan yang ingin dilihat.\nContoh: .liat catatan1' }, { quoted: msg });
         }
         if (!catatan[nama]) {
-          return conn.sendMessage(chatId, { text: `Catatan *${nama}* tidak ditemukan.` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `Catatan *${nama}* tidak ditemukan.` }, { quoted: msg });
         }
         const listIsi = Object.values(catatan[nama]).map((isi, idx) => `${idx + 1}. ${isi}`).join('\n');
-        conn.sendMessage(chatId, { text: `Isi catatan *${nama}*:\n\n${listIsi}` }, { quoted: message });
+        conn.sendMessage(chatId, { text: `Isi catatan *${nama}*:\n\n${listIsi}` }, { quoted: msg });
       }
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

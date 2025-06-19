@@ -5,34 +5,44 @@ module.exports = {
   desc: 'Menampilkan informasi profil.',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     prefix,
     commandText,
     args
   }) => {
     const { chatId, senderId, pushName } = chatInfo;
+
     try {
-      const targetId = target(message, senderId);
+      const targetId = target(msg, senderId);
       const mentionTarget = `${targetId}@s.whatsapp.net`;
 
       intDB();
       const db = readDB();
 
-      const userData = getUser(db, mentionTarget);
-      if (!userData) {
-        return conn.sendMessage(chatId, {
-          text: `⚠️ Kamu belum terdaftar di database!\n\nKetik *${prefix}daftar* untuk mendaftar.`,
-        }, { quoted: message });
+      let userEntry = null;
+      let username = null;
+      for (const [key, value] of Object.entries(db.Private)) {
+        if (value.Nomor === mentionTarget) {
+          userEntry = value;
+          username = key;
+          break;
+        }
       }
 
-      const user = userData.value;
+      if (!userEntry) {
+        return conn.sendMessage(chatId, {
+          text: `⚠️ Kamu belum terdaftar di database!\n\nKetik *${prefix}daftar* untuk mendaftar.`,
+        }, { quoted: msg });
+      }
+
+      const user = userEntry;
 
       if (commandText.toLowerCase() === 'claim') {
         const result = await tryFree(mentionTarget);
         return conn.sendMessage(chatId, {
           text: result.message
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       let isPremiumText = "Tidak ❌";
@@ -54,12 +64,13 @@ module.exports = {
         : `Kamu sudah claim trial`;
 
       let profileText = `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n`;
+      profileText += `${side} ${btn} *Nama:* ${username || 'Pengguna'}\n`;
       profileText += `${side} ${btn} *Nomor:* ${user.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n`;
       profileText += `${side} ${btn} *Auto AI:* ${user.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n`;
       profileText += `${side} ${btn} *Private Cmd:* ${user.cmd || 0}\n`;
       profileText += `${side} ${btn} *Umur:* ${user.umur || "Tidak diatur"}\n`;
       profileText += `${side} ${btn} *Status Premium:* ${user.isPremium?.isPrem ? "Ya ✅" : "Tidak ❌"}\n`;
-      profileText += `${side} ${btn} *Premium Tersisa:* ${isPremiumText}\n`;
+      profileText += `${side} ${btn} *Premium Time:* ${isPremiumText}\n`;
       profileText += `${side} ${btn} *Nomor Id:* ${user.noId || "Tidak ada"}\n`;
       profileText += `${foot}${garis}\n\n`;
       profileText += `${claimText}`;
@@ -82,13 +93,13 @@ module.exports = {
             newsletterJid: '120363310100263711@newsletter'
           }
         }
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error("Error di plugin profile.js:", error);
       await conn.sendMessage(chatInfo.chatId, {
         text: "⚠️ Terjadi kesalahan saat mengambil profil!"
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   },
 };

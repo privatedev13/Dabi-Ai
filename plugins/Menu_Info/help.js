@@ -8,7 +8,7 @@ module.exports = {
   desc: 'Menampilkan informasi tentang command.',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,7 +18,7 @@ module.exports = {
     try {
       const { chatId } = chatInfo;
       if (!args.length) {
-        return conn.sendMessage(chatId, { text: `Gunakan perintah: ${prefix}${commandText} <nama_file_plugin>` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `Gunakan perintah: ${prefix}${commandText} <nama_file_plugin>` }, { quoted: msg });
       }
 
       const pluginsDir = path.join(__dirname, '..'); 
@@ -40,7 +40,7 @@ module.exports = {
       }
 
       if (!foundPlugin) {
-        return conn.sendMessage(chatId, { text: `Plugin dengan nama file *${args[0]}* tidak ditemukan.` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `Plugin dengan nama file *${args[0]}* tidak ditemukan.` }, { quoted: msg });
       }
 
       const { name, command, desc } = foundPlugin;
@@ -53,12 +53,12 @@ module.exports = {
         `• *Command:* ${commandList}\n` +
         `• *Deskripsi:* ${description}\n`;
 
-      conn.sendMessage(chatId, { text: helpMessage }, { quoted: message });
+      conn.sendMessage(chatId, { text: helpMessage }, { quoted: msg });
     } catch (error) {
       console.error('Error:', error);
-      conn.sendMessage(message.key.remoteJid, {
+      conn.sendMessage(msg.key.remoteJid, {
         text: `Error: ${error.message || error}`,
-        quoted: message,
+        quoted: msg,
       });
     }
   }

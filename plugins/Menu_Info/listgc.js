@@ -6,7 +6,7 @@ module.exports = {
   prefix: true,
   isPremium: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -14,14 +14,14 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, message))) return;
+    if (!(await isPrem(module.exports, conn, msg))) return;
 
     try {
       const groups = await conn.groupFetchAllParticipating();
       const groupList = Object.values(groups);
 
       if (groupList.length === 0) {
-        return conn.sendMessage(chatId, { text: '📌 Bot tidak tergabung dalam grup mana pun.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '📌 Bot tidak tergabung dalam grup mana pun.' }, { quoted: msg });
       }
 
       let response = `📋 *Daftar Grup yang Bot Ikuti:*\n\n`;
@@ -29,10 +29,10 @@ module.exports = {
         response += `${index + 1}. *${group.subject}*\n   📌 ID: ${group.id}\n   👥 Member: ${group.size}\n\n`;
       });
 
-      conn.sendMessage(chatId, { text: response }, { quoted: message });
+      conn.sendMessage(chatId, { text: response }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal mengambil daftar grup. Coba lagi nanti.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: '❌ Gagal mengambil daftar grup. Coba lagi nanti.' }, { quoted: msg });
     }
   }
 };

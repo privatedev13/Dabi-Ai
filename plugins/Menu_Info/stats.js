@@ -11,7 +11,7 @@ module.exports = {
   desc: 'Menampilkan status device dan statik bot',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -128,7 +128,7 @@ Stats System
         }
       };
 
-      await conn.sendMessage(chatId, adReply, { quoted: message });
+      await conn.sendMessage(chatId, adReply, { quoted: msg });
 
     } catch (err) {
       console.error('❌ Error pada plugin stats:', err.message);
