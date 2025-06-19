@@ -11,7 +11,7 @@ module.exports = {
   desc: 'Menampilkan menu',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -42,7 +42,7 @@ module.exports = {
       }
     };
 
-    await conn.sendMessage(chatId, { text: menuText, ...adReply }, { quoted: message });
+    await conn.sendMessage(chatId, { text: menuText, ...adReply }, { quoted: msg });
   }
 };
 
@@ -100,8 +100,8 @@ function getMenuText(sender, requestedCategory, prefix) {
       menuText += `${head} ${Obrack} *${category}* ${Cbrack}\n`;
       commands.forEach((cmd) => {
         const plugin = global.plugins[cmd];
-        const isPremium = plugin && plugin.isPremium === true;
-        const isPremiumLabel = isPremium ? ' *[ isPremium ]*' : '';
+        const prem = plugin && plugin.premium === true;
+        const isPremiumLabel = prem ? ' *[ premium ]*' : '';
         menuText += `${side} ${btn} ${prefix}${cmd}${isPremiumLabel}\n`;
       });
       menuText += `${foot}${garis}\n\n`;
