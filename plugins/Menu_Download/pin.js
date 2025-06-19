@@ -8,9 +8,9 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Mencari media dari pinterest',
   prefix: true,
-  isPremium: false,
+  premium: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,13 +18,11 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, message))) return;
+    if (!(await isPrem(module.exports, conn, msg))) return;
     const query = args.join(' ');
     if (!query) {
-      return conn.sendMessage(chatId, { text: `Contoh: ${prefix}${commandText} christy jkt48` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Contoh: ${prefix}${commandText} christy jkt48` }, { quoted: msg });
     }
-
-    await conn.sendMessage(chatId, { react: { text: '🔍', key: message.key } });
 
     try {
       const res = await fetch(`https://id.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
@@ -42,7 +40,7 @@ module.exports = {
       });
 
       if (imageUrls.length === 0) {
-        return conn.sendMessage(chatId, { text: 'Gambar tidak ditemukan.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Gambar tidak ditemukan.' }, { quoted: msg });
       }
 
       const index = isNaN(args[1]) ? 0 : Math.min(parseInt(args[1]), imageUrls.length - 1);
@@ -53,11 +51,11 @@ module.exports = {
         caption: `Menampilkan gambar ke *${index + 1}* dari *${imageUrls.length}* hasil pencarian *${query}*.`,
         footer: '',
         headerType: 4
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat scraping.' }, { quoted: message });
+      conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat scraping.' }, { quoted: msg });
     }
   }
 };

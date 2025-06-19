@@ -6,9 +6,9 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Mengunduh video atau foto dari Instagram',
   prefix: true,
-  isPremium: true,
+  premium: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,24 +17,24 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, msg))) return;
 
       if (!args) {
-        return conn.sendMessage(chatId, { text: `Masukkan URL Instagram! Contoh: *${prefix}${commandText} https://www.instagram.com/p/C1Ck8sENM94/*` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `Masukkan URL Instagram! Contoh: *${prefix}${commandText} https://www.instagram.com/p/C1Ck8sENM94/*` }, { quoted: msg });
       }
 
       const url = Array.isArray(args) ? args[0] : args;
       if (!url || !url.match(/(https?:\/\/(?:www\.)?instagram\.[a-z\.]{2,6}\/[\w\-\.]+(\/[^\s]*)?)/g)) {
-        return conn.sendMessage(chatId, { text: 'URL tidak valid! Pastikan itu adalah tautan Instagram.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'URL tidak valid! Pastikan itu adalah tautan Instagram.' }, { quoted: msg });
       }
 
-      await conn.sendMessage(chatId, { text: '⏳ Sedang memproses, mohon tunggu...' }, { quoted: message });
+      await conn.sendMessage(chatId, { text: '⏳ Sedang memproses, mohon tunggu...' }, { quoted: msg });
 
       const res = await igdl(url);
       const data = res.data;
 
       if (!data || data.length === 0) {
-        return conn.sendMessage(chatId, { text: 'Media tidak ditemukan atau URL salah.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Media tidak ditemukan atau URL salah.' }, { quoted: msg });
       }
 
       const media = data[0];
@@ -46,11 +46,11 @@ module.exports = {
         mimetype: 'video/mp4',
         fileName,
         caption
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error(error);
-      conn.sendMessage(message.key.remoteJid, { text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti!' }, { quoted: message });
+      conn.sendMessage(msg.key.remoteJid, { text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti!' }, { quoted: msg });
     }
   }
 }

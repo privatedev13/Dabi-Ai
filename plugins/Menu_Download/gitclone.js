@@ -6,9 +6,9 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Download repository GitHub dalam bentuk .zip',
   prefix: true,
-  isPremium: false,
+  premium: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -16,23 +16,23 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, message))) return;
+    if (!(await isPrem(module.exports, conn, msg))) return;
     const text = args.join(' ');
     if (!text) {
-      return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/MaouDabi0/Dabi-Ai` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/MaouDabi0/Dabi-Ai` }, { quoted: msg });
     }
 
     if (!/^https?:\/\//.test(text) || !text.includes('github.com')) {
-      return conn.sendMessage(chatId, { text: `Link invalid!!` }, { quoted: message });
+      return conn.sendMessage(chatId, { text: `Link invalid!!` }, { quoted: msg });
     }
 
-    await conn.sendMessage(chatId, { react: { text: '📦', key: message.key } });
+    await conn.sendMessage(chatId, { react: { text: '📦', key: msg.key } });
 
     try {
       let regex = /(?:https|git)(?::\/\/|@)github\.com[\/:]([^\/:]+)\/(.+)/i;
       let [, user, repo] = text.match(regex) || [];
       if (!user || !repo) {
-        return conn.sendMessage(chatId, { text: 'Invalid GitHub link.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Invalid GitHub link.' }, { quoted: msg });
       }
 
       repo = repo.replace(/.git$/, '');
@@ -40,7 +40,7 @@ module.exports = {
       let head = await fetch(url, { method: 'HEAD' });
       let disposition = head.headers.get('content-disposition');
       if (!disposition) {
-        return conn.sendMessage(chatId, { text: 'Failed to get file info.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Failed to get file info.' }, { quoted: msg });
       }
       
       let filename = disposition.match(/attachment; filename=(.*)/)[1];
@@ -49,11 +49,11 @@ module.exports = {
         document: { url: url },
         fileName: filename + '.zip',
         mimetype: 'application/zip'
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (e) {
       console.error(e);
-      await conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat mendownload repository.' }, { quoted: message });
+      await conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat mendownload repository.' }, { quoted: msg });
     }
   }
 };

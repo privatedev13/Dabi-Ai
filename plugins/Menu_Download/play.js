@@ -20,9 +20,9 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Mendownload lagu dari YouTube',
   prefix: true,
-  isPremium: false,
+  premium: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -31,19 +31,19 @@ module.exports = {
   }) => {
     try {
       const { chatId } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, msg))) return;
 
       const text = args.join(" ");
       if (!text) {
         return conn.sendMessage(chatId, {
           text: `Masukkan judul lagu yang ingin dicari.\nContoh: *${prefix}${commandText} Jadian yuk chloe pawapua/<url>*`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       if (processedAudio.has(text)) {
         return conn.sendMessage(chatId, {
           text: 'Masih ada proses yang belum selesai untuk lagu ini.'
-        }, { quoted: message });
+        }, { quoted: msg });
       }
       processedAudio.add(text);
 
@@ -51,13 +51,13 @@ module.exports = {
       const video = search.videos[0];
       if (!video) {
         processedAudio.delete(text);
-        return conn.sendMessage(chatId, { text: 'Video tidak ditemukan.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Video tidak ditemukan.' }, { quoted: msg });
       }
 
       const durationInSeconds = video.timestamp?.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
       if (durationInSeconds >= 3600) {
         processedAudio.delete(text);
-        return conn.sendMessage(chatId, { text: 'Video berdurasi lebih dari 1 jam!' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: 'Video berdurasi lebih dari 1 jam!' }, { quoted: msg });
       }
 
       const thumbnailBuffer = await getBuffer(video.thumbnail);
@@ -75,7 +75,7 @@ module.exports = {
       await conn.sendMessage(chatId, {
         image: thumbnailBuffer,
         caption: caption,
-      }, { quoted: message });
+      }, { quoted: msg });
 
       const downloadUrl = await downloadYoutubeAudio(video.url);
 
@@ -83,16 +83,16 @@ module.exports = {
         audio: { url: downloadUrl },
         mimetype: 'audio/mpeg',
         fileName: `${video.title}.mp3`
-      }, { quoted: message });
+      }, { quoted: msg });
 
       processedAudio.delete(text);
 
     } catch (error) {
       console.error('Error:', error);
       processedAudio.delete(text);
-      return conn.sendMessage(message.key.remoteJid, {
+      return conn.sendMessage(msg.key.remoteJid, {
         text: `Terjadi kesalahan: ${error.message}`
-      }, { quoted: message });
+      }, { quoted: msg });
     }
   }
 };

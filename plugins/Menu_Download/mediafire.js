@@ -6,10 +6,10 @@ module.exports = {
   tags: 'Download Menu',
   desc: 'Download file mediafire',
   prefix: true,
-  isPremium: false,
+  premium: true,
   owner: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -18,13 +18,13 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
-      if (!(await isOwner(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, msg))) return;
+      if (!(await isOwner(module.exports, conn, msg))) return;
 
       if (!args[0]) {
         return conn.sendMessage(chatId, { 
           text: `Contoh penggunaan:\n${prefix + commandText} https://www.mediafire.com/file/xxxxx` 
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const mediafireUrl = args[0];
@@ -32,17 +32,17 @@ module.exports = {
 
       const caption = `*MediaFire Downloader*\n*Nama:* ${data.name}\n*Ukuran:* ${data.size}\n*MIME:* ${data.mime}\nSedang mengirim file...`;
 
-      await conn.sendMessage(chatId, { text: caption }, { quoted: message });
+      await conn.sendMessage(chatId, { text: caption }, { quoted: msg });
 
       await conn.sendMessage(chatId, {
         document: { url: data.url },
         fileName: data.name,
         mimetype: data.mime
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (error) {
       console.error(error);
-      conn.sendMessage(message.key.remoteJid, { text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti!' }, { quoted: message });
+      conn.sendMessage(msg.key.remoteJid, { text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti!' }, { quoted: msg });
     }
   }
 }

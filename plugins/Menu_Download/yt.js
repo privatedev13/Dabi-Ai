@@ -8,7 +8,7 @@ module.exports = {
   prefix: true,
   isPremium: false,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,20 +17,20 @@ module.exports = {
   }) => {
     try {
       const { chatId } = chatInfo;
-      if (!(await isPrem(module.exports, conn, message))) return;
+      if (!(await isPrem(module.exports, conn, msg))) return;
       const text = args.join(' ').trim();
       if (!text) {
         return conn.sendMessage(chatId, {
           text: `Silakan masukkan link YouTube!\n\nContoh:\n${prefix}${commandText} https://youtu.be/rCYlIIf_1L0?si=fGJw_zjBVPCRlDXM`
-        }, { quoted: message });
+        }, { quoted: msg });
       }
 
       const regex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
       if (!regex.test(text)) {
-        return conn.sendMessage(chatId, { text: `Link YouTube tidak valid.` }, { quoted: message });
+        return conn.sendMessage(chatId, { text: `Link YouTube tidak valid.` }, { quoted: msg });
       }
 
-      await conn.sendMessage(chatId, { react: { text: '⏳', key: message.key } });
+      await conn.sendMessage(chatId, { react: { text: '⏳', key: msg.key } });
 
       if (commandText === 'ytmp3') {
         const result = await ytMp3(text);
@@ -38,19 +38,19 @@ module.exports = {
           audio: { url: result.url },
           mimetype: 'audio/mp4',
           ptt: false
-        }, { quoted: message });
+        }, { quoted: msg });
       } else if (commandText === 'ytmp4') {
         const result = await ytMp4(text, { quality: 'hd' });
         await conn.sendMessage(chatId, {
           video: { url: result.url },
           caption: result.title || 'Berikut videonya'
-        }, { quoted: message });
+        }, { quoted: msg });
       } else {
-        await conn.sendMessage(chatId, { text: `Command tidak dikenali.` }, { quoted: message });
+        await conn.sendMessage(chatId, { text: `Command tidak dikenali.` }, { quoted: msg });
       }
     } catch (error) {
       console.error(error);
-      await conn.sendMessage(message.key.remoteJid, { text: 'Aduh kak, error nih...' }, { quoted: message });
+      await conn.sendMessage(msg.key.remoteJid, { text: 'Aduh kak, error nih...' }, { quoted: msg });
     }
   }
 };
