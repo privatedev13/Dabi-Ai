@@ -12,7 +12,7 @@ module.exports = {
   desc: 'Membeli barang dari toko',
   prefix: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -21,7 +21,7 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage || null;
+      const quotedMessage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage || null;
 
       if (!fs.existsSync(dbPath)) {
         fs.writeFileSync(dbPath, JSON.stringify({ pendingOrders: [] }, null, 2));
@@ -32,14 +32,14 @@ module.exports = {
         dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
         if (!dbData.pendingOrders) dbData.pendingOrders = [];
       } catch (err) {
-        return conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat membaca database." }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat membaca database." }, { quoted: msg });
       }
 
       if (!textMessage.includes('done')) {
         if (args.length < 2) {
           return conn.sendMessage(chatId, {
             text: `⚠️ Gunakan format *${prefix}${commandText} <NamaToko> <NamaBarang>*\nLihat daftar toko dengan *${prefix}shop*.`
-          }, { quoted: message });
+          }, { quoted: msg });
         }
 
         const tokoName = args[0];
@@ -49,18 +49,18 @@ module.exports = {
         try {
           tokoData = JSON.parse(fs.readFileSync(tokoPath, 'utf8'));
         } catch (err) {
-          return conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat membaca database toko." }, { quoted: message });
+          return conn.sendMessage(chatId, { text: "❌ Terjadi kesalahan saat membaca database toko." }, { quoted: msg });
         }
 
         if (!tokoData.storeSetting || !tokoData.storeSetting[tokoName]) {
-          return conn.sendMessage(chatId, { text: `❌ Toko *${tokoName}* tidak ditemukan!` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `❌ Toko *${tokoName}* tidak ditemukan!` }, { quoted: msg });
         }
 
         const tokoItems = tokoData.storeSetting[tokoName];
         const barang = tokoItems.find(item => item.name.toLowerCase() === barangName.toLowerCase());
 
         if (!barang) {
-          return conn.sendMessage(chatId, { text: `❌ Barang *${barangName}* tidak ditemukan di toko *${tokoName}*.` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `❌ Barang *${barangName}* tidak ditemukan di toko *${tokoName}*.` }, { quoted: msg });
         }
 
         dbData.pendingOrders.push({ userId: senderId, toko: tokoName, barang: barang.name, harga: barang.price });
@@ -76,24 +76,24 @@ module.exports = {
           image: { url: "https://files.catbox.moe/4cuj4g.jpeg" },
           caption: `📌 *Pembelian Pending*\n\n👤 *User:* @${senderId.split('@')[0]}\n🏪 *Toko:* ${tokoName}\n📦 *Barang:* ${barang.name}\n💰 *Harga:* Rp${barang.price.toLocaleString()}\n\n${paymentInfo}\n\n📢 *Owner Harap Konfirmasi dengan*:\n\`${prefix}buy ${tokoName} ${barang.price} done\`\nAtau *Reply pesan ini dengan "done"*`,
           mentions: [senderId]
-        }, { quoted: message });
+        }, { quoted: msg });
 
         return;
       }
 
       if (!global.ownerNumber.includes(senderId.replace(/\D/g, ''))) {
-        return conn.sendMessage(chatId, { text: '❌ Hanya owner yang dapat mengonfirmasi pembelian.' }, { quoted: message });
+        return conn.sendMessage(chatId, { text: '❌ Hanya owner yang dapat mengonfirmasi pembelian.' }, { quoted: msg });
       }
 
       let order;
-      const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+      const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
 
       if (quotedMessage && contextInfo?.participant) {
         const quotedUserId = contextInfo.participant;
         order = dbData.pendingOrders.find(o => o.userId === quotedUserId);
       } else {
         if (args.length < 3 || args[2].toLowerCase() !== 'done') {
-          return conn.sendMessage(chatId, { text: `⚠️ Gunakan format *${prefix}buy <NamaToko> <Harga> done* atau reply pesan pembelian dengan "done".` }, { quoted: message });
+          return conn.sendMessage(chatId, { text: `⚠️ Gunakan format *${prefix}buy <NamaToko> <Harga> done* atau reply pesan pembelian dengan "done".` }, { quoted: msg });
         }
 
         const tokoName = args[0];
@@ -106,7 +106,7 @@ module.exports = {
       }
 
       if (!order) {
-        return conn.sendMessage(chatId, { text: "❌ Tidak ada transaksi yang cocok untuk dikonfirmasi!" }, { quoted: message });
+        return conn.sendMessage(chatId, { text: "❌ Tidak ada transaksi yang cocok untuk dikonfirmasi!" }, { quoted: msg });
       }
 
       dbData.pendingOrders = dbData.pendingOrders.filter(o =>
@@ -117,11 +117,11 @@ module.exports = {
       await conn.sendMessage(chatId, {
         text: `✅ Pembelian dikonfirmasi!\n\n👤 *User:* @${order.userId.split('@')[0]}\n🏪 *Toko:* ${order.toko}\n📦 *Barang:* ${order.barang}\n💰 *Harga:* Rp${order.harga.toLocaleString()}\n\n📌 Terima kasih telah berbelanja!`,
         mentions: [order.userId]
-      }, { quoted: message });
+      }, { quoted: msg });
 
     } catch (err) {
       console.error("ERROR BUY:", err);
-      conn.sendMessage(message.key.remoteJid, { text: "❌ Terjadi kesalahan, coba lagi nanti." }, { quoted: message });
+      conn.sendMessage(msg.key.remoteJid, { text: "❌ Terjadi kesalahan, coba lagi nanti." }, { quoted: msg });
     }
   }
 };

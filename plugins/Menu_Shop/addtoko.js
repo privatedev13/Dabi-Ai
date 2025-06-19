@@ -9,7 +9,7 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -17,11 +17,11 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, message))) return;
+    if (!(await isOwner(module.exports, conn, msg))) return;
 
     const tokoName = args.join(' ').trim();
     if (!tokoName) {
-      return conn.sendMessage(chatId, { text: "❌ Masukkan nama toko yang ingin ditambahkan!" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Masukkan nama toko yang ingin ditambahkan!" }, { quoted: msg });
     }
 
     const tokoPath = './toolkit/set/toko.json';
@@ -32,13 +32,13 @@ module.exports = {
       tokoData = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
     } catch (err) {
       console.error('Error membaca toko.json:', err);
-      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: msg });
     }
 
     if (!tokoData.storeSetting) tokoData.storeSetting = {};
 
     if (tokoData.storeSetting[tokoName]) {
-      return conn.sendMessage(chatId, { text: "⚠️ Toko sudah ada dalam daftar." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "⚠️ Toko sudah ada dalam daftar." }, { quoted: msg });
     }
 
     tokoData.storeSetting[tokoName] = [];
@@ -56,7 +56,7 @@ module.exports = {
   tags: 'Toko Menu',
   desc: 'Menampilkan toko ${tokoName}',
 
-  run: async (conn, message, {
+  run: async (conn, msg, {
     chatInfo,
     textMessage,
     prefix,
@@ -69,12 +69,12 @@ module.exports = {
     try {
       tokoData = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
     } catch (err) {
-      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "❌ Gagal membaca file toko.json" }, { quoted: msg });
     }
 
     const items = tokoData.storeSetting['${tokoName}'];
     if (!items || items.length === 0) {
-      return conn.sendMessage(chatId, { text: "Toko ini belum memiliki barang." }, { quoted: message });
+      return conn.sendMessage(chatId, { text: "Toko ini belum memiliki barang." }, { quoted: msg });
     }
 
     const sortedItems = items.sort((a, b) => a.name.localeCompare(b.name));
@@ -83,7 +83,7 @@ module.exports = {
     
     conn.sendMessage(chatId, { 
       text: \`Selamat datang di toko ${tokoName}!\n\n\${head}\${Obrack} Daftar ${tokoName} \${Cbrack}\n\${itemList}\${foot}\`
-    }, { quoted: message });
+    }, { quoted: msg });
   }
 };`;
 
@@ -91,9 +91,9 @@ module.exports = {
 
     await conn.sendMessage(chatId, { 
       text: `✅ Toko *"${tokoName}"* berhasil ditambahkan!\n📁 File toko dibuat di *plugins/Menu_Toko/${tokoName}.js*`
-    }, { quoted: message });
+    }, { quoted: msg });
 
-    await conn.sendMessage(chatId, { text: "🔄 Bot akan restart dalam 3 detik..." }, { quoted: message });
+    await conn.sendMessage(chatId, { text: "🔄 Bot akan restart dalam 3 detik..." }, { quoted: msg });
 
     setTimeout(() => {
       process.exit(1);
