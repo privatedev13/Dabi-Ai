@@ -16,7 +16,7 @@ module.exports = {
       const { cekKhodam } = await global.loadFunc();
 
       const { chatId, senderId } = chatInfo;
-      let targetId = target(msh, senderId);
+      let targetId = target(msg, senderId);
       const mentionTarget = targetId;
 
       const cek = cekKhodam[Math.floor(Math.random() * cekKhodam.length)];
