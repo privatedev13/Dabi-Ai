@@ -17,7 +17,7 @@ module.exports = {
     commandText,
     args
   }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
+    const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
     const Mode = args[0]?.toLowerCase();
@@ -33,10 +33,16 @@ module.exports = {
       config.botSetting.Mode = Mode;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-      conn.sendMessage(chatId, { text: `✅ Mode bot berhasil diubah menjadi *${Mode}*.` }, { quoted: msg });
+      if (typeof global.watchCfg === 'function') global.watchCfg();
+
+      conn.sendMessage(chatId, {
+        text: `✅ Mode bot berhasil diubah menjadi *${Mode}*.`
+      }, { quoted: msg });
     } catch (err) {
       console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal mengubah mode bot.' }, { quoted: msg });
+      conn.sendMessage(chatId, {
+        text: '❌ Gagal mengubah mode bot.'
+      }, { quoted: msg });
     }
   }
 };

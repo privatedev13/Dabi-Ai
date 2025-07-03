@@ -1,5 +1,3 @@
-const cleartemp = require('./cleartemp');
-
 module.exports = {
   name: 'restart',
   command: ['restart', 'rt'],
@@ -18,9 +16,7 @@ module.exports = {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
-    await cleartemp.run(conn, msg, { chatInfo, textMessage, prefix, commandText, args });
-
-    await conn.sendMessage(chatId, { text: "🔄 Membersihkan folder temp selesai. Bot akan restart dalam 2 detik..." }, { quoted: msg });
+    await conn.sendMessage(chatId, { text: "🔄 Bot akan restart dalam 2 detik..." }, { quoted: msg });
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 

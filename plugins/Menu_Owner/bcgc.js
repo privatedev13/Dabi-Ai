@@ -53,15 +53,6 @@ module.exports = {
         await conn.sendMessage(id, {
           text: broadcastMessage,
           contextInfo: {
-            externalAdReply: {
-              title: '📢 B R O A D C A S T',
-              thumbnailUrl: thumbnail,
-              sourceUrl: 'https://github.com/maoudabi0',
-              mediaUrl: 'https://wa.me/6285725892962?text=Beli+Kak',
-              mediaType: 1,
-              renderLargerThumbnail: true,
-              showAdAttribution: true
-            },
             forwardingScore: 0,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
