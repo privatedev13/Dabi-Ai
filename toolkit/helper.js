@@ -5,6 +5,8 @@ const { exec } = require('child_process');
 const axios = require('axios');
 const chalk = require('chalk');
 
+const thumb = fs.readFileSync('./toolkit/set/Dabi.jpg');
+
 const pluginDir = path.join(__dirname, '../plugins');
 const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
@@ -191,12 +193,12 @@ const Format = {
     const d = Math.floor(dur / (1000 * 60 * 60 * 24));
     const h = Math.floor((dur % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const m = Math.floor((dur % (1000 * 60 * 60)) / (1000 * 60));
-    return `${d ? `${d}H ` : ''}${h ? `${h}J ` : ''}${m ? `${m}M ` : ''}`.trim();
+    return `${d ? `${d} Hari ` : ''}${h ? `${h} Jam ` : ''}${m ? `${m} Menit ` : ''}`.trim();
   }
 };
 
-const target = (message, senderId) => {
-  const context = message.message?.extendedTextMessage?.contextInfo || {};
+const target = (msg, senderId) => {
+  const context = msg.message?.extendedTextMessage?.contextInfo || {};
   const isReply = context.quotedMessage && context.participant;
   const isMention = context.mentionedJid?.length;
 
@@ -205,30 +207,30 @@ const target = (message, senderId) => {
   return senderId.replace(/@s\.whatsapp\.net$/, '');
 };
 
-const getSenderId = (message) => {
-  const chatId = message?.key?.remoteJid;
+const getSenderId = (msg) => {
+  const chatId = msg?.key?.remoteJid;
   const isGroup = chatId.endsWith('@g.us');
-  return { chatId, senderId: isGroup ? message.key.participant : chatId };
+  return { chatId, senderId: isGroup ? msg.key.participant : chatId };
 };
 
-const chkOwner = async (plugin, conn, message) => {
+const chkOwner = async (plugin, conn, msg) => {
   if (plugin.owner) {
-    const { chatId, senderId } = getSenderId(message);
+    const { chatId, senderId } = getSenderId(msg);
     const num = senderId.replace(/\D/g, '');
     if (!global.ownerNumber.includes(num)) {
-      await conn.sendMessage(chatId, { text: owner }, { quoted: message });
+      await conn.sendMessage(chatId, { text: owner }, { quoted: msg });
       return false;
     }
   }
   return true;
 };
 
-const chkPrem = async (plugin, conn, message) => {
+const chkPrem = async (plugin, conn, msg) => {
   if (plugin.isPremium) {
-    const { chatId, senderId } = getSenderId(message);
+    const { chatId, senderId } = getSenderId(msg);
     const user = global.getUserData(senderId);
     if (!user?.isPremium?.isPrem) {
-      await conn.sendMessage(chatId, { text: prem }, { quoted: message });
+      await conn.sendMessage(chatId, { text: prem }, { quoted: msg });
       return false;
     }
   }
@@ -269,14 +271,14 @@ const AiDB = (senderId, chatId) => {
   return false;
 };
 
-const chtEmt = async (textMessage, message, senderId, chatId, conn) => {
+const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
   const botRwId = conn.user?.id || '';
   const botNumber = botRwId.split(':')[0] + '@s.whatsapp.net';
   const botName = global.botName?.toLowerCase();
 
-  if (senderId === botRwId || message.key.fromMe) return false;
+  if (senderId === botRwId || msg.key.fromMe) return false;
 
-  const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+  const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
   const mentionJid = contextInfo?.mentionedJid || [];
   const participant = contextInfo?.participant || '';
   const replyBot = participant === botNumber;
@@ -294,12 +296,12 @@ const chtEmt = async (textMessage, message, senderId, chatId, conn) => {
       mentionBot
     )
   ) {
-    const aiReply = await global.ai(textMessage, message, senderId);
+    const aiReply = await global.ai(textMessage, msg, senderId);
 
     if (aiReply) {
-      await conn.sendMessage(chatId, { text: aiReply }, { quoted: message });
+      await conn.sendMessage(chatId, { text: aiReply }, { quoted: msg });
     } else {
-      await conn.sendMessage(chatId, { text: 'Maaf, saya tidak mengerti.' }, { quoted: message });
+      await conn.sendMessage(chatId, { text: 'Maaf, saya tidak mengerti.' }, { quoted: msg });
     }
     return true;
   }
@@ -307,39 +309,39 @@ const chtEmt = async (textMessage, message, senderId, chatId, conn) => {
   return false;
 };
 
-const exCht = (message = {}) => {
-  const chatId = message?.key?.remoteJid || '';
+const exCht = (msg = {}) => {
+  const chatId = msg?.key?.remoteJid || '';
   const isGroup = chatId.endsWith('@g.us');
 
-  const senderId = message?.key?.fromMe
-    ? message?.key?.remoteJid
-    : message?.key?.participant || message?.key?.remoteJid;
+  const senderId = msg?.key?.fromMe
+    ? msg?.key?.remoteJid
+    : msg?.key?.participant || msg?.key?.remoteJid;
 
-  const pushName = message?.pushName || global.botName || 'User';
+  const pushName = msg?.pushName || global.botName || 'User';
 
   return { chatId, isGroup, senderId, pushName };
 };
 
-const exTxtMsg = (message) => {
+const exTxtMsg = (msg) => {
   return (
-    message.body ||
-    message.message?.conversation ||
-    message.message?.extendedTextMessage?.text ||
-    message.message?.imageMessage?.caption ||
-    message.message?.videoMessage?.caption ||
-    message.message?.documentMessage?.fileName ||
-    message.message?.locationMessage?.name ||
-    message.message?.locationMessage?.address ||
-    message.message?.contactMessage?.displayName ||
-    message.message?.pollCreationMessage?.name ||
-    message.message?.reactionMessage?.text ||
+    msg.body ||
+    msg.message?.conversation ||
+    msg.message?.extendedTextMessage?.text ||
+    msg.message?.imageMessage?.caption ||
+    msg.message?.videoMessage?.caption ||
+    msg.message?.documentMessage?.fileName ||
+    msg.message?.locationMessage?.name ||
+    msg.message?.locationMessage?.address ||
+    msg.message?.contactMessage?.displayName ||
+    msg.message?.pollCreationMessage?.name ||
+    msg.message?.reactionMessage?.text ||
     ''
   );
 };
 
-const parseMessage = (message, prefixes) => {
-  const chatInfo = exCht(message);
-  const textMessage = exTxtMsg(message);
+const parseMessage = (msg, prefixes) => {
+  const chatInfo = exCht(msg);
+  const textMessage = exTxtMsg(msg);
 
   if (!textMessage) return null;
 
@@ -358,9 +360,9 @@ const parseMessage = (message, prefixes) => {
   };
 };
 
-const parseNoPrefix = (message) => {
-  const chatInfo = exCht(message);
-  const textMessage = exTxtMsg(message);
+const parseNoPrefix = (msg) => {
+  const chatInfo = exCht(msg);
+  const textMessage = exTxtMsg(msg);
 
   if (!textMessage) return null;
 
@@ -398,7 +400,8 @@ module.exports = {
   exCht,
   parseMessage,
   parseNoPrefix,
-  exGrp
+  exGrp,
+  thumb
 };
 
 fs.watchFile(__filename, () => {

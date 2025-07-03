@@ -48,6 +48,7 @@ global.parseNoPrefix = Sys.parseNoPrefix;
 global.chtEmt = Sys.chtEmt;
 global.stGrup = Sys.exGrp;
 global.Format = Sys.Format;
+global.thumb = Sys.thumb;
 global.ai = emtData.ai;
 global.mtData = emtData.mtData;
 global.gtMJid = emtData.gtMention;
@@ -61,6 +62,8 @@ global.bdWrd = emtData.bdWord;
 global.afkCencel = emtData.afkCencel;
 global.afkTgR = emtData.afkTgR;
 global.loadFunc = emtData.loadFunc;
+global.watchCfg = emtData.watchCfg;
+global.getStId = emtData.getStId;
 
 Object.assign(global, {
     target: Sys.target,
@@ -76,7 +79,6 @@ Object.assign(global, {
     side: setting.menuSetting.side,
     type: setting.botSetting.type || 'default',
     footer: setting.botSetting.footer,
-    thumbnail: setting.botSetting.thumbnail || '',
     botFullName: setting.botSetting.botFullName || 'Belum Diset',
     botName: setting.botSetting.botName || 'Belum Diset',
     isPrefix: setting.menuSetting.isPrefix,
@@ -90,7 +92,6 @@ Object.assign(global, {
     autoBio: setting.botSetting.autoBio,
     public: setting.botSetting.public,
     logic: setting.botSetting.logic,
-    mode: setting.botSetting.Mode,
     sewaList: toko.storeSetting.sewa || [],
     storeList: Object.keys(toko.storeSetting).filter(k => k !== 'sewa'),
     owner: setting.msg.rejectMsg.isOwner,

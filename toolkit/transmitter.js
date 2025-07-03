@@ -4,6 +4,8 @@ const path = require('path');
 const axios = require('axios');
 const vm = require('vm');
 const chalk = require('chalk');
+const { exec } = require('child_process');
+const dbPath = path.join(__dirname, './db/database.json');
 
 const memoryCache = {};
 const groupCache = new Map();
@@ -300,6 +302,74 @@ const cache = {
 setInterval(cache.reset, 60 * 60 * 1000);
 cache.reset();
 
+async function watchCfg() {
+  const p = path.join(__dirname, '../toolkit/set/config.json');
+
+  const loadConfig = async () => {
+    try {
+      const data = await fs.promises.readFile(p, 'utf-8');
+      global.setting = JSON.parse(data);
+    } catch (e) {
+      console.error(chalk.redBright.bold('❌ Gagal reload config.json:'), e);
+    }
+  };
+
+  await loadConfig();
+  fs.watchFile(p, loadConfig);
+}
+
+async function clean(conn) {
+  exec("df / | awk 'NR==2 {print $5}' | sed 's/%//'", async (err, stdout) => {
+    if (err) return;
+    const used = parseInt(stdout.trim());
+    if (used >= 90) {
+      try {
+        if (global.gc) global.gc();
+      } catch {}
+
+      exec('npm cache clean --force');
+      exec('find . -name "*.log" -delete', async () => {
+        if (conn && conn.sendMessage) {
+          await conn.sendMessage("6288215052251@s.whatsapp.net", { text: "Ram berhasil di reset✅" });
+        }
+        process.exit(1);
+      });
+    }
+  });
+}
+
+function timer(conn) {
+  setInterval(() => {
+    clean(conn);
+  }, 28800000);
+}
+
+async function getStId(msg) {
+  try {
+    const stanzaId = msg?.message?.extendedTextMessage?.contextInfo?.stanzaId || null
+    return stanzaId
+  } catch (err) {
+    console.error('Gagal mengambil stanzaId:', err);
+    return null
+  }
+}
+
+function loadDatabase() {
+  if (!fs.existsSync(dbPath)) return { Private: {}, Grup: {} }
+  const data = fs.readFileSync(dbPath, 'utf-8')
+  return JSON.parse(data)
+}
+
+function getDbUsr(nomorPengguna) {
+  const db = loadDatabase()
+  return Object.values(db.Private || {}).some(user => user.Nomor === nomorPengguna)
+}
+
+function getNmbUsr(nomorPengguna) {
+  const db = loadDatabase()
+  return Object.values(db.Private || {}).find(user => user.Nomor === nomorPengguna) || null
+}
+
 module.exports = {
   ai,
   mtData,
@@ -313,5 +383,11 @@ module.exports = {
   afkTgR,
   loadFunc,
   cache,
-  memoryCache
+  memoryCache,
+  watchCfg,
+  clean,
+  timer,
+  getStId,
+  getDbUsr,
+  getNmbUsr
 };
