@@ -5,7 +5,7 @@ module.exports = {
   name: 'remini',
   command: ['remini'],
   tags: 'Tools Menu',
-  desc: 'Meningkatkan kualitas gambar',
+  desc: 'Upscale kualitas gambar (scale 2-4)',
   prefix: true,
 
   run: async (conn, msg, {
@@ -16,7 +16,7 @@ module.exports = {
     args
   }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
+      const { chatId } = chatInfo;
       const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const quotedImage = quotedMsg?.imageMessage;
       const directImage = msg.message?.imageMessage;
@@ -27,7 +27,7 @@ module.exports = {
         return conn.sendMessage(
           chatId,
           {
-            text: `Kirim atau balas gambar dengan caption *${prefix}${commandText} [mode]*\n\nMode tersedia:\n- enhance\n- recolor\n- dehaze`
+            text: `Kirim atau balas gambar dengan caption *${prefix}${commandText} [scale]*\n\nContoh:\n${prefix}${commandText} 4\n\nNilai scale bisa 2, 3, atau 4.`
           },
           { quoted: msg }
         );
@@ -51,10 +51,18 @@ module.exports = {
 
       await conn.sendMessage(chatId, { react: { text: '🕒', key: msg.key } });
 
-      const mode = (args[0] || 'enhance').toLowerCase();
+      const scale = parseInt(args[0]) || 4;
+      if (![2, 3, 4].includes(scale)) {
+        return conn.sendMessage(
+          chatId,
+          { text: '❌ Nilai scale harus 2, 3, atau 4!' },
+          { quoted: msg }
+        );
+      }
+
       let result;
       try {
-        result = await remini(media, mode);
+        result = await remini(media, scale);
         if (!result) throw new Error('Gagal memproses gambar.');
       } catch (error) {
         return conn.sendMessage(
@@ -68,14 +76,14 @@ module.exports = {
         chatId,
         {
           image: result,
-          caption: `Berhasil! Mode: *${mode}*`
+          caption: `✅ Gambar berhasil di-upscale!\nSkala: *${scale}x*`
         },
         { quoted: msg }
       );
     } catch (error) {
       conn.sendMessage(
         chatInfo.chatId,
-        { text: `❌ Terjadi kesalahan saat memproses gambar, coba lagi! ${error.message}` },
+        { text: `❌ Terjadi kesalahan saat memproses gambar: ${error.message}` },
         { quoted: msg }
       );
       console.error('❌ Error pada plugin remini:', error);

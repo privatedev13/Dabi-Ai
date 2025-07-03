@@ -8,7 +8,7 @@ module.exports = {
   tags: 'Tools Menu',
   desc: 'Mengekstrak media sekali lihat.',
   prefix: true,
-  isPremium: true,
+  premium: true,
 
   run: async (conn, msg, {
     chatInfo,
