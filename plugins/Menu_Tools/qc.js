@@ -1,67 +1,123 @@
-const { generateQuotly, convertToWebp, sendImageAsSticker } = require('../../toolkit/exif.js');
-const { uploadImage } = require('../../toolkit/scrape/uploadImage.js');
-const { webp2png } = require('../../toolkit/scrape/webp2mp4.js');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const axios = require('axios');
+const { writeExifImg } = require('../../toolkit/exif');
 
 module.exports = {
   name: 'qc',
-  command: ['qc', 'quoted', 'quotly'],
-  tags: 'Tools Menu',
-  desc: 'Membuat quoted stiker',
+  command: ['qc', 'quoted'],
+  tags: 'maker',
+  desc: 'Membuat quote dari pesan.',
   prefix: true,
+  energy: 7,
 
   run: async (conn, msg, {
     chatInfo,
     textMessage,
+    args,
     prefix,
-    commandText,
-    args
+    commandText
   }) => {
     const { chatId, senderId, pushName } = chatInfo;
 
-    if (!args[0]) return conn.sendMessage(chatId, { text: `Contoh: ${prefix}qc pink | Halo dunia` });
-    if (textMessage.length > 100) return conn.sendMessage(chatId, { text: "Maksimal 100 karakter!" });
+    const colors = {
+      pink: "#f68ac9",
+      blue: "#6cace4",
+      red: "#f44336",
+      green: "#4caf50",
+      yellow: "#ffeb3b",
+      purple: "#9c27b0",
+      darkblue: "#0d47a1",
+      lightblue: "#03a9f4",
+      grey: "#9e9e9e",
+      orange: "#ff9800",
+      black: "#000000",
+      white: "#ffffff",
+      teal: "#008080",
+      lightred: "#FFC0CB",
+      brown: "#A52A2A",
+      salmon: "#FFA07A",
+      magenta: "#FF00FF",
+      tan: "#D2B48C",
+      wheat: "#F5DEB3",
+      deeppink: "#FF1493",
+      fire: "#B22222",
+      skyblue: "#00BFFF",
+      brightorange: "#FF7F50",
+      lightskyblue: "#1E90FF",
+      hotpink: "#FF69B4",
+      skybluegreen: "#87CEEB",
+      seagreen: "#20B2AA",
+      darkred: "#8B0000",
+      redorange: "#FF4500",
+      cyan: "#48D1CC",
+      darkpurple: "#BA55D3",
+      mossgreen: "#00FF7F",
+      darkgreen: "#008000",
+      midnightblue: "#191970",
+      darkorange: "#FF8C00",
+      blackishpurple: "#9400D3",
+      fuchsia: "#FF00FF",
+      darkmagenta: "#8B008B",
+      darkgrey: "#2F4F4F",
+      peachpuff: "#FFDAB9",
+      darkcrimson: "#DC143C",
+      goldenrod: "#DAA520",
+      gold: "#FFD700",
+      silver: "#C0C0C0"
+    };
 
-    let text = args.join(" ");
-    let color = '';
-    let quotedText = '';
-    let quotedName = '';
-
-    if (text.includes("|")) {
-      let [clr, ...rest] = text.split("|");
-      color = clr.trim().toLowerCase();
-      text = rest.join("|").trim();
+    if (!args || args.length === 0) {
+      return conn.sendMessage(chatId, {
+        text: `📌 Contoh: *${prefix}${commandText} pink hallo dunia!*\n\n🎨 Daftar warna:\n- ${Object.keys(colors).join("\n- ")}`
+      }, { quoted: msg });
     }
 
-    if (msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
-      const quoted = msg.message.extendedTextMessage.contextInfo;
-      const quotedMessage = quoted.quotedMessage;
-      const quotedType = Object.keys(quotedMessage)[0];
+    const [color, ...quoteWords] = args.join(' ').split(' ');
+    const text = colors[color] ? quoteWords.join(' ') : args.join(' ');
 
-      if (quotedType === "conversation" || quotedType === "extendedTextMessage") {
-        quotedText = quotedMessage[quotedType].text || '';
-        quotedName = await conn.getName(quoted.participant);
-        text = `${quotedName}: ${quotedText}\n\n${pushName || 'User'}: ${text}`;
-      } else if (quotedType === "stickerMessage" || quotedType === "imageMessage") {
-        try {
-          let img = await downloadMediaMessage(quotedMessage);
-          let up = quotedType === "stickerMessage" ? await webp2png(img) : await uploadImage(img);
-          text = `${pushName || 'User'}:\n${text}\n[Media: ${up}]`;
-        } catch (e) {
-          console.error('Error processing media:', e);
-        }
-      }
+    let avatar;
+    try {
+      avatar = await conn.profilePictureUrl(msg.quoted?.sender || senderId, 'image');
+    } catch {
+      avatar = 'https://telegra.ph/file/c3f3d2c2548cbefef1604.jpg';
     }
 
-    conn.sendMessage(chatId, { react: { text: "🕛", key: msg.key } });
+    const json = {
+      type: 'quote',
+      format: 'png',
+      backgroundColor: colors[color] || "#ffffff",
+      width: 700,
+      height: 580,
+      scale: 2,
+      messages: [{
+        entities: [],
+        avatar: true,
+        from: {
+          id: 1,
+          name: pushName,
+          photo: { url: avatar }
+        },
+        text: text,
+        'm.replyMessage': {}
+      }]
+    };
 
     try {
-      const buffer = await generateQuotly(text, pushName || 'User', color);
-      const webpBuffer = await convertToWebp(buffer);
-      await sendImageAsSticker(conn, chatId, webpBuffer, msg);
-    } catch (error) {
-      console.error('Error in quoted sticker creation:', error);
-      conn.sendMessage(chatId, { text: "Gagal membuat kutipan." });
+      const res = await axios.post("https://bot.lyo.su/quote/generate", json, {
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const buff = Buffer.from(res.data.result.image, 'base64');
+      const sticker = await writeExifImg(buff, {
+        packname: 'My sticker',
+        author: 'Ⓒ' + pushName
+      });
+
+      await conn.sendMessage(chatId, { sticker: { url: sticker } }, { quoted: msg });
+    } catch (e) {
+      console.error(e);
+      await conn.sendMessage(chatId, {
+        text: '⚠️ Terjadi kesalahan saat membuat sticker quote!'
+      }, { quoted: msg });
     }
-  },
+  }
 };
