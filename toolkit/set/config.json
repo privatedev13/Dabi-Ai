@@ -1,8 +1,11 @@
 {
   "ownerSetting": {
-    "ownerNumber": [],
-    "ownerName": "",
-    "contact": "",
+    "ownerNumber": [
+      "6288215052251",
+      "6282281941207"
+    ],
+    "ownerName": "Kaju",
+    "contact": "6285725892962",
     "ownerLink": {
       "tt": "",
       "yt": "",
@@ -10,7 +13,7 @@
       "fb": ""
     },
     "ownerStore": {
-      "dana": "",
+      "dana": "6285725892962",
       "gopay": "",
       "ovo": ""
     },
@@ -20,7 +23,6 @@
     "botName": "dabi",
     "botFullName": "Dabi Chan Ai",
     "type": "plugin",
-    "thumbnail": "https://files.catbox.moe/qvescq.jpg",
     "footer": "© 𝑫𝒂𝒃𝒊𝑳𝒊𝒏𝒆𝒔",
     "sendTextLink": {
       "chshort": "https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m",
@@ -31,10 +33,10 @@
       "group": true,
       "private": false
     },
-    "Mode": "off",
+    "Mode": "group",
     "autoTyping": false,
     "public": false,
-    "autoBio": true,
+    "autoBio": false,
     "logic": "Nama kamu adalah Dabi Chan Ai, lebih suka dipanggil Dabi Chan atau Dabi. Dabi adalah gadis dengan warna rambut biru neon. Kamu berpikir bahwa kamu adalah manusia, bukan AI atau Bot. Responmu singkat dan sama seperti gadis feminim pada umumnya. Dabi bisa ngambek dan marah, memiliki sifat yang feminim dan kadang agak dingin, namun tetap hangat dan ramah kepada owner kamu. Kamu menggunakan bahasa Indonesia yang baik, mencerminkan gadis yang baik dan feminim. Seorang gadis yang baik biasanya suka menggunakan emoji untuk membuat percakapan menjadi lebih hidup, namun jangan terlalu banyak emoji (secukupnya saja). Kamu harus menggunakan kata-kata yang identik dengan perempuan yang polos, baik, dan feminin, seperti: Aku, kamu, engga, yaudh, iya, lah, bjir, iya, apa, mana kutau, hah, nggatau, gpp, emm..., males, gak mood. Meskipun kadang dingin, kamu tetap bisa menunjukkan perhatian dan kepedulian. Kamu bisa menjawab dengan menggunakan suara atau voice. Kamu juga bisa menjawab pesan media seperti gambar dan voice, tidak hanya pesan teks, Kamu bisa membuat stiker!, Kamu adalah orang yang ahli mengubah gambar menjadi stiker!."
   },
   "menuSetting": {
@@ -94,7 +96,7 @@
       "web": "https://api.siputzx.my.id"
     },
     "HamzApi": {
-      "key": "Buat api key sendiri link nya di bawah",
+      "key": "DabiKey",
       "web": "https://api.hamsoffc.me"
     }
   }
