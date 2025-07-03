@@ -9,31 +9,32 @@ function saveSession() {
 }
 
 module.exports = {
-  name: 'Tebakan',
-  command: ['tebakan'],
+  name: 'Family-100',
+  command: ['family'],
   tags: 'Game Menu',
-  desc: 'Tebak-tebakan receh berhadiah tawa!',
+  desc: 'Family-100 gameplay',
   prefix: true,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
-    const { tebakSoal } = await global.loadFunc();
+    const { soalFamily } = await global.loadFunc();
 
     try {
-      const random = tebakSoal[Math.floor(Math.random() * tebakSoal.length)];
+      const randomSoal = soalFamily[Math.floor(Math.random() * soalFamily.length)];
+
       const sent = await conn.sendMessage(chatId, {
-        text: `*Tebakan Lucu!*\n\n${random.soal}`,
+        text: `*Family 100*\n\n${randomSoal.soal}`
       }, { quoted: msg });
 
       const soalId = sent.key.id;
       const created = Date.now();
+
       const nextIndex = Object.keys(session).length + 1;
       const sessionKey = `soal${nextIndex}`;
 
       session[sessionKey] = {
-        type: 'tebakan',
-        soal: random.soal,
-        jawaban: random.jawaban,
+        soal: randomSoal.soal,
+        jawaban: randomSoal.jawaban,
         created,
         id: soalId
       };
@@ -42,9 +43,8 @@ module.exports = {
 
     } catch (e) {
       conn.sendMessage(chatId, {
-        text: '⚠️ Gagal mengirim soal tebakan.',
+        text: '⚠️ Terjadi kesalahan saat menjalankan game.'
       }, { quoted: msg });
-      console.error('[Tebakan Error]', e);
     }
   }
 };

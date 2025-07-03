@@ -9,20 +9,20 @@ function saveSession() {
 }
 
 module.exports = {
-  name: 'Tebakan',
-  command: ['tebakan'],
+  name: 'SiapaAku',
+  command: ['siapakahaku'],
   tags: 'Game Menu',
-  desc: 'Tebak-tebakan receh berhadiah tawa!',
+  desc: 'Game Siapakah Aku? Coba tebak siapa aku dari petunjuk!',
   prefix: true,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
-    const { tebakSoal } = await global.loadFunc();
+    const { siapaAkuSoal } = await global.loadFunc();
 
     try {
-      const random = tebakSoal[Math.floor(Math.random() * tebakSoal.length)];
+      const random = siapaAkuSoal[Math.floor(Math.random() * siapaAkuSoal.length)];
       const sent = await conn.sendMessage(chatId, {
-        text: `*Tebakan Lucu!*\n\n${random.soal}`,
+        text: `*Siapakah Aku?*\n\n${random.soal}`,
       }, { quoted: msg });
 
       const soalId = sent.key.id;
@@ -31,9 +31,9 @@ module.exports = {
       const sessionKey = `soal${nextIndex}`;
 
       session[sessionKey] = {
-        type: 'tebakan',
+        type: 'siapakahaku',
         soal: random.soal,
-        jawaban: random.jawaban,
+        jawaban: random.jawaban.toLowerCase(),
         created,
         id: soalId
       };
@@ -42,9 +42,9 @@ module.exports = {
 
     } catch (e) {
       conn.sendMessage(chatId, {
-        text: '⚠️ Gagal mengirim soal tebakan.',
+        text: '⚠️ Gagal mengirim soal *Siapakah Aku?*',
       }, { quoted: msg });
-      console.error('[Tebakan Error]', e);
+      console.error('[SiapakahAku Error]', e);
     }
   }
 };
