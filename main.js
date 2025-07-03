@@ -13,13 +13,11 @@ const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys
 const { isPrefix } = globalSetting;
 const { loadPlug } = require('./toolkit/helper');
 const { set, get, delete: del, reset, memoryCache } = require('./toolkit/transmitter.js');
+const Cc = require('./temp/prgM.js');
+const { timer } = require('./toolkit/transmitter.js');
+const { handleGame } = require('./toolkit/funcGame');
 
 const logger = pino({ level: 'silent' });
-
-const folderName = 'temp';
-fs.mkdir(folderName, (err) => {
-  if (!err) console.log(chalk.greenBright.bold('Berhasil membuat folder :', folderName));
-});
 
 global.plugins = {};
 global.categories = {};
@@ -43,16 +41,6 @@ setInterval(() => {
 
   saveDB(db);
 }, 60000);
-
-const configPath = path.join(__dirname, './toolkit/set/config.json');
-fs.watchFile(configPath, () => {
-  try {
-    delete require.cache[require.resolve(configPath)];
-    global.setting = require(configPath);
-  } catch (err) {
-    console.error(chalk.redBright.bold('❌ Gagal memuat ulang config.json:'), err);
-  }
-});
 
 const mute = async (chatId, senderId, conn) => {
   const db = readDB();
@@ -105,6 +93,7 @@ const startBot = async () => {
       console.log(chalk.greenBright.bold('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
     }
 
+    timer(conn);
     if (!conn.reactionCache) conn.reactionCache = new Map();
 
     conn.ev.on('connection.update', ({ connection }) => {
@@ -215,6 +204,8 @@ const startBot = async () => {
       else if (mediaInfo) console.log(chalk.whiteBright.bold(`  ${mediaInfo}`));
       else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
+      await Cc(conn, msg, textMessage);
+
       if (await gcFilter(conn, msg, chatId, senderId, isGroup)) return;
       if (await bdWrd(conn, msg, chatId, senderId, isGroup)) return;
       if (await mute(chatId, senderId, conn)) return;
@@ -245,9 +236,12 @@ const startBot = async () => {
       await afkCencel(senderId, chatId, msg, conn);
       await afkTgR(msg, conn);
 
+      const isGame = await handleGame(conn, msg, chatId, textMessage);
+
       if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) return;
 
       if (!isPrem) {
+        const mode = global.setting?.botSetting?.Mode || 'private';
         if (mode === 'group' && !isGroup) return;
         if (mode === 'private' && isGroup) return;
       }
@@ -256,35 +250,44 @@ const startBot = async () => {
       const parsedNoPrefix = parseNoPrefix(msg);
       if (!parsedPrefix && !parsedNoPrefix) return;
 
+      const { getDbUsr, getNmbUsr } = require('./toolkit/transmitter');
+
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
         const sender = chatInfo.senderId;
 
-        for (const [file, plugin] of Object.entries(global.plugins)) {
+        for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
-          const exPrx = plugin.prefix;
-          const allowRun =
-            exPrx === 'both' ||
-            (exPrx === false && !prefixUsed) ||
-            ((exPrx === true || exPrx === undefined) && prefixUsed);
+          if (prefixUsed && !getDbUsr(sender) && !plugin.whiteLiss) {
+            await conn.sendMessage(chatInfo.chatId, {
+              text: '❌ Kamu belum terdaftar.\nKetik *.daftar* untuk mendaftar.'
+            }, { quoted: msg });
+            return;
+          }
 
-          if (!allowRun) continue;
+          const pluginPrefix = plugin.prefix;
+          const canRun =
+            pluginPrefix === 'both' ||
+            (pluginPrefix === false && !prefixUsed) ||
+            ((pluginPrefix === true || pluginPrefix === undefined) && prefixUsed);
 
+          if (!canRun) continue;
 
           try {
             await plugin.run(conn, msg, { ...parsed, isPrefix });
 
             const db = readDB();
-            const user = getUser(db, sender);
-            if (user) {
-              db.Private[user.key].cmd = (db.Private[user.key].cmd || 0) + 1;
+            const userData = getUser(db, sender);
+            if (userData) {
+              db.Private[userData.key].cmd = (db.Private[userData.key].cmd || 0) + 1;
               saveDB(db);
             }
 
           } catch (err) {
-            console.log(chalk.redBright.bold(`❌ Error pada plugin: ${file}\n${err.message}`));
+            console.log(chalk.redBright.bold(`❌ Error pada plugin: ${fileName}\n${err.message}`));
           }
+
           break;
         }
       };
@@ -340,6 +343,7 @@ const startBot = async () => {
 console.log(chalk.cyanBright.bold('Create By Dabi\n'));
 loadPlug();
 startBot();
+watchCfg();
 
 let file = require.resolve(__filename);
 fs.watchFile(file, () => {
