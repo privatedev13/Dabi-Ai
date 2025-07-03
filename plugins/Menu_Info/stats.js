@@ -24,8 +24,6 @@ module.exports = {
 
       global.commandCount = (global.commandCount || 0) + 1;
 
-      const thumbnail = global.thumbnail;
-
       const uptime = process.uptime();
       const totalMemory = os.totalmem();
       const freeMemory = os.freemem();
@@ -108,27 +106,17 @@ Stats System
 ┖ ${btn} Storage: ${usedDisk} / ${totalDisk} (Free: ${freeDisk})
 `.trim();
 
-      const adReply = {
-        text: statsMessage,
+      await conn.sendMessage(chatId, {
+        image: thumb,
+        caption: statsMessage,
         contextInfo: {
-          externalAdReply: {
-            title: "Bot Stats",
-            body: "Ini adalah statistik bot",
-            thumbnailUrl: thumbnail,
-            sourceUrl: "https://github.com/maoudabi0",
-            mediaType: 1,
-            renderLargerThumbnail: true,
-            showAdAttribution: true
-          },
-          forwardingScore: 19,
+          forwardingScore: 0,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: '120363310100263711@newsletter'
           }
         }
-      };
-
-      await conn.sendMessage(chatId, adReply, { quoted: msg });
+      }, { quoted: msg });
 
     } catch (err) {
       console.error('❌ Error pada plugin stats:', err.message);

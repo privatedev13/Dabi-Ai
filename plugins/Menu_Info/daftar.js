@@ -4,6 +4,7 @@ module.exports = {
   tags: 'Info Menu',
   desc: 'Mendaftarkan pengguna atau grup.',
   prefix: true,
+  whiteLiss: true,
 
   run: async (conn, msg, {
     chatInfo,

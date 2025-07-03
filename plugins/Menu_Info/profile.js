@@ -63,7 +63,7 @@ module.exports = {
         ? `Kamu bisa claim trial premium dengan *${prefix}claim*`
         : `Kamu sudah claim trial`;
 
-      let profileText = `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n`;
+      let profileText = `${head} ${Obrack} Profil ${pushName} ${Cbrack}\n`;
       profileText += `${side} ${btn} *Nama:* ${username || 'Pengguna'}\n`;
       profileText += `${side} ${btn} *Nomor:* ${user.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n`;
       profileText += `${side} ${btn} *Auto AI:* ${user.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n`;
@@ -76,18 +76,11 @@ module.exports = {
       profileText += `${claimText}`;
 
       await conn.sendMessage(chatId, {
-        text: profileText,
+        image: thumb,
+        caption: profileText,
         mentions: [mentionTarget],
         contextInfo: {
-          externalAdReply: {
-            title: pushName,
-            body: `Ini adalah Profile ${pushName}`,
-            thumbnailUrl: thumbnail,
-            mediaType: 1,
-            renderLargerThumbnail: true,
-          },
-          mentionedJid: [mentionTarget],
-          forwardingScore: 1,
+          forwardingScore: 0,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: '120363310100263711@newsletter'
