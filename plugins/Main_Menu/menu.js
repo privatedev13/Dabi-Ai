@@ -22,27 +22,17 @@ module.exports = {
     const requestedCategory = args.length ? args.join(' ').toLowerCase() : null;
     const menuText = getMenuText(pushName, requestedCategory, prefix);
 
-    const adReply = {
+    await conn.sendMessage(chatId, {
+      image: thumb,
+      caption: menuText,
       contextInfo: {
-        externalAdReply: {
-          title: botName,
-          body: 'Silakan pilih menu yang tersedia',
-          thumbnailUrl: thumbnail,
-          sourceUrl: 'https://github.com/maoudabi0',
-          mediaUrl: 'https://wa.me/6285725892962?text=Beli+Kak',
-          mediaType: 1,
-          renderLargerThumbnail: true,
-          showAdAttribution: true
-        },
         forwardingScore: 0,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
           newsletterJid: '120363310100263711@newsletter'
         }
       }
-    };
-
-    await conn.sendMessage(chatId, { text: menuText, ...adReply }, { quoted: msg });
+    }, { quoted: msg });
   }
 };
 
