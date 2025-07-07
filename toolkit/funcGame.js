@@ -22,22 +22,30 @@ async function handleGame(conn, msg, chatId, textMessage) {
     const matchedKey = Object.keys(db).find(key => db[key].id === replyTo);
     if (!matchedKey) return false;
 
-    const jawabanBenar = Array.isArray(db[matchedKey].jawaban)
-      ? db[matchedKey].jawaban.map(j => j.toLowerCase())
-      : [db[matchedKey].jawaban.toLowerCase()];
-    const userJawab = textMessage.trim().toLowerCase();
+    const data = db[matchedKey];
 
-    if (jawabanBenar.includes(userJawab)) {
+    let jawaban = data.jawaban || (data.data && data.data.jawaban);
+    if (!jawaban) return false;
+
+    const jawabanBenar = Array.isArray(jawaban)
+      ? jawaban.map(j => j.toLowerCase())
+      : [String(jawaban).toLowerCase()];
+
+    const userJawab = textMessage.trim().toLowerCase();
+    const benar = jawabanBenar.includes(userJawab);
+
+    if (benar) {
       await conn.sendMessage(chatId, {
         text: `🎉 Jawaban benar! Kamu hebat!`,
       }, { quoted: msg });
+
+      delete db[matchedKey];
     } else {
       await conn.sendMessage(chatId, {
         text: `Jawaban *salah*!\n\nJawaban nya adalah: ${jawabanBenar.join(', ')}`,
       }, { quoted: msg });
     }
 
-    delete db[matchedKey];
     saveDb(db);
     return true;
   } catch (err) {
