@@ -61,12 +61,11 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 <details>
   <summary> Penting </summary>
     Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui.
-  </details>
 </details><br>
-  Pada dasarnya, Semua Script Bot WhatsApp mendukung termux, tetapi karena keterbatasan device, akhirnya beberapa **Dev** menyarankan untuk menggunakan Penel/Server.<br><br>
+  Pada dasarnya, Semua Script Bot WhatsApp mendukung termux, tetapi karena keterbatasan device, akhirnya beberapa Dev menyarankan untuk menggunakan Penel/Server.<br><br>
 <details>
   <summary>Tip</summary>
-    Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
+    Gunakan Device yang kompatibel/sesuai dengan spesifikasi Script ini
 </details>
 
 ### <div align='center'>Spesifikasi Yang Di Sarankan</div> 
@@ -103,8 +102,8 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    tunggu hingga process selesai, jika process selesai atau berhasil maka langkah berikutnya adalah
 
 <details>
-<summary>Tip</summary>
-  Jika `npm install` tidak bisa maka gunakan
+  <summary>Tip</summary>
+    Jika `npm install` tidak bisa maka gunakan
 </details><br>
 3. Yarn Package Meneger
 
@@ -136,8 +135,8 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 
 ## Request & Fix 
 <details>
-<summary>Laporan dan Request</summary>
-[sini](https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug)
+  <summary>Help Dabi</summary>
+    Email: maoudabioffc@gmail.com
 </details><br>
 
 # (C)
