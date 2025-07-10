@@ -1,12 +1,12 @@
 # <div align='center'>Dabi-Ai-WhastApp</div>
 
 <p align="center">
- <img src="https://raw.githubusercontent.com/maoudabi0/Dabi-Ai-Documentation/main/assets/Dabi-Ai.png">
+  <img src="https://raw.githubusercontent.com/maoudabi0/Dabi-Ai-Documentation/main/assets/Dabi-Ai.png">
 </p>
 
 - - -
 
-## Salam
+## Hi Everyone
    Hari yang menyenangkan teman-teman. Kali ini saya akan memberikan sebuah informasi tentang Script Dabi-Ai ini, ini adalah sebuah Script Dabi-Ai/Base Bot WhatsApp,  dalam rangkaian kali ini saya benar-benar berterima kasih kepada kalian yang menggunakan Script ini.
 
    Tentu saja Script ini bisa terhubung dengan akun/nomor WhatsApp anda, Berikut adalah beberapa spesifikasi tentang Script Dabi-Ai ini:
@@ -58,13 +58,16 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 
 ## Cara Memasangnya
 
->  [!Important] 
->  Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui. Jika anda belum mengetahui semua dan masih tidak faham, maka klik link yang ada di [Sini](https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m/906) dan pelajari baik-baik.
-
-  Pada dasarnya, Semua Script Bot WhatsApp mendukung termux, tetapi karena keterbatasan device, akhirnya beberapa **Dev** menyarankan untuk menggunakan Penel/Server.
-
->  [!Tip] 
->  Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
+<details>
+  <summary> Penting </summary>
+    Pastikan anda membaca ini dengan baik, untuk Memasangnya ada beberapa hal yang harus anda ketahui.
+  </details>
+</details><br>
+  Pada dasarnya, Semua Script Bot WhatsApp mendukung termux, tetapi karena keterbatasan device, akhirnya beberapa **Dev** menyarankan untuk menggunakan Penel/Server.<br><br>
+<details>
+  <summary>Tip</summary>
+    Gunakan Device yang **kompatibel/sesuai** dengan spesifikasi Script ini
+</details>
 
 ### <div align='center'>Spesifikasi Yang Di Sarankan</div> 
   Ini adalah spesifikasi device yang saya sarankan untuk menjalankan Bot WhatsApp di Termux: 
@@ -99,9 +102,10 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
    
    tunggu hingga process selesai, jika process selesai atau berhasil maka langkah berikutnya adalah
 
-  >  [!Tip] 
-  >  Jika `npm install` tidak bisa maka gunakan
-
+<details>
+<summary>Tip</summary>
+  Jika `npm install` tidak bisa maka gunakan
+</details><br>
 3. Yarn Package Meneger
 
    gunakan yarn untuk menginstall **Package** di dalam `~/node_module` pada Script Bot WhatsApp dengan cara mengetik/menyalin ini
@@ -131,7 +135,10 @@ Salin atau ketik promt seperti yang ada di bawah ini di termux
 - - -
 
 ## Request & Fix 
-   laporkan Bug ke [sini](https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug)
+<details>
+<summary>Laporan dan Request</summary>
+[sini](https://wa.me/6285725892962?text=halo+kak+aku+ingin+melaporkan+bug)
+</details><br>
 
 # (C)
 <div align="left">
