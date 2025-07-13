@@ -35,7 +35,21 @@ module.exports = {
       }
 
       await conn.sendMessage(chatId, {
-        text: welcomeText
+        text: welcomeText,
+        contextInfo: {
+          externalAdReply: {
+            title: botFullName,
+            body: 'Selamat Datang Member Baru',
+            thumbnailUrl: thumbnail,
+            mediaType: 1,
+            renderLargerThumbnail: true,
+          },
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363310100263711@newsletter'
+          }
+        }
       }, { quoted: msg });
 
     } catch (error) {

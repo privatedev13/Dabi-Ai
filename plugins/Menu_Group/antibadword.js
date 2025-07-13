@@ -1,6 +1,6 @@
 module.exports = {
   name: 'antibadword',
-  command: ['antibadword'],
+  command: ['badword', 'antibadword'],
   tags: 'Group Menu',
   desc: 'Mengatur fitur anti badword dalam grup',
   prefix: true,
