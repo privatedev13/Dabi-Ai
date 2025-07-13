@@ -10,36 +10,89 @@ const dbPath = path.join(__dirname, './db/database.json');
 const memoryCache = {};
 const groupCache = new Map();
 
-async function mtData(id, conn) {
-  if (!global.groupCache) global.groupCache = new Map();
-  if (global.groupCache.has(id)) return global.groupCache.get(id);
+const sesiBell = path.join(__dirname, '../session/BellaSession.json');
+const sesiAi = path.join(__dirname, '../session/AiSesion.json');
 
+function loadSession(file) {
+  if (!fs.existsSync(file)) return {};
+  return JSON.parse(fs.readFileSync(file));
+}
+
+function saveSession(file, session) {
+  fs.writeFileSync(file, JSON.stringify(session, null, 2));
+}
+
+async function bell(body) {
   try {
-    const metadata = await conn.groupMetadata(id);
-    global.groupCache.set(id, metadata);
-    setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
-    return metadata;
+    const res = await fetch(`${termaiWeb}/api/chat/logic-bell?key=${termaiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return await res.json();
   } catch (e) {
-    console.error(chalk.redBright.bold('Gagal ambil metadata grup:', e));
+    console.error(chalk.red('Request Error:'), e.message);
+    return { status: false, msg: 'Request gagal terkirim.' };
+  }
+}
+
+async function Elevenlabs(text, voice = "bella", pitch = 0, speed = 1.0) {
+  try {
+    const response = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`);
+    if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
+    return await response.arrayBuffer();
+  } catch (error) {
+    console.error('Fetch error:', error);
     return null;
   }
 }
 
-const sessionPath = path.join(__dirname, '../session/AiSesion.json');
+async function logicBella(text, msg, senderId, conn) {
+  const session = loadSession(sesiBell);
 
-function loadSesiAi() {
-  if (!fs.existsSync(sessionPath)) return {};
-  return JSON.parse(fs.readFileSync(sessionPath));
-}
+  const res = await bell({
+    text,
+    id: senderId,
+    fullainame: botFullName,
+    nickainame: botName,
+    senderName: msg.pushName || 'Unknown',
+    ownerName,
+    date: new Date().toISOString(),
+    role: "Sahabat Deket",
+    msgtype: "text",
+    custom_profile: logic,
+    commands: [{
+      description: "Jika perlu direspon dengan suara",
+      output: {
+        cmd: "voice",
+        msg: "Pesan di sini. Gunakan gaya bicara <nickainame> yang menarik dan realistis, lengkap dengan tanda baca yang tepat agar terdengar hidup saat diucapkan."
+      }
+    }]
+  });
 
-function saveSesiAi(session) {
-  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2));
+  if (!res.status) {
+    console.error('Bella response failed:', res.msg);
+    return { cmd: 'text', msg: `Maaf, Bella lagi error. Coba lagi nanti ya.` };
+  }
+
+  const { msg: replyMsg, cmd } = res.data;
+
+  session[senderId] ??= [];
+  session[senderId].push({ time: new Date().toISOString(), user: text, response: replyMsg, cmd });
+  saveSession(sesiBell, session);
+
+  if (cmd === 'voice') {
+    const audio = await Elevenlabs(replyMsg);
+    return { cmd: 'voice', msg: replyMsg, audio };
+  }
+
+  return { cmd, msg: replyMsg };
 }
 
 async function ai(textMessage, msg, senderId) {
   const ctx = global.logic;
   const url = `${global.siptzKey}/api/ai/gpt3`;
-  const ses = loadSesiAi();
+  const ses = loadSession(sesiAi);
 
   ses[senderId] ??= [{ role: "system", content: ctx }];
   ses[senderId].push({ role: 'user', content: textMessage });
@@ -56,13 +109,28 @@ async function ai(textMessage, msg, senderId) {
     const json = await res.json();
     if (json?.status && json?.data) {
       ses[senderId].push({ role: "assistant", content: json.data });
-      saveSesiAi(ses);
+      saveSession(sesiAi, ses);
       return json.data;
     }
     throw new Error("Invalid response");
   } catch (e) {
     console.error(chalk.redBright.bold('Ai Error: ', e.message));
     return "Maaf, terjadi kesalahan saat menghubungi AI.";
+  }
+}
+
+async function mtData(id, conn) {
+  if (!global.groupCache) global.groupCache = new Map();
+  if (global.groupCache.has(id)) return global.groupCache.get(id);
+
+  try {
+    const metadata = await conn.groupMetadata(id);
+    global.groupCache.set(id, metadata);
+    setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
+    return metadata;
+  } catch (e) {
+    console.error(chalk.redBright.bold('Gagal ambil metadata grup:', e));
+    return null;
   }
 }
 
@@ -211,7 +279,8 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
       ''
     ).toLowerCase();
 
-    const detected = badwords.some(word => textMsg.includes(word));
+    const detected = badwords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(textMsg));
+
     if (detected) {
       await conn.sendMessage(chatId, {
         text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
@@ -228,16 +297,22 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
 async function afkCencel(senderId, chatId, msg, conn) {
   const db = readDB();
   const senderKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === senderId);
-  if (!senderKey || !db.Private[senderKey].afk?.afkTime) return;
+  if (!senderKey) return;
 
-  const afkSince = db.Private[senderKey].afk.afkTime;
-  const reason = db.Private[senderKey].afk.reason || 'Tidak ada alasan';
+  const user = db.Private[senderKey];
+  const afkData = user.afk || {};
+  if (!afkData.afkTime) return;
+
+  const afkStart = afkData.afkTime;
+  const afkLast = afkData.Time || afkStart;
+  const reason = afkData.reason || 'Tidak ada alasan';
+
   const now = Math.floor(Date.now() / 1000);
+  let waktu = Format.duration(afkStart, now);
 
-  let waktu = Format.duration(afkSince, now);
-  if (!waktu) waktu = 'Baru saja';
+  if (!waktu || waktu === '0 detik') waktu = 'Baru saja';
 
-  db.Private[senderKey].afk = {};
+  user.afk = {};
   saveDB(db);
 
   await conn.sendMessage(chatId, {
@@ -261,16 +336,19 @@ async function afkTgR(msg, conn) {
   const checkAFK = (jid, tagType) => {
     const data = Object.values(db.Private).find(u => u.Nomor === jid && u.afk?.afkTime);
     if (!data) return;
-    const waktu = Format.duration(data.afk.afkTime, Math.floor(Date.now() / 1000)) || 'Baru saja';
+
+    const afkStart = data.afk.afkTime;
+    const now = Math.floor(Date.now() / 1000);
+    const waktu = Format.duration(afkStart, now) || 'Baru saja';
     const alasan = data.afk.reason || 'Tidak ada alasan';
     const text = tagType === 'reply'
       ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`
       : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`;
+
     return conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
   };
 
   if (quoted && quoted !== botNumber) return checkAFK(quoted, 'reply');
-
   for (const jid of mentions) {
     if (jid !== botNumber) return checkAFK(jid, 'mention');
   }
@@ -370,6 +448,76 @@ function getNmbUsr(nomorPengguna) {
   return Object.values(db.Private || {}).find(user => user.Nomor === nomorPengguna) || null
 }
 
+const voiceList = [  
+  'prabowo',  
+  'yanzgpt',  
+  'bella',  
+  'megawati',  
+  'echilling',  
+  'adam',  
+  'thomas_shelby',  
+  'michi_jkt48',  
+  'nokotan',  
+  'jokowi',  
+  'boboiboy',  
+  'keqing',  
+  'anya',  
+  'yanami_anna',  
+  'MasKhanID',  
+  'Myka',  
+  'raiden',  
+  'CelzoID'  
+];
+
+async function voiceCmd(message, isPrefix = '.') {  
+  if (!message || !message.startsWith(isPrefix)) return null;
+
+  const [commandText, ...rest] = message.slice(isPrefix.length).trim().split(/\s+/);  
+  const voice = commandText.toLowerCase();  
+
+  const matchedVoice = voiceList.find(v => v.toLowerCase() === voice);
+  if (!matchedVoice) return null;
+
+  return {  
+    voice: matchedVoice,  
+    text: rest.join(' ').trim()  
+  };  
+}
+
+async function labvn(message, msg, conn, chatId, isPrefix = '.') {
+  const result = await voiceCmd(message, isPrefix);
+  if (!result) return;
+  const prm = await isPrem({ premium: true }, conn, msg);
+  if (!prm) return;
+
+  const { voice, text } = result;
+
+  try {
+    const pitch = 0;
+    const speed = 0.9;
+
+    const url = `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const audioBuffer = await response.arrayBuffer();
+    const audioMessage = Buffer.from(audioBuffer);
+
+    await conn.sendMessage(chatId, {
+      audio: audioMessage,
+      mimetype: 'audio/mp4',
+      ptt: true
+    }, { quoted: msg });
+
+  } catch (error) {
+    console.error(error);
+    return conn.sendMessage(chatId, {
+      text: `⚠️ *Gagal membuat suara!*`
+    }, { quoted: msg });
+  }
+}
+
 module.exports = {
   ai,
   mtData,
@@ -389,5 +537,7 @@ module.exports = {
   timer,
   getStId,
   getDbUsr,
-  getNmbUsr
+  getNmbUsr,
+  logicBella,
+  labvn
 };

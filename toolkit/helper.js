@@ -5,8 +5,6 @@ const { exec } = require('child_process');
 const axios = require('axios');
 const chalk = require('chalk');
 
-const thumb = fs.readFileSync('./toolkit/set/Dabi.jpg');
-
 const pluginDir = path.join(__dirname, '../plugins');
 const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
@@ -226,11 +224,30 @@ const chkOwner = async (plugin, conn, msg) => {
 };
 
 const chkPrem = async (plugin, conn, msg) => {
-  if (plugin.isPremium) {
+  if (plugin.premium) {
     const { chatId, senderId } = getSenderId(msg);
     const user = global.getUserData(senderId);
+    if (!user) {
+      console.log(`User data not found for senderId: ${senderId}`);
+    }
     if (!user?.isPremium?.isPrem) {
-      await conn.sendMessage(chatId, { text: prem }, { quoted: msg });
+      await conn.sendMessage(chatId, {
+        text: prem,
+        contextInfo: {
+          externalAdReply: {
+            title: "Stop",
+            body: "Hanya Untuk Pengguna Premium",
+            thumbnailUrl: 'https://files.catbox.moe/to26f6.jpg',
+            mediaType: 1,
+            renderLargerThumbnail: true,
+          },
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363310100263711@newsletter'
+          }
+        }
+      }, { quoted: msg });
       return false;
     }
   }
@@ -271,6 +288,28 @@ const AiDB = (senderId, chatId) => {
   return false;
 };
 
+const BellDB = (senderId, chatId) => {
+  const database = readDB();
+
+  if (chatId.endsWith('@s.whatsapp.net')) {
+    for (const key in database.Private) {
+      const user = database.Private[key];
+      if (user.Nomor === senderId) {
+        return user.bell === true;
+      }
+    }
+  } else if (chatId.endsWith('@g.us')) {
+    for (const key in database.Grup) {
+      const group = database.Grup[key];
+      if (group.Id === chatId) {
+        return group.bell === true;
+      }
+    }
+  }
+
+  return false;
+};
+
 const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
   const botRwId = conn.user?.id || '';
   const botNumber = botRwId.split(':')[0] + '@s.whatsapp.net';
@@ -286,27 +325,39 @@ const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
 
   if (contextInfo && participant && !replyBot && !mentionBot) return false;
 
-  if (!AiDB(senderId, chatId)) return false;
+  const aiEnabled = AiDB(senderId, chatId);
+  const bellEnabled = BellDB?.(senderId, chatId);
 
-  if (
-    textMessage &&
-    (
-      textMessage.toLowerCase().includes(botName) ||
-      replyBot ||
-      mentionBot
-    )
-  ) {
+  if (!aiEnabled && !bellEnabled) return false;
+
+  const mentioned = textMessage?.toLowerCase().includes(botName);
+  const trigger = mentioned || replyBot || mentionBot;
+
+  if (!trigger) return false;
+
+  if (aiEnabled) {
     const aiReply = await global.ai(textMessage, msg, senderId);
-
     if (aiReply) {
       await conn.sendMessage(chatId, { text: aiReply }, { quoted: msg });
     } else {
       await conn.sendMessage(chatId, { text: 'Maaf, saya tidak mengerti.' }, { quoted: msg });
     }
-    return true;
   }
 
-  return false;
+  if (bellEnabled) {
+    const bellaRes = await Bella(textMessage, msg, senderId);
+    if (bellaRes.cmd === 'voice' && bellaRes.audio) {
+      await conn.sendMessage(chatId, { 
+        audio: Buffer.from(bellaRes.audio), 
+        mimetype: 'audio/mpeg', 
+        ptt: true 
+      }, { quoted: msg });
+    } else if (bellaRes.msg) {
+      await conn.sendMessage(chatId, { text: bellaRes.msg }, { quoted: msg });
+    }
+  }
+
+  return true;
 };
 
 const exCht = (msg = {}) => {
@@ -400,8 +451,7 @@ module.exports = {
   exCht,
   parseMessage,
   parseNoPrefix,
-  exGrp,
-  thumb
+  exGrp
 };
 
 fs.watchFile(__filename, () => {

@@ -25,7 +25,7 @@ global.getUserData = (userId) => {
 
 global.premium = (userId) => {
     const userData = global.getUserData(userId);
-    return userData ? userData.premium?.prem ?? false : false;
+    return userData ? userData.isPremium?.isPrem ?? false : false;
 };
 
 global.isOwner = Sys.chkOwner;
@@ -48,8 +48,8 @@ global.parseNoPrefix = Sys.parseNoPrefix;
 global.chtEmt = Sys.chtEmt;
 global.stGrup = Sys.exGrp;
 global.Format = Sys.Format;
-global.thumb = Sys.thumb;
 global.ai = emtData.ai;
+global.Bella = emtData.logicBella;
 global.mtData = emtData.mtData;
 global.gtMJid = emtData.gtMention;
 global.gbLink = emtData.gbLink;
@@ -81,6 +81,7 @@ Object.assign(global, {
     footer: setting.botSetting.footer,
     botFullName: setting.botSetting.botFullName || 'Belum Diset',
     botName: setting.botSetting.botName || 'Belum Diset',
+    thumbnail: setting.botSetting.thumbnail,
     isPrefix: setting.menuSetting.isPrefix,
     ownerName: setting.ownerSetting.ownerName || 'default',
     ownerNumber: setting.ownerSetting.ownerNumber,
@@ -101,6 +102,8 @@ Object.assign(global, {
     siptzKey: setting.apiKey.siputKey.web,
     HamzKey: setting.apiKey.HamzApi.key,
     HamzWeb: setting.apiKey.HamzApi.web,
+    termaiWeb: setting.apiKey.termai.web,
+    termaiKey: setting.apiKey.termai.key,
 
     ownerStore: {
         dana: setting.ownerSetting.ownerStore?.dana || 'Tidak tersedia',
