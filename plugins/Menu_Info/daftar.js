@@ -6,21 +6,14 @@ module.exports = {
   prefix: true,
   whiteLiss: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
+  run: async (conn, msg, { chatInfo, textMessage, prefix, commandText, args }) => {
+    const { chatId, senderId, isGroup, pushName } = chatInfo;
     try {
-      const { chatId, senderId, isGroup, pushName } = chatInfo;
-
       intDB();
-      let db = readDB();
+      const db = readDB();
 
-      if (!db.Private || typeof db.Private !== 'object') db.Private = {};
-      if (!db.Grup || typeof db.Grup !== 'object') db.Grup = {};
+      db.Private = db.Private || {};
+      db.Grup = db.Grup || {};
 
       if (commandText === 'daftargc') {
         if (!isGroup) {
@@ -30,105 +23,78 @@ module.exports = {
         const metadata = await conn.groupMetadata(chatId);
         const groupName = metadata.subject;
 
-        const groupExists = Object.values(db.Grup).some(g => g.Id === chatId);
-        if (groupExists) {
+        if (Object.values(db.Grup).some(g => g.Id === chatId)) {
           return conn.sendMessage(chatId, { text: '✅ Grup ini sudah terdaftar di database.' }, { quoted: msg });
         }
 
         db.Grup[groupName] = {
           Id: chatId,
           autoai: false,
+          bell: false,
           mute: false,
           setWarn: 0,
           gbFilter: {
-            Welcome: {
-              welcome: false,
-              welcomeText: ''
-            },
-            Left: {
-              gcLeft: false,
-              leftText: '',
-            },
-            link: {
-              antilink: false,
-              setlink: ''
-            },
-            stiker: {
-              antistiker: false
-            },
+            Welcome: { welcome: false, welcomeText: '' },
+            Left: { gcLeft: false, leftText: '' },
+            link: { antilink: false, setlink: '' },
+            stiker: { antistiker: false },
             antibot: false,
             antiTagSw: false
           },
-          antibadword: {
-            badword: false,
-            badwordText: ''
-          }
+          antibadword: { badword: false, badwordText: '' }
         };
 
         saveDB(db);
+        return conn.sendMessage(chatId, { text: `✅ Grup *${groupName}* berhasil didaftarkan ke dalam database.` }, { quoted: msg });
+      }
 
+      if (args.length < 2) {
         return conn.sendMessage(chatId, {
-          text: `✅ Grup *${groupName}* berhasil didaftarkan ke dalam database.`
+          text: `📌 Cara daftar:\n\n*${prefix}daftar Nama Kamu Umur*\n\nContoh:\n*${prefix}daftar ${pushName} 15*`
         }, { quoted: msg });
       }
 
-      const teks = `📌 Cara daftar:\n\n*${prefix}daftar Nama Kamu Umur*\n\nContoh:\n*${prefix}daftar ${pushName} 15*`;
-
-      if (args.length < 2) {
-        return conn.sendMessage(chatId, { text: teks }, { quoted: msg });
-      }
-
       const nama = args.slice(0, -1).join(' ');
-      const umur = parseInt(args[args.length - 1]);
+      const umur = parseInt(args.at(-1));
 
       if (isNaN(umur) || umur < 12 || umur > 100) {
-        return conn.sendMessage(chatId, {
-          text: `❌ ️Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: msg });
+        return conn.sendMessage(chatId, { text: `❌ ️Maaf, umur kamu terlalu kecil untuk mendaftar.` }, { quoted: msg });
       }
 
       if (getUser(db, senderId)) {
         return conn.sendMessage(chatId, {
-          text: `❌ Nama *${nama}* sudah terdaftar!\n\nGunakan nama lain atau cek profil dengan *${prefix}profile*.` }, { quoted: msg });
+          text: `❌ Nama *${nama}* sudah terdaftar!\n\nGunakan nama lain atau cek profil dengan *${prefix}profile*.`
+        }, { quoted: msg });
       }
 
-      function generateRandomId() {
-        const chars = 'abcdefghijklmnopqrstuvwxyz';
-        let randomId = '';
-        for (let i = 0; i < 7; i++) {
-          randomId += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        randomId += Math.floor(Math.random() * 100) + 1;
-        return randomId;
-      }
+      const generateId = () => [...Array(7)].map(() => 'abcdefghijklmnopqrstuvwxyz'.charAt(Math.random() * 26 | 0)).join('') + (Math.floor(Math.random() * 100) + 1);
 
       db.Private[nama] = {
         Nomor: senderId,
         umur: umur.toString(),
-        noId: generateRandomId(),
+        noId: generateId(),
         autoai: false,
+        bell: false,
         cmd: 0,
         claim: false,
-        isPremium: {
-          isPrem: false,
-          time: 0,
-        },
+        isPremium: { isPrem: false, time: 0 },
         afk: {}
       };
 
       saveDB(db);
 
-      let textMsg = `✅ Pendaftaran berhasil!\n\n`;
-      textMsg += `🔹 Nama: *${nama}*\n`;
-      textMsg += `🔹 Umur: *${umur}*\n`;
-      textMsg += `🔹 ID: *${db.Private[nama].noId}*\n\n`;
-      textMsg += `Ketik *${prefix}profile* untuk melihat profil.`
-
       conn.sendMessage(chatId, {
-        text: textMsg,
-        contextInfo: { mentionedJid: [senderId] } }, { quoted: msg });
+        text:
+          `✅ Pendaftaran berhasil!\n\n` +
+          `🔹 Nama: *${nama}*\n` +
+          `🔹 Umur: *${umur}*\n` +
+          `🔹 ID: *${db.Private[nama].noId}*\n\n` +
+          `Ketik *${prefix}profile* untuk melihat profil.`,
+        contextInfo: { mentionedJid: [senderId] }
+      }, { quoted: msg });
 
-    } catch (error) {
-      console.error('Error di plugin daftar.js:', error);
+    } catch (err) {
+      console.error('Error di plugin daftar.js:', err);
       conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat mendaftar!' }, { quoted: msg });
     }
   },

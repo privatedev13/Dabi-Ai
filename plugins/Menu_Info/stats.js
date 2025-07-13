@@ -11,78 +11,50 @@ module.exports = {
   desc: 'Menampilkan status device dan statik bot',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
-    const startTime = performance.now();
+  run: async (conn, msg, { chatInfo }) => {
+    const start = performance.now();
+    const { chatId, senderId, pushName } = chatInfo;
+
+    global.commandCount = (global.commandCount || 0) + 1;
+
+    const uptime = process.uptime();
+    const totalMem = os.totalmem();
+    const usedMem = totalMem - os.freemem();
+    const cpu = os.cpus()[0]?.model || 'Tidak diketahui';
+    const platform = os.platform();
+    const arch = os.arch();
+    const botName = global.botName || 'Bot';
+    const botFullName = global.botFullName || botName;
+
+    const formatBytes = bytes => (bytes / 1024 / 1024).toFixed(2);
+
+    const deviceUptimeSec = os.uptime();
+    const d = Math.floor(deviceUptimeSec / 86400);
+    const h = Math.floor((deviceUptimeSec % 86400) / 3600);
+    const m = Math.floor((deviceUptimeSec % 3600) / 60);
+    const deviceUptime = `${d} hari ${h} jam ${m} menit`;
+
+    let totalDisk = 'Tidak diketahui', usedDisk = 'Tidak diketahui', freeDisk = 'Tidak diketahui';
     try {
-      const { chatId, senderId } = chatInfo;
+      const disk = execSync('df -h /', { encoding: 'utf8' }).split('\n')[1].split(/\s+/);
+      [totalDisk, usedDisk, freeDisk] = [disk[1], disk[2], disk[3]];
+    } catch (e) {
+      console.error('❌ Gagal mendapatkan disk info:', e.message);
+    }
 
-      global.commandCount = (global.commandCount || 0) + 1;
+    const db = global.readDB?.();
+    let privateCmd = '-', maxCmd = 0;
 
-      const uptime = process.uptime();
-      const totalMemory = os.totalmem();
-      const freeMemory = os.freemem();
-      const usedMemory = totalMemory - freeMemory;
-      const platform = os.platform();
-      const architecture = os.arch();
-      const botName = global.botName || 'Bot';
-      const botFullName = global.botFullName || botName;
-      const cpuInfo = os.cpus()[0]?.model || 'Tidak diketahui';
-
-      let deviceUptimeStr = 'Tidak diketahui';
-      try {
-        const deviceUptime = os.uptime();
-        const days = Math.floor(deviceUptime / 86400);
-        const hrs = Math.floor((deviceUptime % 86400) / 3600);
-        const mins = Math.floor((deviceUptime % 3600) / 60);
-        deviceUptimeStr = `${days} hari ${hrs} jam ${mins} menit`;
-      } catch (e) {
-        console.error('❌ Gagal mendapatkan uptime device:', e.message);
+    if (db?.Private) {
+      for (const user of Object.values(db.Private)) {
+        if (user.Nomor === senderId) privateCmd = user.cmd || 0;
+        if ((user.cmd || 0) > maxCmd) maxCmd = user.cmd;
       }
+    }
 
-      let totalDisk = 'Tidak diketahui';
-      let usedDisk = 'Tidak diketahui';
-      let freeDisk = 'Tidak diketahui';
-      try {
-        const diskInfo = execSync('df -h /', { encoding: 'utf8' }).split('\n')[1].split(/\s+/);
-        totalDisk = diskInfo[1];
-        usedDisk = diskInfo[2];
-        freeDisk = diskInfo[3];
-      } catch (e) {
-        console.error('❌ Gagal mendapatkan informasi penyimpanan:', e.message);
-      }
+    const responseTime = (performance.now() - start).toFixed(2);
 
-      const db = global.readDB();
-
-      let privateCmd = '-';
-      let maxCmd = 0;
-
-      if (db && db.Private) {
-        for (const key in db.Private) {
-          const user = db.Private[key];
-          const nomor = user.Nomor;
-          const cmd = user.cmd || 0;
-
-          if (nomor === senderId) {
-            privateCmd = cmd;
-          }
-
-          if (cmd > maxCmd) {
-            maxCmd = cmd;
-          }
-        }
-      }
-
-      const endTime = performance.now();
-      const responseTime = (endTime - startTime).toFixed(2);
-
-      const statsMessage = `
-
+    const stats = `
 Ini adalah status dari bot ${botName}
 
 Stats Bot ${Obrack} ${botFullName} ${Cbrack}
@@ -99,27 +71,29 @@ Stats Chat
 
 Stats System
 ┃
-┣ ${btn} Uptime Device: ${deviceUptimeStr}
-┣ ${btn} Platform: ${platform} (${architecture})
-┣ ${btn} Cpu: ${cpuInfo}
-┣ ${btn} Ram: ${(usedMemory / 1024 / 1024).toFixed(2)} MB / ${(totalMemory / 1024 / 1024).toFixed(2)} MB
+┣ ${btn} Uptime Device: ${deviceUptime}
+┣ ${btn} Platform: ${platform} (${arch})
+┣ ${btn} Cpu: ${cpu}
+┣ ${btn} Ram: ${formatBytes(usedMem)} MB / ${formatBytes(totalMem)} MB
 ┖ ${btn} Storage: ${usedDisk} / ${totalDisk} (Free: ${freeDisk})
 `.trim();
 
-      await conn.sendMessage(chatId, {
-        image: thumb,
-        caption: statsMessage,
-        contextInfo: {
-          forwardingScore: 0,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363310100263711@newsletter'
-          }
+    await conn.sendMessage(chatId, {
+      text: stats,
+      contextInfo: {
+        externalAdReply: {
+          title: `Status ${pushName}`,
+          body: `Ini adalah status ${botFullName}`,
+          thumbnailUrl: thumbnail,
+          mediaType: 1,
+          renderLargerThumbnail: true
+        },
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: '120363310100263711@newsletter'
         }
-      }, { quoted: msg });
-
-    } catch (err) {
-      console.error('❌ Error pada plugin stats:', err.message);
-    }
+      }
+    }, { quoted: msg });
   }
 };
