@@ -11,41 +11,53 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
-    prefix,
-    commandText,
     args
   }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
+    const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
-    if (!args[0]) return conn.sendMessage(chatId, { text: '⚠️ Masukkan nama file yang ingin dihapus!' }, { quoted: msg });
+    if (!args[0]) {
+      return conn.sendMessage(chatId, { text: '⚠️ Masukkan nama file yang ingin dihapus!' }, { quoted: msg });
+    }
 
     const baseDir = path.join(__dirname, '../../');
-    const fileName = args[0];
-    const filePath = path.join(baseDir, fileName);
+    const fileName = args.join(' ');
+    const filePath = path.resolve(baseDir, fileName);
 
-    console.log(`Mencoba menghapus file di path: ${filePath}`);
+    if (!filePath.startsWith(baseDir)) {
+      return conn.sendMessage(chatId, { text: '⚠️ Akses file di luar direktori BaseBot tidak diizinkan!' }, { quoted: msg });
+    }
 
     if (!fs.existsSync(filePath)) {
-      console.error(`File tidak ditemukan di path: ${filePath}`);
       return conn.sendMessage(chatId, { text: '❌ File tidak ditemukan!' }, { quoted: msg });
     }
-    
+
+    let statusMsg;
     try {
+      const status = await conn.sendMessage(chatId, { text: 'Menghapus file...' }, { quoted: msg });
+      statusMsg = status.key;
+
       fs.unlinkSync(filePath);
-      conn.sendMessage(chatId, { text: `✅ File *${fileName}* berhasil dihapus!` }, { quoted: msg });
 
+      const deletedText = `✅ File *${fileName}* berhasil dihapus!`;
       await new Promise(resolve => setTimeout(resolve, 2000));
+      await conn.sendMessage(chatId, { text: deletedText, edit: statusMsg }, { quoted: msg });
 
-      await conn.sendMessage(chatId, { text: "🔄 Bot akan restart dalam 3 detik..." }, { quoted: msg });
+      const restartText = '🔄 Bot akan restart dalam 3 detik...';
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await conn.sendMessage(chatId, { text: restartText, edit: statusMsg }, { quoted: msg });
 
       await new Promise(resolve => setTimeout(resolve, 3000));
-
       process.exit(1);
+
     } catch (error) {
       console.error(error);
-      conn.sendMessage(chatId, { text: '⚠️ Terjadi kesalahan saat menghapus file!' }, { quoted: msg });
+      const errorMsg = { text: '⚠️ Terjadi kesalahan saat menghapus file!' };
+      if (statusMsg) {
+        await conn.sendMessage(chatId, { ...errorMsg, edit: statusMsg });
+      } else {
+        await conn.sendMessage(chatId, { ...errorMsg, quoted: msg });
+      }
     }
   }
 };
