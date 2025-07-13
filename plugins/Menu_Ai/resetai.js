@@ -8,6 +8,7 @@ module.exports = {
   tags: 'Ai Menu',
   desc: 'Mereset sesi AI',
   prefix: true,
+  owner: true,
 
   run: async (conn, msg, {
     chatInfo,
@@ -15,6 +16,7 @@ module.exports = {
     prefix,
     commandText
   }) => {
+    if (!(await isOwner(module.exports, conn, msg))) return;
     try {
       const { senderId, chatId } = chatInfo;
       const session = JSON.parse(fs.readFileSync(sessionPath, 'utf-8'));

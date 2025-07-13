@@ -1,5 +1,6 @@
 const fs = require('fs');
 const configPath = './toolkit/set/config.json';
+const aiSessionPath = './session/AiSesion.json';
 
 function getConfig() {
   return JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -7,7 +8,7 @@ function getConfig() {
 
 module.exports = {
   name: 'setlogic',
-  command: ['setlogic'],
+  command: ['setlogic', 'set'],
   tags: 'Ai Menu',
   desc: 'Menyetel/menseting logika AI',
   prefix: true,
@@ -39,6 +40,10 @@ module.exports = {
       let config = getConfig();
       config.botSetting.logic = newLogic;
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+      if (fs.existsSync(aiSessionPath)) {
+        fs.writeFileSync(aiSessionPath, JSON.stringify({}));
+      }
 
       conn.sendMessage(chatId, { text: `✅ Logika AI berhasil diubah menjadi:\n\n"${newLogic}"` }, { quoted: msg });
     } catch (error) {
