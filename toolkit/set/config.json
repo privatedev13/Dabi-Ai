@@ -1,11 +1,10 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "6288215052251",
-      "6282281941207"
+      "628821xxxx"
     ],
     "ownerName": "Yumi",
-    "contact": "6288215052251",
+    "contact": "",
     "ownerLink": {
       "tt": "",
       "yt": "",
@@ -13,7 +12,7 @@
       "fb": ""
     },
     "ownerStore": {
-      "dana": "6285725892962",
+      "dana": "",
       "gopay": "",
       "ovo": ""
     },
@@ -97,11 +96,11 @@
       "web": "https://api.siputzx.my.id"
     },
     "HamzApi": {
-      "key": "DabiKey",
+      "key": "Your Api Key",
       "web": "https://api.hamsoffc.me"
     },
     "termai": {
-      "key": "papaanya",
+      "key": "Bell409",
       "web": "https://api.termai.cc"
     }
   }
