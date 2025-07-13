@@ -12,10 +12,17 @@ const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const { isPrefix } = globalSetting;
 const { loadPlug } = require('./toolkit/helper');
-const { set, get, delete: del, reset, memoryCache } = require('./toolkit/transmitter.js');
 const Cc = require('./temp/prgM.js');
-const { timer } = require('./toolkit/transmitter.js');
 const { handleGame } = require('./toolkit/funcGame');
+const {
+  set,
+  get,
+  delete: del,
+  reset,
+  memoryCache,
+  timer,
+  labvn
+} = require('./toolkit/transmitter.js');
 
 const logger = pino({ level: 'silent' });
 
@@ -36,6 +43,10 @@ setInterval(() => {
         user.isPremium.isPrem = false;
         user.isPremium.time = 0;
       }
+    }
+
+    if (user.afk?.afkTime) {
+      user.afk.Time = Math.floor(Date.now() / 1000);
     }
   });
 
@@ -204,6 +215,7 @@ const startBot = async () => {
       else if (mediaInfo) console.log(chalk.whiteBright.bold(`  ${mediaInfo}`));
       else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
+      await labvn(textMessage, msg, conn, chatId)
       await Cc(conn, msg, textMessage);
 
       if (await gcFilter(conn, msg, chatId, senderId, isGroup)) return;
@@ -300,39 +312,32 @@ const startBot = async () => {
       const { id: chatId, participants, action } = event;
 
       try {
-        if (enGcW(chatId) && action === 'add') {
-          const welcomeText = getWlcTxt(chatId);
+        const isWelcome = enGcW(chatId) && action === 'add';
+        const isLeave = enGcL(chatId) && (action === 'remove' || action === 'leave');
 
+        let textTemplate = '';
+        if (isWelcome) textTemplate = getWlcTxt(chatId);
+        if (isLeave) textTemplate = getLftTxt(chatId);
+
+        if (isWelcome || isLeave) {
           for (const participant of participants) {
             const userTag = `@${participant.split('@')[0]}`;
-            const text = welcomeText
-              .replace(/@user/g, userTag)
-              .replace(/%user/g, userTag);
+            const text = textTemplate.replace(/@user|%user/g, userTag);
 
             await conn.sendMessage(chatId, {
               text,
-              mentions: [participant]
+              mentions: [participant],
             });
           }
         }
 
-        if (enGcL(chatId) && (action === 'remove' || action === 'leave')) {
-          const leftText = getLftTxt(chatId);
-
-          for (const participant of participants) {
-            const userTag = `@${participant.split('@')[0]}`;
-            const text = leftText
-              .replace(/@user/g, userTag)
-              .replace(/%user/g, userTag);
-
-            await conn.sendMessage(chatId, {
-              text,
-              mentions: [participant]
-            });
-          }
+        if (['promote', 'demote'].includes(action)) {
+          global.groupCache = global.groupCache || new Map();
+          global.groupCache.delete(chatId);
+          await mtData(chatId, conn);
         }
       } catch (error) {
-        console.error(chalk.redBright.bold('❌ Error saat kirim pesan masuk/keluar grup:', error));
+        console.error(chalk.redBright.bold('❌ Error saat menangani group-participants.update:'), error);
       }
     });
   } catch (error) {
