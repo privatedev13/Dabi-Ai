@@ -2,10 +2,23 @@ const fs = require('fs');
 const path = require('path');
 
 const sessionFile = path.join(__dirname, '../../toolkit/db/game.json');
-let session = fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile)) : {};
 
-function saveSession() {
-  fs.writeFileSync(sessionFile, JSON.stringify(session, null, 2));
+function loadSession() {
+  return fs.existsSync(sessionFile) ? JSON.parse(fs.readFileSync(sessionFile)) : {};
+}
+
+function saveSession(data) {
+  fs.writeFileSync(sessionFile, JSON.stringify(data, null, 2));
+}
+
+function cleanSession(data) {
+  for (const key in data) {
+    const item = data[key];
+    if (!item || item.status !== true) {
+      delete data[key];
+    }
+  }
+  return data;
 }
 
 module.exports = {
@@ -15,16 +28,19 @@ module.exports = {
   desc: 'Game susun kata',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
     const { susunKata } = await global.loadFunc();
     const user = msg.sender;
 
+    let session = loadSession();
+    session = cleanSession(session);
+    saveSession(session);
+
     const existing = Object.entries(session).find(([_, v]) =>
       v.status && v.chatId === chatId && v.Nomor === user
     );
+
     if (existing) {
       return conn.sendMessage(chatId, {
         text: `🕹️ Kamu masih punya soal yang belum dijawab!\nSilakan jawab dulu.`,
@@ -53,6 +69,6 @@ module.exports = {
       }
     };
 
-    saveSession();
+    saveSession(session);
   }
 };
