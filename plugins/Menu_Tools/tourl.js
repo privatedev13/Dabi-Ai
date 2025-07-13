@@ -11,53 +11,74 @@ module.exports = {
   desc: 'Mengubah media menjadi URL.',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     try {
       const { chatId } = chatInfo;
-      const quoted = msg.quoted;
-      const targetMsg = quoted || msg;
 
-      const mime =
-        quoted?.mimetype ||
-        targetMsg.message?.imageMessage?.mimetype ||
-        targetMsg.message?.videoMessage?.mimetype ||
-        '';
+      const quotedMessage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const isImage = quotedMessage?.imageMessage || msg.message?.imageMessage;
+      const isVideo = quotedMessage?.videoMessage || msg.message?.videoMessage;
 
-      if (!/image|video/.test(mime)) {
-        return conn.sendMessage(chatId, { text: '⚠️ Balas atau kirim gambar/video dengan caption *.tourl*' }, { quoted: msg });
+      if (!isImage && !isVideo) {
+        return conn.sendMessage(chatId, {
+          text: '⚠️ Balas atau kirim gambar/video dengan caption *.tourl*'
+        }, { quoted: msg });
       }
 
-      const buffer = await downloadMediaMessage(targetMsg, 'buffer', {}, {
-        logger: conn.logger,
-        reuploadRequest: conn.updateMediaMessage,
-      });
+      let mediaBuffer;
+      try {
+        mediaBuffer = await downloadMediaMessage(
+          { message: quotedMessage || msg.message },
+          'buffer',
+          {},
+          {
+            logger: conn.logger,
+            reuploadRequest: conn.updateMediaMessage,
+          }
+        );
+        if (!mediaBuffer) throw new Error('Media tidak terunduh!');
+      } catch (error) {
+        return conn.sendMessage(chatId, {
+          text: `❌ Gagal mengunduh media! ${error.message}`
+        }, { quoted: msg });
+      }
 
-      if (!buffer) throw new Error('Gagal mengunduh media');
-
-      const form = new FormData();
-      const tempFileName = `temp_${Date.now()}.${mime.includes('image') ? 'jpg' : 'mp4'}`;
+      const mimeType = isImage?.mimetype || isVideo?.mimetype || 'application/octet-stream';
+      const extension = mimeType.includes('image') ? 'jpg' : mimeType.includes('video') ? 'mp4' : 'bin';
+      const tempFileName = `temp_${Date.now()}.${extension}`;
       const tempPath = path.join(__dirname, tempFileName);
 
-      fs.writeFileSync(tempPath, buffer);
+      fs.writeFileSync(tempPath, mediaBuffer);
+
+      const form = new FormData();
       form.append('reqtype', 'fileupload');
       form.append('fileToUpload', fs.createReadStream(tempPath));
 
-      const res = await axios.post('https://catbox.moe/user/api.php', form, {
-        headers: form.getHeaders(),
-      });
+      let uploadResult;
+      try {
+        const response = await axios.post('https://catbox.moe/user/api.php', form, {
+          headers: form.getHeaders()
+        });
+        uploadResult = response.data;
+      } catch (err) {
+        fs.unlinkSync(tempPath);
+        throw new Error('Gagal mengupload ke Catbox');
+      }
 
       fs.unlinkSync(tempPath);
 
-      if (res.data && typeof res.data === 'string' && res.data.startsWith('https://')) {
-        return conn.sendMessage(chatId, { text: `✅ URL:\n${res.data}` }, { quoted: msg });
+      if (typeof uploadResult === 'string' && uploadResult.startsWith('https://')) {
+        return conn.sendMessage(chatId, {
+          text: `✅ URL:\n${uploadResult}`
+        }, { quoted: msg });
       } else {
-        throw new Error('Gagal mengupload ke Catbox');
+        throw new Error('Respons dari server tidak valid');
       }
     } catch (e) {
       console.error('[ERROR] tourl:', e);
-      return conn.sendMessage(msg.key.remoteJid, { text: '❌ Terjadi kesalahan saat mengupload media.' }, { quoted: msg });
+      return conn.sendMessage(msg.key.remoteJid, {
+        text: '❌ Terjadi kesalahan saat mengupload media.'
+      }, { quoted: msg });
     }
   }
 };

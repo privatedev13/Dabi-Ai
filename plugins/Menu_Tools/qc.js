@@ -4,10 +4,9 @@ const { writeExifImg } = require('../../toolkit/exif');
 module.exports = {
   name: 'qc',
   command: ['qc', 'quoted'],
-  tags: 'maker',
+  tags: 'Tools Menu',
   desc: 'Membuat quote dari pesan.',
   prefix: true,
-  energy: 7,
 
   run: async (conn, msg, {
     chatInfo,
