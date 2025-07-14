@@ -1,6 +1,7 @@
-const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { writeExifImg } = require('../../toolkit/exif');
-const { upUguu, getBufMime, genMemeBuf } = require('../../toolkit/scrape/smeme');
+const { upUguu, genMemeBuf } = require('../../toolkit/scrape/smeme');
+const fs = require('fs');
 
 module.exports = {
   name: 'smeme',
@@ -10,102 +11,60 @@ module.exports = {
   prefix: true,
 
   run: async (conn, msg, {
-    textMessage,
-    commandText,
-    args,
     chatInfo,
-    prefix
+    textMessage,
+    prefix,
+    commandText,
+    args
   }) => {
-    const { chatId } = chatInfo;
-    const quoted = msg.quoted;
-
     try {
-      const isImage = msg.type === 'imageMessage' || 
-                      (msg.type === 'documentMessage' && msg.mimetype?.startsWith('image/')) || 
-                      msg.type === 'stickerMessage';
+      const { chatId, pushName } = chatInfo;
+      const quotedMessage = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+      const mediaMsg = quotedMessage || msg.message;
 
-      const isQuotedImage = quoted?.type === 'imageMessage' || 
-                            (quoted?.type === 'documentMessage' && quoted?.mimetype?.startsWith('image/')) || 
-                            quoted?.type === 'stickerMessage';
+      const isImage =
+        (quotedMessage?.imageMessage || quotedMessage?.stickerMessage ||
+         (quotedMessage?.documentMessage?.mimetype || '').startsWith('image/')) ||
+        (msg.message?.imageMessage || msg.message?.stickerMessage ||
+         (msg.message?.documentMessage?.mimetype || '').startsWith('image/'));
 
-      let imageBuffer, imageMime, imageUrl;
-
-      const getMediaBufferAndMime = async (mData) => {
-        let mime = '';
-        let content = null;
-
-        if (mData.message?.imageMessage) {
-          mime = mData.message.imageMessage.mimetype;
-          content = mData.message.imageMessage;
-        } else if (mData.message?.documentMessage?.mimetype?.startsWith('image/')) {
-          mime = mData.message.documentMessage.mimetype;
-          content = mData.message.documentMessage;
-        } else if (mData.message?.stickerMessage) {
-          mime = mData.message.stickerMessage.mimetype;
-          content = mData.message.stickerMessage;
-        }
-
-        if (!content || !mime || (!mime.startsWith('image/') && !mime.includes('webp'))) {
-          throw new Error("Pesan bukan gambar atau stiker valid.");
-        }
-
-        const stream = await downloadContentFromMessage(content, mime.includes('webp') ? 'sticker' : mime.split('/')[0]);
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) {
-          buffer = Buffer.concat([buffer, chunk]);
-        }
-        return { buffer, mime };
-      };
-
-      if (isImage) {
-        const data = await getMediaBufferAndMime(msg);
-        imageBuffer = data.buffer;
-        imageMime = data.mime;
-      } else if (isQuotedImage) {
-        const data = await getMediaBufferAndMime(quoted);
-        imageBuffer = data.buffer;
-        imageMime = data.mime;
-      } else if (textMessage && /^https?:\/\/.*\.(jpe?g|png|webp|gif|bmp)$/i.test(textMessage.split(' ')[0])) {
-        const data = await getBufMime(textMessage.split(' ')[0]);
-        imageBuffer = data.buffer;
-        imageMime = data.mime;
-        imageUrl = textMessage.split(' ')[0];
+      if (!isImage) {
+        return conn.sendMessage(chatId, {
+          text: `❗ Balas gambar/stiker atau kirim gambar dengan caption:\n*${prefix}${commandText} teks_atas teks_bawah*\nContoh: *${prefix}${commandText} halo semuanya*`
+        }, { quoted: msg });
       }
 
-      if (!imageBuffer && !imageUrl) {
-        return conn.sendMessage(chatId, { text: `Kirim gambar atau balas gambar dengan caption.\nContoh: *${prefix}${commandText} atas|bawah*` }, { quoted: msg });
+      if (!args.length) {
+        return conn.sendMessage(chatId, {
+          text: `❗ Masukkan teks untuk meme!\nFormat:\n*${prefix}${commandText} teks_atas teks_bawah*\nContoh: *${prefix}${commandText} halo semuanya*`
+        }, { quoted: msg });
       }
 
-      if (imageBuffer && (!imageMime || !/image\/(jpe?g|png|webp)/i.test(imageMime))) {
-        return conn.sendMessage(chatId, { text: `Format gambar tidak didukung (${imageMime}). Gunakan JPG/PNG/WEBP.` }, { quoted: msg });
-      }
+      const mediaBuffer = await downloadMediaMessage({ message: mediaMsg }, 'buffer', {});
+      if (!mediaBuffer) throw new Error('Gagal mengunduh media!');
 
-      const [atas, bawah] = textMessage?.includes('|') ? textMessage.split('|').map(v => v.trim()) : ['-', textMessage?.trim() || '-'];
+      const [atas, ...bawahArr] = args;
+      const bawah = bawahArr.join(' ') || '-';
 
-      if (!atas && !bawah) {
-        return conn.sendMessage(chatId, { text: `Format: teks_atas|teks_bawah\nContoh: *${prefix}${commandText}* atas|bawah` }, { quoted: msg });
-      }
+      const imageUrl = await upUguu(mediaBuffer, `smeme.jpg`, 'image/jpeg');
+      if (!imageUrl) throw new Error('Gagal upload gambar ke hosting!');
 
-      if (imageBuffer) {
-        let ext = imageMime.split('/')[1];
-        if (ext === 'jpeg') ext = 'jpg';
-        imageUrl = await upUguu(imageBuffer, `upload.${ext}`, imageMime);
-      }
+      const memeBuffer = await genMemeBuf(imageUrl, atas, bawah);
+      if (!Buffer.isBuffer(memeBuffer)) throw new Error('Format gambar meme tidak valid.');
 
-      if (!imageUrl) throw new Error('Gagal mendapatkan URL gambar.');
+      const stickerPath = await writeExifImg(memeBuffer, {
+        packname: `${footer}`,
+        author: `${pushName}`
+      });
 
-      const memeBuffer = await genMemeBuf(imageUrl, atas || '-', bawah || '-');
+      const stickerBuffer = fs.readFileSync(stickerPath);
+      await conn.sendMessage(chatId, { sticker: stickerBuffer }, { quoted: msg });
 
-      const sticker = await writeExifImg(
-        { mimetype: 'image/png', data: memeBuffer },
-        { packName: 'Sticker By', packPublish: 'DanzzAraAra' }
-      );
-
-      await conn.sendMessage(chatId, { sticker }, { quoted: msg });
-
-    } catch (e) {
-      console.error('smeme error:', e);
-      conn.sendMessage(chatId, { text: `Terjadi kesalahan:\n${e.message}` }, { quoted: msg });
+    } catch (err) {
+      console.error('❌ smeme error:', err);
+      conn.sendMessage(chatInfo.chatId, {
+        text: `❌ Gagal membuat meme:\n${err.message}`
+      }, { quoted: msg });
     }
   }
 };
