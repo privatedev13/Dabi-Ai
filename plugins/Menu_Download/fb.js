@@ -26,7 +26,7 @@ module.exports = {
 
     const url = args[0];
 
-    if (!/facebook\.\w+\/(reel|watch|share)/gi.test(url)) {
+    if (!/^https?:\/\/(www\.)?facebook\.(com|watch)\/.+/.test(url)) {
       return conn.sendMessage(chatId, {
         text: `❌ *Masukkan URL Facebook yang valid!*`
       }, { quoted: msg });
@@ -37,30 +37,21 @@ module.exports = {
 
       const videoData = await facebook(url);
 
-      if (!videoData || !videoData.video.length) {
+      if (!videoData || !videoData.status || !videoData.video.length) {
         return conn.sendMessage(chatId, {
           text: "⚠️ *Gagal mengambil video! Pastikan link valid dan publik.*"
         }, { quoted: msg });
       }
 
-      const bestQualityVideo = videoData.video[0]?.url;
-      if (!bestQualityVideo) {
-        return conn.sendMessage(chatId, {
-          text: "⚠️ *Video tidak ditemukan atau tidak dapat diunduh!*"
-        }, { quoted: msg });
-      }
+      const bestVideo = videoData.video[0];
 
-      const caption = `🎬 *Video Facebook Ditemukan!*\n\n📌 *Judul*: ${videoData.title || "Tidak diketahui"}\n⏳ *Durasi*: ${videoData.duration || "Tidak diketahui"}`;
+      const caption = `🎬 *Video Facebook Ditemukan!*\n\n📌 *Resolusi*: ${bestVideo.resolution || "Tidak diketahui"}\n📁 *Format*: ${bestVideo.format || "Tidak diketahui"}`;
 
       await conn.sendMessage(chatId, {
-        image: { url: videoData.thumbnail },
         caption,
+        video: { url: bestVideo.url }
       }, { quoted: msg });
 
-      await conn.sendMessage(chatId, {
-        video: { url: bestQualityVideo },
-        caption: "✅ *Berikut videonya!*"
-      }, { quoted: msg });
     } catch (err) {
       console.error(err);
       return conn.sendMessage(chatId, {
