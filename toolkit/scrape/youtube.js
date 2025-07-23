@@ -1,1 +1,30 @@
-const _0x20a23d=_0x5e41;(function(_0x589631,_0xd3b3a8){const _0x32d9a5=_0x5e41,_0x2e0a76=_0x589631();while(!![]){try{const _0x36ed9c=parseInt(_0x32d9a5(0x80))/0x1+parseInt(_0x32d9a5(0x6c))/0x2+-parseInt(_0x32d9a5(0x7b))/0x3*(-parseInt(_0x32d9a5(0x79))/0x4)+-parseInt(_0x32d9a5(0x76))/0x5*(-parseInt(_0x32d9a5(0x70))/0x6)+parseInt(_0x32d9a5(0x7a))/0x7*(-parseInt(_0x32d9a5(0x81))/0x8)+parseInt(_0x32d9a5(0x74))/0x9*(-parseInt(_0x32d9a5(0x6d))/0xa)+-parseInt(_0x32d9a5(0x6f))/0xb*(parseInt(_0x32d9a5(0x85))/0xc);if(_0x36ed9c===_0xd3b3a8)break;else _0x2e0a76['push'](_0x2e0a76['shift']());}catch(_0x130983){_0x2e0a76['push'](_0x2e0a76['shift']());}}}(_0x3780,0x1dd2f));const axios=require('axios');function _0x3780(){const _0x53ff77=['666BUNsyG','result','data','/download/ytmp4','34074WlHPdK','get','3555uUezAA','url','find','1444gfEjrL','7iyRgfE','1254lbAWmc','formats','/download/ytmp3','HamzKey','itag','77186MOhSex','968984wluhxu','Gagal\x20mengambil\x20link\x20MP3:\x20','Format\x20video\x20360p\x20tidak\x20ditemukan.','thumbnail','1064004VJCzwW','downloadURL','title','HamzWeb','Gagal\x20mendapatkan\x20data\x20dari\x20API.','exports','Gagal\x20mengambil\x20link\x20MP4:\x20','80176BMMAkf','40tvuLXR','message','11qtSktQ'];_0x3780=function(){return _0x53ff77;};return _0x3780();}function _0x5e41(_0x5a782f,_0x483146){const _0x378058=_0x3780();return _0x5e41=function(_0x5e4103,_0xbff2ea){_0x5e4103=_0x5e4103-0x67;let _0x4d730d=_0x378058[_0x5e4103];return _0x4d730d;},_0x5e41(_0x5a782f,_0x483146);}async function ytMp3(_0x26db18){const _0x1988da=_0x5e41;try{const _0x90eac0=await axios[_0x1988da(0x75)](global[_0x1988da(0x68)]+_0x1988da(0x7d),{'params':{'apikey':global[_0x1988da(0x7e)],'url':_0x26db18}}),_0x3f9fb0=_0x90eac0[_0x1988da(0x72)];if(!_0x3f9fb0?.[_0x1988da(0x71)]||_0x3f9fb0[_0x1988da(0x71)][_0x1988da(0x86)]===undefined)throw new Error(_0x3f9fb0[_0x1988da(0x6e)]||_0x1988da(0x69));return{'title':_0x3f9fb0[_0x1988da(0x71)][_0x1988da(0x67)]||'','url':_0x3f9fb0['result'][_0x1988da(0x86)]||'','thumb':_0x3f9fb0[_0x1988da(0x71)][_0x1988da(0x84)]||''};}catch(_0x237f48){throw new Error(_0x1988da(0x82)+_0x237f48[_0x1988da(0x6e)]);}}async function ytMp4(_0x78240c){const _0x22e069=_0x5e41;try{const _0x4e37a8=await axios['get'](global[_0x22e069(0x68)]+_0x22e069(0x73),{'params':{'apikey':global[_0x22e069(0x7e)],'url':_0x78240c}}),_0x43b732=_0x4e37a8['data'];if(!_0x43b732?.[_0x22e069(0x71)]?.[_0x22e069(0x7c)]||!Array['isArray'](_0x43b732['result']['formats']))throw new Error(_0x43b732['message']||_0x22e069(0x69));const _0x32c16a=_0x43b732[_0x22e069(0x71)][_0x22e069(0x7c)][_0x22e069(0x78)](_0x5248a2=>_0x5248a2[_0x22e069(0x7f)]===0x12||_0x5248a2['qualityLabel']==='360p');if(!_0x32c16a||!_0x32c16a['url'])throw new Error(_0x22e069(0x83));return{'title':_0x43b732['result'][_0x22e069(0x67)]||'','url':_0x32c16a[_0x22e069(0x77)],'thumb':_0x43b732[_0x22e069(0x71)]['thumbnail']||''};}catch(_0x497a13){throw new Error(_0x22e069(0x6b)+_0x497a13['message']);}}module[_0x20a23d(0x6a)]={'ytMp3':ytMp3,'ytMp4':ytMp4};
+const fetch = require('node-fetch');
+
+async function youtube(url, type = 'mp4') {
+  const isValid = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url);
+  if (!isValid) throw new Error('URL YouTube tidak valid');
+
+  try {
+    const res = await fetch(`${termaiWeb}/api/downloader/youtube?type=${type}&url=${encodeURIComponent(url)}&key=${termaiKey}`);
+    const json = await res.json();
+
+    if (!json.status || !json.data || json.data.status !== 'success') {
+      throw new Error('Gagal mengambil data dari API Termai');
+    }
+
+    return {
+      title: json.data.caption,
+      videoId: json.data.vid,
+      thumbnail: json.data.thumb,
+      type: json.data.fileType,
+      quality: json.data.fileQuality,
+      downloadLink: json.data.dlink,
+      info: json.data.info
+    };
+  } catch (err) {
+    console.error('Scrape Error:', err.message);
+    throw err;
+  }
+}
+
+module.exports = { youtube };
