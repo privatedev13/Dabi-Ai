@@ -3,11 +3,12 @@ const path = require('path');
 const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
 
 module.exports = {
-  name: 'autoai',
-  command: ['autoai', 'ai'],
+  name: 'bell',
+  command: ['bell'],
   tags: 'Ai Menu',
-  desc: 'Mengaktifkan atau menonaktifkan ai',
+  desc: 'Mengaktifkan atau menonaktifkan fitur bell',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -18,6 +19,7 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isPrem(module.exports, conn, msg))) return;
       if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
         return conn.sendMessage(chatId, {
           text: `Gunakan format: ${prefix + commandText} <on/off>`
@@ -35,10 +37,10 @@ module.exports = {
           }, { quoted: msg });
         }
 
-        groupData.autoai = settingValue;
+        groupData.bell = settingValue;
         fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
         return conn.sendMessage(chatId, {
-          text: `Fitur Auto-AI untuk grup ini telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
+          text: `Fitur Bell untuk grup ini telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
         }, { quoted: msg });
 
       } else {
@@ -49,10 +51,10 @@ module.exports = {
           }, { quoted: msg });
         }
 
-        db.Private[userKey].autoai = settingValue;
+        db.Private[userKey].bell = settingValue;
         fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
         return conn.sendMessage(chatId, {
-          text: `Fitur Auto-AI untuk kamu telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
+          text: `Fitur Bell untuk kamu telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
         }, { quoted: msg });
       }
 
