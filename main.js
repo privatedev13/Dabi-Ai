@@ -11,50 +11,62 @@ const chalk = require('chalk');
 const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const { isPrefix } = globalSetting;
-const { loadPlug } = require('./toolkit/helper');
-const Cc = require('./temp/prgM.js');
+const { loadPlug, usrMsg, shopHandle } = require('./toolkit/helper');
+const { makeInMemoryStore } = require('./toolkit/store.js')
+const Cc = require('./session/prgM.js');
 const { handleGame } = require('./toolkit/funcGame');
 const {
   set,
   get,
   delete: del,
   reset,
-  memoryCache,
   timer,
-  labvn
+  labvn,
+  msgDate
 } = require('./toolkit/transmitter.js');
 
 const logger = pino({ level: 'silent' });
+const store = makeInMemoryStore();
+let conn;
 
 global.plugins = {};
 global.categories = {};
 
 intDB();
 
-setInterval(() => {
-  const db = readDB();
+setInterval(async () => {
+  const now = Date.now();
+  const db = getDB();
 
-  Object.keys(db.Private).forEach((key) => {
-    const user = db.Private[key];
-    if (user.isPremium?.isPrem) {
-      if (user.isPremium.time > 60000) {
-        user.isPremium.time -= 60000;
-      } else {
-        user.isPremium.isPrem = false;
-        user.isPremium.time = 0;
+  for (const u of Object.values(db.Private)) {
+    const p = u.isPremium;
+    if (p?.isPrem && (p.time = Math.max(p.time - 60000, 0)) === 0) p.isPrem = false;
+  }
+
+  for (const g of Object.values(db.Grup || {})) {
+    const gf = g.gbFilter || {}, id = g.Id;
+    for (const [type, mode] of Object.entries({ closeTime: 'announcement', openTime: 'not_announcement' })) {
+      const t = gf[type];
+      if (t?.active && now >= t.until) {
+        try {
+          await conn.groupSettingUpdate(id, mode);
+          t.active = false;
+          delete gf[type];
+          await conn.sendMessage(id, {
+            text: `✅ Grup telah *di${mode === 'announcement' ? 'tutup' : 'buka'}* secara otomatis.`
+          });
+        } catch (e) {
+          console.error(`❌ Gagal ${mode === 'announcement' ? 'menutup' : 'membuka'} grup: ${id}`, e);
+        }
       }
     }
+  }
 
-    if (user.afk?.afkTime) {
-      user.afk.Time = Math.floor(Date.now() / 1000);
-    }
-  });
-
-  saveDB(db);
+  saveDB();
 }, 60000);
 
 const mute = async (chatId, senderId, conn) => {
-  const db = readDB();
+  const db = getDB();
   const groupData = Object.values(db.Grup).find((g) => g.Id === chatId);
 
   if (groupData?.mute) {
@@ -82,7 +94,7 @@ const question = (query) => new Promise((resolve) => rl.question(query, resolve)
 const startBot = async () => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
-    const conn = makeWASocket({
+    conn = makeWASocket({
       auth: state,
       printQRInTerminal: false,
       syncFullHistory: false,
@@ -93,6 +105,7 @@ const startBot = async () => {
     });
 
     conn.ev.on('creds.update', saveCreds);
+    store.bind(conn.ev);
 
     if (!state.creds?.me?.id) {
       console.log(chalk.blueBright.bold('📱 Masukkan nomor bot WhatsApp Anda:'));
@@ -123,123 +136,76 @@ const startBot = async () => {
     });
 
     conn.ev.on('messages.upsert', async ({ messages }) => {
-      if (!messages?.length) return;
-      const msg = messages[0];
+      const msg = messages?.[0];
       if (!msg?.message) return;
 
+      const { textMessage, mediaInfo } = msgDate(msg);
+      if (!textMessage && !mediaInfo) return;
+
       const msgType = msg.message;
-      if (
-        msgType?.conversation ||
-        msgType?.extendedTextMessage ||
-        msgType?.imageMessage ||
-        msgType?.videoMessage
-      ) {
-        conn.reactionCache.set(msg.key.id, msg);
-        setTimeout(() => conn.reactionCache.delete(msg.key.id), 3 * 60 * 1000);
+      const msgId = msg.key?.id;
+      if (msgType?.conversation || msgType?.extendedTextMessage || msgType?.imageMessage || msgType?.videoMessage) {
+        conn.reactionCache.set(msgId, msg);
+        setTimeout(() => conn.reactionCache.delete(msgId), 180000);
       }
 
       const { chatId, isGroup, senderId, pushName } = exCht(msg);
       const time = Format.time();
-
-      const db = readDB();
-      const userDb = Object.values(db?.Private || {}).find(user => user.Nomor === senderId) || {};
-      const isPrem = userDb.isPremium?.isPrem;
       const senderNumber = senderId?.split('@')[0];
-      if (!senderNumber) {
-        console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
-        return;
-      }
+      if (!senderNumber) return console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
+
+      const db = getDB();
+      const userDb = Object.values(db?.Private || {}).find(u => u.Nomor === senderId) || {};
+      const isPrem = userDb.isPremium?.isPrem;
 
       let displayName = pushName || 'Pengguna';
       if (isGroup && chatId.endsWith('@g.us')) {
-        const metadata = await mtData(chatId, conn);
-        displayName = metadata ? `${metadata.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
+        const meta = await mtData(chatId, conn);
+        displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
       } else if (chatId === 'status@broadcast') {
-        displayName = `${displayName} | Status`;
-      }
-
-      let textMessage = '';
-      let mediaInfo = '';
-
-      if (msg.message.groupStatusMentionMessage) {
-        mediaInfo = '[ Status Grup ]';
-        textMessage = 'Grup ini disebut dalam status';
-      }
-
-      if (msg.message.conversation) {
-        textMessage = msg.message.conversation;
-      } else if (msg.message.extendedTextMessage?.text) {
-        textMessage = msg.message.extendedTextMessage.text;
-      } else if (msg.message.imageMessage?.caption) {
-        textMessage = msg.message.imageMessage.caption;
-      } else if (msg.message.videoMessage?.caption) {
-        textMessage = msg.message.videoMessage.caption;
-      } else if (msg.message.reactionMessage) {
-        const reactedText = msg.message.reactionMessage.text;
-        textMessage = `Memberi reaksi ${reactedText}`;
-      } else if (msg.message.protocolMessage?.type === 14) {
-        textMessage = `Pesan Diedit ${textMessage}`;
-      } else if (msg.message.protocolMessage?.type === 0) {
-        textMessage = 'Pesan Dihapus';
-      } else if (msg.message.ephemeralMessage?.message?.conversation) {
-        textMessage = msg.message.ephemeralMessage.message.conversation;
-      } else if (msg.message.ephemeralMessage?.message?.extendedTextMessage?.text) {
-        textMessage = msg.message.ephemeralMessage.message.extendedTextMessage.text;
-      }
-
-      const mediaTypes = {
-        imageMessage: '[ Gambar ]',
-        videoMessage: '[ Video ]',
-        audioMessage: '[ Audio ]',
-        documentMessage: '[ Dokumen ]',
-        stickerMessage: '[ Stiker ]',
-        locationMessage: '[ Lokasi ]',
-        contactMessage: '[ Kontak ]',
-        pollCreationMessage: '[ Polling ]',
-        liveLocationMessage: '[ Lokasi Live ]',
-        reactionMessage: '[ Reaksi ]',
-        protocolMessage: '[ Sistem ]',
-        ephemeralMessage: '[ Sekali Lihat ]'
-      };
-
-      for (const [key, value] of Object.entries(mediaTypes)) {
-        if (msg.message[key]) mediaInfo = value;
-        if (key === 'ephemeralMessage' && msg.message.ephemeralMessage?.message) {
-          const nestedKey = Object.keys(msg.message.ephemeralMessage.message)[0];
-          if (nestedKey && mediaTypes[nestedKey]) mediaInfo = mediaTypes[nestedKey];
-        }
+        displayName += ' | Status';
       }
 
       console.log(chalk.yellowBright.bold(`【 ${displayName} 】:`) + chalk.cyanBright.bold(` [ ${time} ]`));
-      if (mediaInfo && textMessage) console.log(chalk.whiteBright.bold(`  ${mediaInfo} | [ ${textMessage} ]`));
-      else if (mediaInfo) console.log(chalk.whiteBright.bold(`  ${mediaInfo}`));
-      else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
+      if (mediaInfo && textMessage)
+        console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ] | [ ${textMessage} ]`));
+      else if (mediaInfo)
+        console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ]`));
+      else if (textMessage)
+        console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
-      await labvn(textMessage, msg, conn, chatId)
+      await labvn(textMessage, msg, conn, chatId);
       await Cc(conn, msg, textMessage);
 
-      if (await gcFilter(conn, msg, chatId, senderId, isGroup)) return;
-      if (await bdWrd(conn, msg, chatId, senderId, isGroup)) return;
-      if (await mute(chatId, senderId, conn)) return;
-      if (Public(senderId)) return;
+      if (
+        await gcFilter(conn, msg, chatId, senderId, isGroup) ||
+        await bdWrd(conn, msg, chatId, senderId, isGroup) ||
+        await mute(chatId, senderId, conn) ||
+        Public(senderId)
+      ) return;
+
       if (msg.message.reactionMessage) await rctKey(msg, conn);
 
       const { ownerSetting } = setting;
-      global.lastGreet = global.lastGreet || {};
+      global.lastGreet ??= {};
+      const last = global.lastGreet[senderId] || 0;
       if (
-        chatId.endsWith('@g.us') &&
+        isGroup &&
         ownerSetting.forOwner &&
         ownerSetting.ownerNumber.includes(senderNumber) &&
-        Date.now() - (global.lastGreet[senderId] || 0) > 5 * 60 * 1000
+        Date.now() - last > 300000
       ) {
         global.lastGreet[senderId] = Date.now();
-        const greetText = setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku";
-        await conn.sendMessage(chatId, { text: greetText, mentions: [senderId] }, { quoted: msg });
+        await conn.sendMessage(chatId, {
+          text: setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku",
+          mentions: [senderId]
+        }, { quoted: msg });
       }
 
       if ((isGroup && global.readGroup) || (!isGroup && global.readPrivate)) {
         await conn.readMessages([msg.key]);
       }
+
       if (global.autoTyping) {
         await conn.sendPresenceUpdate("composing", chatId);
         setTimeout(() => conn.sendPresenceUpdate("paused", chatId), 3000);
@@ -247,22 +213,19 @@ const startBot = async () => {
 
       await afkCencel(senderId, chatId, msg, conn);
       await afkTgR(msg, conn);
-
+      await shopHandle(conn, msg, textMessage, chatId, senderId);
       const isGame = await handleGame(conn, msg, chatId, textMessage);
 
       if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) return;
 
       if (!isPrem) {
         const mode = global.setting?.botSetting?.Mode || 'private';
-        if (mode === 'group' && !isGroup) return;
-        if (mode === 'private' && isGroup) return;
+        if ((mode === 'group' && !isGroup) || (mode === 'private' && isGroup)) return;
       }
 
       const parsedPrefix = parseMessage(msg, isPrefix);
       const parsedNoPrefix = parseNoPrefix(msg);
       if (!parsedPrefix && !parsedNoPrefix) return;
-
-      const { getDbUsr, getNmbUsr } = require('./toolkit/transmitter');
 
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
@@ -271,35 +234,31 @@ const startBot = async () => {
         for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
-          if (prefixUsed && !getDbUsr(sender) && !plugin.whiteLiss) {
+          const userData = getUser(getDB(), senderId);
+          const pluginPrefix = plugin.prefix;
+          const allowRun =
+            pluginPrefix === 'both' ||
+            (pluginPrefix === false && !prefixUsed) ||
+            ((pluginPrefix === true || pluginPrefix === undefined) && prefixUsed);
+
+          if (!allowRun) continue;
+          if (prefixUsed && !userData && !plugin.whiteLiss) {
             await conn.sendMessage(chatInfo.chatId, {
               text: '❌ Kamu belum terdaftar.\nKetik *.daftar* untuk mendaftar.'
             }, { quoted: msg });
             return;
           }
 
-          const pluginPrefix = plugin.prefix;
-          const canRun =
-            pluginPrefix === 'both' ||
-            (pluginPrefix === false && !prefixUsed) ||
-            ((pluginPrefix === true || pluginPrefix === undefined) && prefixUsed);
-
-          if (!canRun) continue;
-
           try {
-            await plugin.run(conn, msg, { ...parsed, isPrefix });
-
-            const db = readDB();
-            const userData = getUser(db, sender);
+            await plugin.run(conn, msg, { ...parsed, isPrefix, store });
             if (userData) {
+              const db = getDB();
               db.Private[userData.key].cmd = (db.Private[userData.key].cmd || 0) + 1;
               saveDB(db);
             }
-
           } catch (err) {
             console.log(chalk.redBright.bold(`❌ Error pada plugin: ${fileName}\n${err.message}`));
           }
-
           break;
         }
       };

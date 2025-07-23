@@ -5,63 +5,51 @@ const path = require('path');
 const { fork } = require('child_process');
 const https = require('https');
 
-const license = path.join(__dirname, 'LICENSE');
-if (fs.existsSync(license)) {
-  console.log('··───── LICENSE ─────··\n\n' + fs.readFileSync(license, 'utf8') + '\n\n··───────────··\n');
-} else {
+const licensePath = path.join(__dirname, 'LICENSE');
+if (!fs.existsSync(licensePath)) {
   console.log('LICENSE tidak ditemukan.\nJangan hapus file ini!');
   return setInterval(() => {}, 1000);
 }
+console.log('··───── LICENSE ─────··\n\n' + fs.readFileSync(licensePath, 'utf8') + '\n\n··───────────··\n');
 
-const folderName = 'temp';
-if (!fs.existsSync(folderName)) {
-  fs.mkdirSync(folderName);
-}
+const tempDir = path.join(__dirname, 'session');
+fs.existsSync(tempDir) || fs.mkdirSync(tempDir);
 
-function downloadAndSave(url, dest) {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    https.get(url, (res) => {
-      if (res.statusCode !== 200) {
-        return reject(new Error(`Status code: ${res.statusCode}`));
-      }
-      res.pipe(file);
-      file.on('finish', () => {
-        file.close(resolve);
-      });
-    }).on('error', (err) => {
-      fs.unlinkSync(dest);
-      reject(err);
-    });
+const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
+  const file = fs.createWriteStream(dest);
+  https.get(url, (res) => {
+    if (res.statusCode !== 200) return reject(new Error(`Status code: ${res.statusCode}`));
+    res.pipe(file).on('finish', () => file.close(resolve));
+  }).on('error', (err) => {
+    fs.existsSync(dest) && fs.unlinkSync(dest);
+    reject(err);
   });
-}
+});
 
 const start = () => {
-  const p = fork(path.join(__dirname, 'main.js'), process.argv.slice(2), {
-    stdio: ['inherit', 'inherit', 'inherit', 'ipc']
-  });
+  const child = fork(path.join(__dirname, 'main.js'), process.argv.slice(2), { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
 
-  p.on('message', (data) => {
-    if (data === 'reset') {
+  child.on('message', (msg) => {
+    if (msg === 'reset') {
       console.log('Restarting...');
-      p.kill();
-    } else if (data === 'uptime') {
-      p.send(process.uptime());
+      child.kill();
+    } else if (msg === 'uptime') {
+      child.send(process.uptime());
     }
   });
 
-  p.on('exit', (code) => {
+  child.on('exit', (code) => {
     console.log('Exited with code:', code);
     start();
   });
 };
 
-const rawURL = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/prgM.js';
-const localPath = path.join(__dirname, 'temp', 'prgM.js');
+const remoteURL = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/prgM.js';
+const localFile = path.join(tempDir, 'prgM.js');
 
-downloadAndSave(rawURL, localPath)
+downloadAndSave(remoteURL, localFile)
   .then(() => {
-    require(localPath);
+    require(localFile);
     start();
   })
   .catch((err) => {
