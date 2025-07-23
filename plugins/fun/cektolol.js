@@ -1,8 +1,8 @@
 module.exports = {
-  name: 'cekcantik',
-  command: ['cekcantik'],
+  name: 'cektolol',
+  command: ['cektolol'],
   tags: 'Fun Menu',
-  desc: 'Cek seberapa cantik seseorang',
+  desc: 'Cek seberapa tolol seseorang',
   prefix: true,
 
   run: async (conn, msg, {
@@ -19,20 +19,20 @@ module.exports = {
 
     let komentar;
     if (persentase <= 25) {
-      komentar = 'Masih biasa aja';
+      komentar = 'Masih pinter kok';
     } else if (persentase <= 44) {
-      komentar = 'Lumayan lah';
+      komentar = 'Agak bego dikit';
     } else if (persentase <= 72) {
-      komentar = 'Cantik juga kamu';
+      komentar = 'Aduh tolol nih';
     } else if (persentase <= 88) {
-      komentar = 'Wah cantik banget';
+      komentar = 'Fix goblok';
     } else {
-      komentar = 'Calon Miss Universe!';
+      komentar = 'Hati² idiot tingkat dewa';
     }
 
-    const teks = `*Seberapa cantik* @${mentionTarget}\n\n*${persentase}%* Cantik\n_${komentar}_`;
+    const teks = `Cek seberapa tolol @${mentionTarget}\n\n${persentase}% Tolol\n_${komentar}_`;
 
-    await conn.sendMessage(chatId, {
+    conn.sendMessage(chatId, {
       text: teks,
       mentions: [`${targetId}@s.whatsapp.net`]
     }, { quoted: msg });
