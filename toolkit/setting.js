@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const Sys = require('./helper');
-
-const settingPath = './toolkit/set/config.json';
-const tokoPath = './toolkit/set/toko.json';
-const databasePath = './toolkit/db/database.json';
-const packageJsonPath = path.join(__dirname, '../package.json');
 const emtData = require('./transmitter.js');
 const reactId = require('./reaction.js');
+const Sys = require('./helper');
+
+const databasePath = './toolkit/db/database.json';
+const packageJsonPath = path.join(__dirname, '../package.json');
+const settingPath = './toolkit/set/config.json';
+const tokoPath = './toolkit/set/toko.json';
+const SysGame = require('./funcGame.js');
 
 const setting = JSON.parse(fs.readFileSync(settingPath, 'utf-8'));
 const toko = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
@@ -28,91 +29,99 @@ global.premium = (userId) => {
     return userData ? userData.isPremium?.isPrem ?? false : false;
 };
 
+global.chtEmt = Sys.chtEmt;
+global.enGcL = Sys.enGcL;
+global.enGcW = Sys.enGcW;
+global.exCht = Sys.exCht;
+global.Format = Sys.Format;
+global.gcData = Sys.getGrpDB;
+global.loadGc = Sys.loadGrpDB;
+global.getLftTxt = Sys.getLeftTxt;
+global.getUser = Sys.getUser;
+global.getWlcTxt = Sys.getWelcTxt;
+global.intDB = Sys.intDB;
 global.isOwner = Sys.chkOwner;
 global.isPrem = Sys.chkPrem;
-global.intDB = Sys.intDB;
-global.readDB = Sys.readDB;
-global.saveDB = Sys.saveDB;
-global.enGcW = Sys.enGcW;
-global.enGcL = Sys.enGcL;
-global.getWlcTxt = Sys.getWelcTxt;
-global.getLftTxt = Sys.getLeftTxt;
-global.stGcW = Sys.stGcW;
-global.stGcL = Sys.stGcL;
-global.updateBio = Sys.updateBio;
-global.exCht = Sys.exCht;
-global.getUser = Sys.getUser;
-global.gcData = Sys.getGrpDB;
 global.parseMessage = Sys.parseMessage;
 global.parseNoPrefix = Sys.parseNoPrefix;
-global.chtEmt = Sys.chtEmt;
+global.getDB = Sys.getDB;
+global.saveDB = Sys.saveDB;
+global.stGcL = Sys.stGcL;
+global.stGcW = Sys.stGcW;
 global.stGrup = Sys.exGrp;
-global.Format = Sys.Format;
-global.ai = emtData.ai;
-global.Bella = emtData.logicBella;
-global.mtData = emtData.mtData;
-global.gtMJid = emtData.gtMention;
-global.gbLink = emtData.gbLink;
-global.tryFree = emtData.tryPrem;
-global.translate = emtData.translate;
-global.rctKey = reactId.rctKey;
-global.gcFilter = emtData.gcFilter;
-global.calNumber = emtData.colNumb;
-global.bdWrd = emtData.bdWord;
+global.updateBio = Sys.updateBio;
+
 global.afkCencel = emtData.afkCencel;
 global.afkTgR = emtData.afkTgR;
-global.loadFunc = emtData.loadFunc;
-global.watchCfg = emtData.watchCfg;
+global.ai = emtData.ai;
+global.bdWrd = emtData.bdWord;
+global.Bella = emtData.logicBella;
+global.calNumber = emtData.colNumb;
+global.gcFilter = emtData.gcFilter;
+global.gbLink = emtData.gbLink;
 global.getStId = emtData.getStId;
+global.gtMJid = emtData.gtMention;
+global.loadFunc = emtData.loadFunc;
+global.mtData = emtData.mtData;
+global.translate = emtData.translate;
+global.tryFree = emtData.tryPrem;
+global.watchCfg = emtData.watchCfg;
+
+global.rctKey = reactId.rctKey;
+
+global.load = SysGame.load;
+global.save = SysGame.save;
+global.bersih = SysGame.bersih;
+global.pPath = SysGame.p;
 
 Object.assign(global, {
-    target: Sys.target,
-    setting,
-    toko,
-    Obrack: setting.menuSetting.brackets?.[0],
-    Cbrack: setting.menuSetting.brackets?.[1],
-    head: setting.menuSetting.frame.head,
+    autoBio: setting.botSetting.autoBio,
+    autoTyping: setting.botSetting.autoTyping,
+    baileys: Object.keys(packageJson.dependencies).find(dep => dep.includes('baileys')),
+    bioText: setting.botSetting.bioText,
     body: setting.menuSetting.frame.body,
-    foot: setting.menuSetting.frame.foot,
-    btn: setting.menuSetting.btn,
-    garis: setting.menuSetting.garis,
-    side: setting.menuSetting.side,
-    type: setting.botSetting.type || 'default',
-    footer: setting.botSetting.footer,
     botFullName: setting.botSetting.botFullName || 'Belum Diset',
     botName: setting.botSetting.botName || 'Belum Diset',
-    thumbnail: setting.botSetting.thumbnail,
-    isPrefix: setting.menuSetting.isPrefix,
-    ownerName: setting.ownerSetting.ownerName || 'default',
-    ownerNumber: setting.ownerSetting.ownerNumber,
-    contact: setting.ownerSetting.contact,
+    btn: setting.menuSetting.btn,
+    Cbrack: setting.menuSetting.brackets?.[1],
     chshort: setting.botSetting.sendTextLink.chshort,
-    readGroup: setting.botSetting.autoread?.group,
-    readPrivate: setting.botSetting.autoread?.private,
-    autoTyping: setting.botSetting.autoTyping,
-    autoBio: setting.botSetting.autoBio,
-    public: setting.botSetting.public,
-    logic: setting.botSetting.logic,
-    sewaList: toko.storeSetting.sewa || [],
-    storeList: Object.keys(toko.storeSetting).filter(k => k !== 'sewa'),
-    owner: setting.msg.rejectMsg.isOwner,
-    prem: setting.msg.rejectMsg.isPremium,
-    zellApi: setting.apiKey.zellApi.web,
-    ytKey: setting.apiKey.ytKey.key,
-    siptzKey: setting.apiKey.siputKey.web,
+    contact: setting.ownerSetting.contact,
+    footer: setting.botSetting.footer,
+    foot: setting.menuSetting.frame.foot,
+    garis: setting.menuSetting.garis,
     HamzKey: setting.apiKey.HamzApi.key,
     HamzWeb: setting.apiKey.HamzApi.web,
-    termaiWeb: setting.apiKey.termai.web,
-    termaiKey: setting.apiKey.termai.key,
-
+    head: setting.menuSetting.frame.head,
+    idCh: setting.menuSetting.idCh,
+    isPrefix: setting.menuSetting.isPrefix,
+    logic: setting.botSetting.logic,
+    Obrack: setting.menuSetting.brackets?.[0],
+    owner: setting.msg.rejectMsg.isOwner,
+    ownerName: setting.ownerSetting.ownerName || 'default',
+    ownerNumber: setting.ownerSetting.ownerNumber,
     ownerStore: {
         dana: setting.ownerSetting.ownerStore?.dana || 'Tidak tersedia',
         gopay: setting.ownerSetting.ownerStore?.gopay || 'Tidak tersedia',
         ovo: setting.ownerSetting.ownerStore?.ovo || 'Tidak tersedia'
     },
-
+    packageJson,
+    prem: setting.msg.rejectMsg.isPremium,
+    public: setting.botSetting.public,
+    readGroup: setting.botSetting.autoread?.group,
+    readPrivate: setting.botSetting.autoread?.private,
+    sewaList: toko.storeSetting.sewa || [],
+    setting,
+    side: setting.menuSetting.side,
+    storeList: Object.keys(toko.storeSetting).filter(k => k !== 'sewa'),
+    target: Sys.target,
+    thumbnail: setting.botSetting.thumbnail,
+    toko,
+    type: setting.botSetting.type || 'default',
     version: packageJson.version,
-    baileys: Object.keys(packageJson.dependencies).find(dep => dep.includes('baileys'))
+    siptzKey: setting.apiKey.siputKey.web,
+    termaiKey: setting.apiKey.termai.key,
+    termaiWeb: setting.apiKey.termai.web,
+    zellApi: setting.apiKey.zellApi.web
 });
 
 module.exports = { ...global };

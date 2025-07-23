@@ -6,45 +6,46 @@ const axios = require('axios');
 const chalk = require('chalk');
 
 const pluginDir = path.join(__dirname, '../plugins');
+const dbFolder = path.join(__dirname, './db');
+const dbFile = path.join(dbFolder, 'database.json');
+const dbPath = './toolkit/db/datatoko.json';
+
 const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
-    console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
-    return;
+    return console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
   }
 
-  let loaded = 0;
-  let failed = 0;
+  let loaded = 0, failed = 0;
   const errors = [];
 
-  const pluginFolders = fs.readdirSync(pluginDir)
-    .filter(name => fs.statSync(path.join(pluginDir, name)).isDirectory());
+  fs.readdirSync(pluginDir)
+    .filter(name => fs.statSync(path.join(pluginDir, name)).isDirectory())
+    .forEach(folder => {
+      const folderPath = path.join(pluginDir, folder);
+      fs.readdirSync(folderPath)
+        .filter(file => file.endsWith('.js'))
+        .forEach(file => {
+          const filePath = path.join(folderPath, file);
+          try {
+            const plugin = require(filePath);
+            if (plugin?.run) {
+              const name = path.basename(file, '.js');
+              global.plugins[name] = plugin;
 
-  for (const folder of pluginFolders) {
-    const folderPath = path.join(pluginDir, folder);
-    const files = fs.readdirSync(folderPath).filter(f => f.endsWith('.js'));
+              const tag = plugin.tags || 'Uncategorized';
+              global.categories[tag] = global.categories[tag] || [];
+              global.categories[tag].push(plugin.command);
 
-    for (const file of files) {
-      const filePath = path.join(folderPath, file);
-      try {
-        const plugin = require(filePath);
-        if (plugin?.run) {
-          const name = path.basename(file, '.js');
-          global.plugins[name] = plugin;
+              loaded++;
+            }
+          } catch (err) {
+            failed++;
+            errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
+          }
+        });
+    });
 
-          const tag = plugin.tags || 'Uncategorized';
-          global.categories[tag] = global.categories[tag] || [];
-          global.categories[tag].push(plugin.command);
-
-          loaded++;
-        }
-      } catch (err) {
-        failed++;
-        errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
-      }
-    }
-  }
-
-  if (failed === 0) {
+  if (!failed) {
     console.log(chalk.greenBright.bold(`✅ ${loaded} plugin berhasil dimuat.`));
   } else {
     errors.forEach(msg => console.log(msg));
@@ -54,37 +55,30 @@ const loadPlug = () => {
   return { loaded, errors: failed, messages: errors };
 };
 
-const tmpFoldr = path.join(__dirname, '../temp');
-if (!fs.existsSync(tmpFoldr)) fs.mkdirSync(tmpFoldr, { recursive: true });
-
-const dbFolder = path.join(__dirname, '../toolkit/db');
-const dbFile = path.join(dbFolder, 'database.json');
+let db = { Private: {}, Grup: {} };
 
 const intDB = () => {
   if (!fs.existsSync(dbFolder)) fs.mkdirSync(dbFolder, { recursive: true });
   if (!fs.existsSync(dbFile)) {
-    fs.writeFileSync(dbFile, JSON.stringify({ Private: {}, Grup: {} }, null, 2));
+    fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
+  } else {
+    try {
+      const file = fs.readFileSync(dbFile, 'utf-8');
+      db = file ? JSON.parse(file) : db;
+    } catch (e) {
+      console.error('[DB] Gagal membaca file:', e);
+    }
   }
 };
 
-const readDB = () => {
-  if (!fs.existsSync(dbFile)) return { Private: {}, Grup: {} };
+const getDB = () => db;
 
+const saveDB = () => {
   try {
-    const data = fs.readFileSync(dbFile, 'utf-8');
-    return data ? JSON.parse(data) : { Private: {}, Grup: {} };
-  } catch (error) {
-    console.error(chalk.redBright.bold('Error membaca database:', error));
-    return { Private: {}, Grup: {} };
+    fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
+  } catch (e) {
+    console.error('[DB] Gagal simpan:', e);
   }
-};
-
-const saveDB = (data) => {
-  if (typeof data !== 'object' || data === null) {
-    console.error(chalk.redBright.bold('Data yang disimpan harus berupa objek.'));
-    return;
-  }
-  fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 };
 
 const getUser = (db, number) => {
@@ -96,7 +90,7 @@ const getUser = (db, number) => {
 };
 
 const getGrpDB = (chatId) => {
-  const db = readDB();
+  const db = getDB();
   return Object.values(db.Grup || {}).find(g => (g.Id || '').toString() === chatId.toString());
 };
 
@@ -123,7 +117,7 @@ const getLeftTxt = (chatId) => {
 };
 
 const loadGrpDB = (chatId) => {
-  const db = readDB();
+  const db = getDB();
   let groupData = getGrpDB(chatId);
 
   if (!groupData) {
@@ -181,17 +175,33 @@ const Format = {
   time: () => moment().format('HH:mm'),
   realTime: () => moment().tz('Asia/Jakarta').format('HH:mm:ss DD-MM-YYYY'),
   date: ts => moment(ts * 1000).format('DD-MM-YYYY'),
+
   uptime: () => {
     const sec = process.uptime();
-    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
-    return `${h}h ${m}m`;
+    return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
   },
+
   duration: (start, end) => {
     const dur = end - start;
-    const d = Math.floor(dur / (1000 * 60 * 60 * 24));
-    const h = Math.floor((dur % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const m = Math.floor((dur % (1000 * 60 * 60)) / (1000 * 60));
-    return `${d ? `${d} Hari ` : ''}${h ? `${h} Jam ` : ''}${m ? `${m} Menit ` : ''}`.trim();
+    const d = Math.floor(dur / 86400000);
+    const h = Math.floor((dur % 86400000) / 3600000);
+    const m = Math.floor((dur % 3600000) / 60000);
+    return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit' : ''}`.trim();
+  },
+
+  toTime: (ms) => {
+    if (!ms || typeof ms !== 'number') return '-';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit ' : ''}${s ? s + ' Detik' : ''}`.trim();
+  },
+
+  parseDuration: str => {
+    const [, num, unit] = /^(\d+)([smhd])$/i.exec(str) || [];
+    const map = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+    return map[unit?.toLowerCase()] ? parseInt(num) * map[unit.toLowerCase()] : null;
   }
 };
 
@@ -256,18 +266,24 @@ const chkPrem = async (plugin, conn, msg) => {
 
 const updateBio = async conn => {
   if (global.bioInterval) clearInterval(global.bioInterval);
+
   global.bioInterval = setInterval(async () => {
     if (!global.autoBio) return clearInterval(global.bioInterval);
+
     try {
-      await conn.updateProfileStatus(`${botName} Aktif ${Format.uptime()}`);
+      const bio = global.bioText
+        .replace(/<waktu>|<time>/gi, Format.uptime())
+        .replace(/<botName>/gi, global.botName);
+      
+      await conn.updateProfileStatus(bio);
     } catch (err) {
-      console.error(chalk.redBright.bold('❌ Gagal memperbarui bio:', err));
+      console.error(chalk.redBright.bold('❌ Gagal memperbarui bio:'), err);
     }
   }, 60000);
 };
 
 const AiDB = (senderId, chatId) => {
-  const database = readDB();
+  const database = getDB();
 
   if (chatId.endsWith('@s.whatsapp.net')) {
     for (const key in database.Private) {
@@ -289,7 +305,7 @@ const AiDB = (senderId, chatId) => {
 };
 
 const BellDB = (senderId, chatId) => {
-  const database = readDB();
+  const database = getDB();
 
   if (chatId.endsWith('@s.whatsapp.net')) {
     for (const key in database.Private) {
@@ -311,49 +327,37 @@ const BellDB = (senderId, chatId) => {
 };
 
 const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
-  const botRwId = conn.user?.id || '';
-  const botNumber = botRwId.split(':')[0] + '@s.whatsapp.net';
+  const botId = conn.user?.id?.split(':')[0] + '@s.whatsapp.net';
   const botName = global.botName?.toLowerCase();
+  const prefixes = [].concat(global.setting?.isPrefix || '.');
 
-  if (senderId === botRwId || msg.key.fromMe) return false;
+  if (prefixes.some(prefix => textMessage?.startsWith(prefix))) return false;
+  if (senderId === conn.user?.id || msg.key.fromMe) return false;
 
-  const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
-  const mentionJid = contextInfo?.mentionedJid || [];
-  const participant = contextInfo?.participant || '';
-  const replyBot = participant === botNumber;
-  const mentionBot = mentionJid.includes(botNumber);
+  const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
+  const { mentionedJid = [], participant = '' } = ctx;
+  const replyBot = participant === botId;
+  const mentionBot = mentionedJid.includes(botId);
+  if (ctx && participant && !replyBot && !mentionBot) return false;
 
-  if (contextInfo && participant && !replyBot && !mentionBot) return false;
+  const ai = AiDB(senderId, chatId);
+  const bell = BellDB?.(senderId, chatId);
+  if (!ai && !bell) return false;
 
-  const aiEnabled = AiDB(senderId, chatId);
-  const bellEnabled = BellDB?.(senderId, chatId);
-
-  if (!aiEnabled && !bellEnabled) return false;
-
-  const mentioned = textMessage?.toLowerCase().includes(botName);
-  const trigger = mentioned || replyBot || mentionBot;
-
+  const trigger = textMessage?.toLowerCase().includes(botName) || replyBot || mentionBot;
   if (!trigger) return false;
 
-  if (aiEnabled) {
-    const aiReply = await global.ai(textMessage, msg, senderId);
-    if (aiReply) {
-      await conn.sendMessage(chatId, { text: aiReply }, { quoted: msg });
-    } else {
-      await conn.sendMessage(chatId, { text: 'Maaf, saya tidak mengerti.' }, { quoted: msg });
-    }
+  if (ai) {
+    const res = await global.ai(textMessage, msg, senderId);
+    await conn.sendMessage(chatId, { text: res || 'Maaf, saya tidak mengerti.' }, { quoted: msg });
   }
 
-  if (bellEnabled) {
-    const bellaRes = await Bella(textMessage, msg, senderId);
-    if (bellaRes.cmd === 'voice' && bellaRes.audio) {
-      await conn.sendMessage(chatId, { 
-        audio: Buffer.from(bellaRes.audio), 
-        mimetype: 'audio/mpeg', 
-        ptt: true 
-      }, { quoted: msg });
-    } else if (bellaRes.msg) {
-      await conn.sendMessage(chatId, { text: bellaRes.msg }, { quoted: msg });
+  if (bell) {
+    const res = await Bella(textMessage, msg, senderId);
+    if (res.cmd === 'voice' && res.audio) {
+      await conn.sendMessage(chatId, { audio: Buffer.from(res.audio), mimetype: 'audio/mpeg', ptt: true }, { quoted: msg });
+    } else if (res.msg) {
+      await conn.sendMessage(chatId, { text: res.msg }, { quoted: msg });
     }
   }
 
@@ -429,6 +433,26 @@ const parseNoPrefix = (msg) => {
   };
 };
 
+async function shopHandle(conn, msg, textMessage, chatId, senderId) {
+  const quoted = msg.message?.extendedTextMessage?.contextInfo;
+  if (!quoted || textMessage?.trim().toLowerCase() !== 'done') return;
+  if (!global.ownerNumber.includes(senderId.replace(/\D/g, ''))) return;
+
+  const { stanzaId: qId, participant: qUser } = quoted;
+  if (!fs.existsSync(dbPath)) return;
+
+  const dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const orders = dbData.pendingOrders || [];
+  const order = orders.find(o => o.userId === qUser && o.idChat === qId);
+  if (!order) return conn.sendMessage(chatId, { text: "Transaksi tidak ditemukan." }, { quoted: msg });
+
+  dbData.pendingOrders = orders.filter(o => o.userId !== qUser || o.idChat !== qId);
+  fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 2));
+
+  const res = `Pembelian dikonfirmasi\n\nUser: @${qUser.split('@')[0]}\nToko: ${order.toko}\nBarang: ${order.barang}\nHarga: Rp${parseInt(order.harga).toLocaleString()}`;
+  await conn.sendMessage(chatId, { text: res, mentions: [qUser] }, { quoted: msg });
+}
+
 module.exports = {
   loadPlug,
   Format,
@@ -437,11 +461,12 @@ module.exports = {
   chkPrem,
   getGrpDB,
   intDB,
-  readDB,
+  getDB,
   saveDB,
   getUser,
   enGcW,
   enGcL,
+  loadGrpDB,
   getWelcTxt,
   getLeftTxt,
   stGcW,
@@ -451,7 +476,8 @@ module.exports = {
   exCht,
   parseMessage,
   parseNoPrefix,
-  exGrp
+  exGrp,
+  shopHandle
 };
 
 fs.watchFile(__filename, () => {

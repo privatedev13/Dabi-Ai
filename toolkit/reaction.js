@@ -1,15 +1,14 @@
-const { run: kickRun } = require('../plugins/Menu_Group/kick');
-const { run: promoteRun } = require('../plugins/Menu_Group/promote');
-const { run: demoteRun } = require('../plugins/Menu_Group/demote');
-const { run: playRun } = require('../plugins/Menu_Download/play');
+const { run: kickRun } = require('../plugins/group/kick');
+const { run: promoteRun } = require('../plugins/group/promote');
+const { run: demoteRun } = require('../plugins/group/demote');
+const { run: playRun } = require('../plugins/download/play');
+const { run: elevenlabsRun } = require('../plugins/fun/elevenlabs');
 
 async function rctKey(msg, conn) {
   try {
     const reaction = msg.message.reactionMessage?.text;
-    if (!reaction) return;
-
     const reactedKey = msg.message.reactionMessage?.key;
-    if (!reactedKey?.id || !reactedKey?.remoteJid) return;
+    if (!reaction || !reactedKey?.id || !reactedKey?.remoteJid) return;
 
     const chatId = reactedKey.remoteJid;
     const participant = reactedKey.participant;
@@ -18,7 +17,7 @@ async function rctKey(msg, conn) {
     const isGroup = chatId.endsWith('@g.us');
     if (!isGroup) return;
 
-    const { botNumber, botAdmin, userAdmin, adminList } = await stGrup(conn, chatId, senderId);
+    const { botNumber, botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
     const isTargetFromBot = participant === botNumber;
 
     const dummyMessage = {
@@ -28,106 +27,116 @@ async function rctKey(msg, conn) {
           text: '',
           contextInfo: {
             participant,
-            quotedMessage: null
+            quotedMessage: null,
+            mentionedJid: [participant]
           }
         }
       }
     };
 
     const chatInfo = { chatId, senderId, isGroup };
+    const Msg = conn.reactionCache?.get(reactedKey.id);
+    const getTextFromMsg = m =>
+      m?.message?.conversation ||
+      m?.message?.extendedTextMessage?.text ||
+      m?.message?.imageMessage?.caption ||
+      m?.message?.videoMessage?.caption;
 
-    if (reaction === '❌') {
-      if (isFromMe || isTargetFromBot || userAdmin) {
-        if (!isTargetFromBot && !botAdmin) return;
-        await conn.sendMessage(chatId, {
-          delete: {
-            remoteJid: chatId,
-            fromMe: isTargetFromBot,
-            id: reactedKey.id,
-            ...(isTargetFromBot ? {} : { participant })
+    const handleReaction = async (condition, callback) => {
+      if (condition) await callback();
+    };
+
+    switch (reaction) {
+      case '❌':
+        await handleReaction(
+          isFromMe || isTargetFromBot || userAdmin,
+          async () => {
+            if (!isTargetFromBot && !botAdmin) return;
+            await conn.sendMessage(chatId, {
+              delete: {
+                remoteJid: chatId,
+                fromMe: isTargetFromBot,
+                id: reactedKey.id,
+                ...(isTargetFromBot ? {} : { participant })
+              }
+            });
           }
-        });
-      }
-    }
+        );
+        break;
 
-    if (reaction === '🦵') {
-      if (userAdmin && botAdmin) {
-        dummyMessage.message.extendedTextMessage.contextInfo.mentionedJid = [participant];
-        await kickRun(conn, dummyMessage, {
+      case '🦵':
+        await handleReaction(userAdmin && botAdmin, async () =>
+          kickRun(conn, dummyMessage, { chatInfo, textMessage: '', prefix: '.', commandText: 'kick', args: [] })
+        );
+        break;
+
+      case '👑':
+        await handleReaction(userAdmin && botAdmin, async () =>
+          promoteRun(conn, dummyMessage, { chatInfo, textMessage: '', prefix: '.', commandText: 'promote', args: [] })
+        );
+        break;
+
+      case '💨':
+        await handleReaction(userAdmin && botAdmin, async () =>
+          demoteRun(conn, dummyMessage, { chatInfo, textMessage: '', prefix: '.', commandText: 'demote', args: [] })
+        );
+        break;
+
+      case '🔍':
+      case '🔎':
+        if (!Msg) return;
+        const searchText = getTextFromMsg(Msg);
+        if (!searchText) return;
+        await playRun(conn, Msg, {
           chatInfo,
-          textMessage: '',
+          textMessage: searchText,
           prefix: '.',
-          commandText: 'kick',
-          args: []
+          commandText: 'play',
+          args: searchText.trim().split(/\s+/)
         });
-      }
-    }
+        break;
 
-    if (reaction === '👑') {
-      if (userAdmin && botAdmin) {
-        dummyMessage.message.extendedTextMessage.contextInfo.mentionedJid = [participant];
-        await promoteRun(conn, dummyMessage, {
+      case '🌐':
+      case '🌏':
+      case '🌍':
+      case '🌎':
+        if (!Msg) return;
+        const quotedText = getTextFromMsg(Msg);
+        if (!quotedText) return;
+        const translated = await translate(quotedText, 'id');
+        if (translated) {
+          await conn.sendMessage(chatId, { text: `*Translate:* ${translated}` }, { quoted: Msg });
+        }
+        break;
+
+      case '🎶':
+      case '🎤':
+        if (!Msg) return;
+        const songText = getTextFromMsg(Msg);
+        if (!songText) return;
+        await elevenlabsRun(conn, Msg, {
           chatInfo,
-          textMessage: '',
+          textMessage: `bella ${songText}`,
           prefix: '.',
-          commandText: 'promote',
-          args: []
+          commandText: 'elevenlabs',
+          args: ['bella', ...songText.trim().split(/\s+/)]
         });
-      }
-    }
+        break;
 
-    if (reaction === '💨') {
-      if (userAdmin && botAdmin) {
-        dummyMessage.message.extendedTextMessage.contextInfo.mentionedJid = [participant];
-        await demoteRun(conn, dummyMessage, {
-          chatInfo,
-          textMessage: '',
-          prefix: '.',
-          commandText: 'demote',
-          args: []
+      case '🤮':
+      case '🩲':
+        if (!Msg) return;
+        const reactText = getTextFromMsg(Msg);
+        if (!reactText) return;
+
+        const emojis = ['🎤', '📢', '🏳️‍🌈', '🏳️‍⚧️', '🇮🇱', '💀', '✅', '👅', '🙈', '🐽', '🐷', '🐤'];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+        await conn.sendMessage(chatId, {
+          react: { text: randomEmoji, key: reactedKey }
         });
-      }
+        break;
     }
-
-    if (['🔍', '🔎'].includes(reaction)) {
-      const Msg = conn.reactionCache?.get(reactedKey.id);
-      if (!Msg) return;
-
-      const searchText =
-        Msg.message?.conversation ||
-        Msg.message?.extendedTextMessage?.text ||
-        Msg.message?.imageMessage?.caption ||
-        Msg.message?.videoMessage?.caption;
-
-      if (!searchText) return;
-
-      await playRun(conn, Msg, {
-        chatInfo,
-        textMessage: searchText,
-        prefix: '.',
-        commandText: 'play',
-        args: searchText.trim().split(/\s+/)
-      });
-    }
-
-    if (['🌐', '🌏', '🌍', '🌎'].includes(reaction)) {
-      const Msg = conn.reactionCache?.get(reactedKey.id);
-      if (!Msg) return;
-
-      const quotedText =
-        Msg.message?.conversation ||
-        Msg.message?.extendedTextMessage?.text ||
-        Msg.message?.imageMessage?.caption ||
-        Msg.message?.videoMessage?.caption;
-
-      if (!quotedText) return;
-
-      const translated = await translate(quotedText, 'id');
-      if (translated) {
-        await conn.sendMessage(chatId, { text: `*Translate:* ${translated}` }, { quoted: Msg });
-      }
-    }
-
   } catch (err) {
     console.error('Reaction handler error:', err);
   }

@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
 const vm = require('vm');
 const chalk = require('chalk');
 const { exec } = require('child_process');
@@ -10,8 +9,8 @@ const dbPath = path.join(__dirname, './db/database.json');
 const memoryCache = {};
 const groupCache = new Map();
 
-const sesiBell = path.join(__dirname, '../session/BellaSession.json');
-const sesiAi = path.join(__dirname, '../session/AiSesion.json');
+const sesiBell = path.join(__dirname, '../temp/BellaSession.json');
+const sesiAi = path.join(__dirname, '../temp/AiSesion.json');
 
 function loadSession(file) {
   if (!fs.existsSync(file)) return {};
@@ -144,7 +143,7 @@ async function gcFilter(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const db = readDB();
+    const db = getDB();
     const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
     if (!groupData || !groupData.gbFilter) return;
 
@@ -214,21 +213,27 @@ async function gcFilter(conn, msg, chatId, senderId, isGroup) {
 async function tryPrem(nomor) {
   try {
     intDB();
-    const db = readDB();
-    const u = getUser(db, nomor);
-    if (!u) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
-    const { key, value } = u;
-    if (value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
+    const db = getDB();
+    const user = getUser(db, nomor);
+
+    if (!user) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
+    if (user.value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
+
+    const key = user.key;
+    const now = Date.now();
+    const claimPrem = 3 * 24 * 60 * 60 * 1000;
+    const remainPrem = db.Private[key].isPremium?.time || 0;
 
     db.Private[key].isPremium = {
       isPrem: true,
-      time: 3 * 24 * 60 * 60 * 1000,
-      activatedAt: Date.now()
+      time: remainPrem + claimPrem,
+      activatedAt: now
     };
+
     db.Private[key].claim = true;
     saveDB(db);
 
-    return { success: true, message: '✅ Trial Premium 3 hari diberikan.', claimable: false };
+    return { success: true, message: '✅ Trial Premium 3 hari ditambahkan.', claimable: false };
   } catch (e) {
     console.error('tryPrem error:', e);
     return { success: false, message: 'Terjadi kesalahan.', claimable: false };
@@ -257,21 +262,19 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const db = readDB();
-    const groupData = Object.values(db.Grup || {}).find(g => g.Id === chatId);
-    if (!groupData || !groupData.antibadword || !groupData.antibadword.badword) return;
+    const { Grup = {} } = getDB();
+    const group = Object.values(Grup).find(g => g.Id === chatId);
+    if (!group?.antibadword?.badword) return;
 
     const metadata = await global.mtData(chatId, conn);
-    const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
-    const botRawId = conn.user?.id || '';
-    const fromMe = senderId === botRawId || msg.key.fromMe;
-
+    const isAdmin = metadata?.participants?.some(p => p.id === senderId && p.admin);
+    const fromMe = senderId === (conn.user?.id || '') || msg.key.fromMe;
     if (isAdmin || fromMe) return;
 
-    const badwords = groupData.antibadword.badwordText?.toLowerCase().split(',').map(v => v.trim()).filter(Boolean);
-    if (!badwords || badwords.length === 0) return;
+    const badwords = group.antibadword.badwordText?.toLowerCase().split(',').map(v => v.trim()).filter(Boolean);
+    if (!badwords?.length) return;
 
-    const textMsg = (
+    const text = (
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
       msg.message?.imageMessage?.caption ||
@@ -279,9 +282,7 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
       ''
     ).toLowerCase();
 
-    const detected = badwords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(textMsg));
-
-    if (detected) {
+    if (badwords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(text))) {
       await conn.sendMessage(chatId, {
         text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
         mentions: [senderId]
@@ -295,22 +296,12 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
 }
 
 async function afkCencel(senderId, chatId, msg, conn) {
-  const db = readDB();
-  const senderKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === senderId);
-  if (!senderKey) return;
+  const db = getDB();
+  const user = Object.values(db.Private).find(u => u.Nomor === senderId);
+  if (!user?.afk?.afkTime) return;
 
-  const user = db.Private[senderKey];
-  const afkData = user.afk || {};
-  if (!afkData.afkTime) return;
-
-  const afkStart = afkData.afkTime;
-  const afkLast = afkData.Time || afkStart;
-  const reason = afkData.reason || 'Tidak ada alasan';
-
-  const now = Math.floor(Date.now() / 1000);
-  let waktu = Format.duration(afkStart, now);
-
-  if (!waktu || waktu === '0 detik') waktu = 'Baru saja';
+  const { afkTime, reason = 'Tidak ada alasan' } = user.afk;
+  const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
 
   user.afk = {};
   saveDB(db);
@@ -322,43 +313,36 @@ async function afkCencel(senderId, chatId, msg, conn) {
 }
 
 async function afkTgR(msg, conn) {
-  const db = readDB();
+  const db = getDB();
   const botNumber = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
   const { remoteJid: chatId, participant, fromMe } = msg.key;
   const sender = participant || chatId;
-
   if (fromMe || sender === botNumber) return;
 
   const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
-  const mentions = ctx.mentionedJid || [];
-  const quoted = ctx.participant;
+  const targets = [...(ctx.mentionedJid || []), ctx.participant].filter(jid => jid && jid !== botNumber);
 
-  const checkAFK = (jid, tagType) => {
-    const data = Object.values(db.Private).find(u => u.Nomor === jid && u.afk?.afkTime);
-    if (!data) return;
+  for (const jid of targets) {
+    const user = Object.values(db.Private).find(u => u.Nomor === jid && u.afk?.afkTime);
+    if (!user) continue;
 
-    const afkStart = data.afk.afkTime;
-    const now = Math.floor(Date.now() / 1000);
-    const waktu = Format.duration(afkStart, now) || 'Baru saja';
-    const alasan = data.afk.reason || 'Tidak ada alasan';
-    const text = tagType === 'reply'
-      ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`
-      : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${alasan}`;
+    const { afkTime, reason = 'Tidak ada alasan' } = user.afk;
+    const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
+    const type = jid === ctx.participant ? 'reply' : 'mention';
 
-    return conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
-  };
+    const text = type === 'reply'
+      ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`
+      : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`;
 
-  if (quoted && quoted !== botNumber) return checkAFK(quoted, 'reply');
-  for (const jid of mentions) {
-    if (jid !== botNumber) return checkAFK(jid, 'mention');
+    await conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
   }
 }
 
 const funcUrl = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/assets/funcFile/function.js';
 
 const loadFunc = async () => {
-  const response = await axios.get(funcUrl);
-  const code = response.data;
+  const response = await fetch(funcUrl);
+  const code = await response.text();
 
   const sandbox = { module: {}, exports: {}, require, console };
   vm.createContext(sandbox);
@@ -432,22 +416,6 @@ async function getStId(msg) {
   }
 }
 
-function loadDatabase() {
-  if (!fs.existsSync(dbPath)) return { Private: {}, Grup: {} }
-  const data = fs.readFileSync(dbPath, 'utf-8')
-  return JSON.parse(data)
-}
-
-function getDbUsr(nomorPengguna) {
-  const db = loadDatabase()
-  return Object.values(db.Private || {}).some(user => user.Nomor === nomorPengguna)
-}
-
-function getNmbUsr(nomorPengguna) {
-  const db = loadDatabase()
-  return Object.values(db.Private || {}).find(user => user.Nomor === nomorPengguna) || null
-}
-
 const voiceList = [  
   'prabowo',  
   'yanzgpt',  
@@ -518,6 +486,66 @@ async function labvn(message, msg, conn, chatId, isPrefix = '.') {
   }
 }
 
+function msgDate(msg) {
+  let textMessage = '';
+  let mediaInfo = '';
+
+  if (!msg?.message) return { textMessage, mediaInfo };
+
+  const m = msg.message;
+
+  if (m.groupStatusMentionMessage) {
+    mediaInfo = '[ Status Grup ]';
+    textMessage = 'Grup ini disebut dalam status';
+  }
+
+  if (m.conversation) {
+    textMessage = m.conversation;
+  } else if (m.extendedTextMessage?.text) {
+    textMessage = m.extendedTextMessage.text;
+  } else if (m.imageMessage?.caption) {
+    textMessage = m.imageMessage.caption;
+  } else if (m.videoMessage?.caption) {
+    textMessage = m.videoMessage.caption;
+  } else if (m.reactionMessage) {
+    const reactedText = m.reactionMessage.text;
+    textMessage = `Memberi reaksi ${reactedText}`;
+  } else if (m.protocolMessage?.type === 14) {
+    textMessage = `Pesan Diedit ${textMessage}`;
+  } else if (m.protocolMessage?.type === 0) {
+    textMessage = 'Pesan Dihapus';
+  } else if (m.ephemeralMessage?.message?.conversation) {
+    textMessage = m.ephemeralMessage.message.conversation;
+  } else if (m.ephemeralMessage?.message?.extendedTextMessage?.text) {
+    textMessage = m.ephemeralMessage.message.extendedTextMessage.text;
+  }
+
+  const mediaTypes = {
+    imageMessage: '[ Gambar ]',
+    videoMessage: '[ Video ]',
+    audioMessage: '[ Audio ]',
+    documentMessage: '[ Dokumen ]',
+    stickerMessage: '[ Stiker ]',
+    locationMessage: '[ Lokasi ]',
+    contactMessage: '[ Kontak ]',
+    pollCreationMessage: '[ Polling ]',
+    liveLocationMessage: '[ Lokasi Live ]',
+    reactionMessage: '[ Reaksi ]',
+    protocolMessage: '[ Sistem ]',
+    ephemeralMessage: '[ Sekali Lihat ]'
+  };
+
+  for (const [key, value] of Object.entries(mediaTypes)) {
+    if (m[key]) mediaInfo = value;
+    if (key === 'ephemeralMessage' && m.ephemeralMessage?.message) {
+      const nestedKey = Object.keys(m.ephemeralMessage.message)[0];
+      if (nestedKey && mediaTypes[nestedKey]) mediaInfo = mediaTypes[nestedKey];
+    }
+  }
+
+  return { textMessage, mediaInfo };
+}
+
 module.exports = {
   ai,
   mtData,
@@ -531,13 +559,11 @@ module.exports = {
   afkTgR,
   loadFunc,
   cache,
-  memoryCache,
   watchCfg,
   clean,
   timer,
   getStId,
-  getDbUsr,
-  getNmbUsr,
   logicBella,
-  labvn
+  labvn,
+  msgDate
 };
