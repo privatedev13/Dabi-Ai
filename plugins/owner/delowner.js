@@ -3,10 +3,10 @@ const path = require('path');
 const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 
 module.exports = {
-  name: 'addowner',
-  command: ['addowner', 'adow'],
+  name: 'delowner',
+  command: ['delowner', 'rmow'],
   tags: 'Owner Menu',
-  desc: 'Menambah owner bot',
+  desc: 'Menghapus nomor owner dari daftar owner',
   prefix: true,
   owner: true,
 
@@ -31,16 +31,16 @@ module.exports = {
 
     const rawInput = args.join(' ');
     if (!rawInput) {
-      return conn.sendMessage(chatId, { text: 'Masukkan nomor yang akan dijadikan owner' }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: 'Masukkan nomor owner yang ingin dihapus' }, { quoted: msg });
     }
 
     const number = await calNumber(rawInput);
-
-    if (config.ownerSetting.ownerNumber.includes(number)) {
-      return conn.sendMessage(chatId, { text: 'Nomor sudah terdaftar' }, { quoted: msg });
+    const index = config.ownerSetting.ownerNumber.indexOf(number);
+    if (index === -1) {
+      return conn.sendMessage(chatId, { text: 'Nomor tidak ditemukan dalam daftar owner' }, { quoted: msg });
     }
 
-    config.ownerSetting.ownerNumber.push(number);
+    config.ownerSetting.ownerNumber.splice(index, 1);
 
     try {
       const fd = fs.openSync(configPath, 'w');
@@ -48,7 +48,7 @@ module.exports = {
       fs.fsyncSync(fd);
       fs.closeSync(fd);
 
-      conn.sendMessage(chatId, { text: `Nomor ${number} sudah ditambahkan sebagai owner` }, { quoted: msg });
+      conn.sendMessage(chatId, { text: `Nomor ${number} telah dihapus dari daftar owner` }, { quoted: msg });
     } catch (err) {
       console.error('Gagal menyimpan config:', err);
       conn.sendMessage(chatId, { text: 'Gagal menyimpan perubahan ke config.json' }, { quoted: msg });
