@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const sessionPath = path.join(__dirname, '../../session/AiSesion.json');
+const sessionPath = path.join(__dirname, '../../temp/AiSesion.json');
 
 module.exports = {
   name: 'resetai',
