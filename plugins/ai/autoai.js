@@ -1,7 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-const dbPath = path.join(__dirname, '../../toolkit/db/database.json');
-
 module.exports = {
   name: 'autoai',
   command: ['autoai', 'ai'],
@@ -11,54 +7,38 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
     prefix,
     commandText,
     args
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
-        return conn.sendMessage(chatId, {
-          text: `Gunakan format: ${prefix + commandText} <on/off>`
-        }, { quoted: msg });
+      const db = getDB();
+      const input = args[0]?.toLowerCase();
+
+      if (!['on', 'off'].includes(input)) {
+        return conn.sendMessage(chatId, { text: `Gunakan format: ${prefix + commandText} <on/off>` }, { quoted: msg });
       }
 
-      const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-      const settingValue = args[0].toLowerCase() === 'on';
+      const status = input === 'on';
+      const target = isGroup ? 'Grup' : 'Private';
+      const idKey = isGroup ? 'Id' : 'Nomor';
+      const idVal = isGroup ? chatId : senderId;
 
-      if (isGroup) {
-        const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
-        if (!groupData) {
-          return conn.sendMessage(chatId, {
-            text: 'Grup ini belum terdaftar dalam database.'
-          }, { quoted: msg });
-        }
-
-        groupData.autoai = settingValue;
-        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-        return conn.sendMessage(chatId, {
-          text: `Fitur Auto-AI untuk grup ini telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
-        }, { quoted: msg });
-
-      } else {
-        const userKey = Object.keys(db.Private).find(name => db.Private[name].Nomor === senderId);
-        if (!userKey) {
-          return conn.sendMessage(chatId, {
-            text: 'Nomor kamu belum terdaftar dalam database.'
-          }, { quoted: msg });
-        }
-
-        db.Private[userKey].autoai = settingValue;
-        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-        return conn.sendMessage(chatId, {
-          text: `Fitur Auto-AI untuk kamu telah *${settingValue ? 'diaktifkan' : 'dinonaktifkan'}*.`
-        }, { quoted: msg });
+      const key = Object.keys(db[target]).find(k => db[target][k][idKey] === idVal);
+      if (!key) {
+        return conn.sendMessage(chatId, { text: `${isGroup ? 'Grup' : 'Nomor kamu'} belum terdaftar dalam database.` }, { quoted: msg });
       }
+
+      db[target][key].autoai = status;
+      saveDB();
+
+      const teks = `Fitur Auto-AI untuk ${isGroup ? 'grup ini' : 'kamu'} telah *${status ? 'diaktifkan' : 'dinonaktifkan'}*.`;
+      conn.sendMessage(chatId, { text: teks }, { quoted: msg });
 
     } catch (err) {
-      console.error(err);
-      conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat memproses perintah.' }, { quoted: msg });
+      console.error('[autoai]', err);
+      conn.sendMessage(chatInfo.chatId, { text: 'Terjadi kesalahan saat memproses perintah.' }, { quoted: msg });
     }
   }
 };
