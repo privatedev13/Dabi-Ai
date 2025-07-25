@@ -45,7 +45,6 @@ module.exports = {
       groupData.gbFilter.openTime = { active: false };
       saveDB(db);
       await conn.groupSettingUpdate(chatId, 'not_announcement');
-      return conn.sendMessage(chatId, { text: '✅ Grup telah dibuka.' }, { quoted: msg });
 
     } catch (err) {
       console.error('Open Group Error:', err);
