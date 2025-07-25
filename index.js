@@ -12,7 +12,7 @@ if (!fs.existsSync(licensePath)) {
 }
 console.log('··───── LICENSE ─────··\n\n' + fs.readFileSync(licensePath, 'utf8') + '\n\n··───────────··\n');
 
-const tempDir = path.join(__dirname, 'session');
+const tempDir = path.join(__dirname, 'temp');
 fs.existsSync(tempDir) || fs.mkdirSync(tempDir);
 
 const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
