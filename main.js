@@ -13,7 +13,7 @@ const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys
 const { isPrefix } = globalSetting;
 const { loadPlug, usrMsg, shopHandle } = require('./toolkit/helper');
 const { makeInMemoryStore } = require('./toolkit/store.js')
-const Cc = require('./session/prgM.js');
+const Cc = require('./temp/prgM.js');
 const { handleGame } = require('./toolkit/funcGame');
 const {
   set,
