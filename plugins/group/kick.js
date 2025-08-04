@@ -11,22 +11,23 @@ module.exports = {
     commandText
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    const targetId = target(msg, senderId);
-    const mentionTag = `${targetId}@s.whatsapp.net`;
-
-    if (!isGroup) return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: msg });
+    if (!isGroup)
+      return conn.sendMessage(chatId, { text: "❌ Perintah ini hanya bisa digunakan dalam grup!" }, { quoted: msg });
 
     const { botAdmin, userAdmin, adminList } = await stGrup(conn, chatId, senderId);
-    if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
-    if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
+
+    if (!userAdmin)
+      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
+
+    if (!botAdmin)
+      return conn.sendMessage(chatId, { text: '❌ Bot bukan admin!' }, { quoted: msg });
 
     const context = msg.message?.extendedTextMessage?.contextInfo || {};
     const targetUser = context.mentionedJid?.[0] || context.participant;
 
     if (!targetUser) {
       return conn.sendMessage(chatId, {
-        text: `❌ Gunakan format:\n${prefix}${commandText} @${targetId} atau reply pesan target.`,
-        mentions: [mentionTag]
+        text: `❌ Gunakan format:\n${prefix}${commandText} @628xxxx atau reply pesan target.`,
       }, { quoted: msg });
     }
 
