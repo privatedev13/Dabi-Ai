@@ -38,6 +38,11 @@ module.exports = {
         ? (premTime > 0 ? Format.duration(0, premTime).trim() : "Kadaluarsa")
         : "Tidak";
 
+      if (!user.money) {
+        user.money = { amount: 300000 };
+        saveDB();
+      }
+
       const moneyAmount = user.money?.amount || 0;
       const formattedMoney = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(moneyAmount);
 
@@ -50,12 +55,20 @@ module.exports = {
         `${side} ${btn} *Nomor:* ${user.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n` +
         `${side} ${btn} *Auto AI:* ${user.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n` +
         `${side} ${btn} *Private Cmd:* ${user.cmd || 0}\n` +
-        `${side} ${btn} *Umur:* ${user.umur || "Tidak diatur"}\n` +
         `${side} ${btn} *Uang:* ${formattedMoney}\n` +
         `${side} ${btn} *Status Premium:* ${isPrem ? "Ya ✅" : "Tidak ❌"}\n` +
         `${side} ${btn} *Premium Time:* ${isPremiumText}\n` +
         `${side} ${btn} *Nomor Id:* ${user.noId || "Tidak ada"}\n` +
         `${foot}${garis}\n\n${claimText}`;
+
+      const defaultThumb = 'https://files.catbox.moe/6ylerz.jpg';
+      let thumbPp = defaultThumb;
+
+      try {
+        thumbPp = await conn.profilePictureUrl(mention, 'image');
+      } catch (e) {
+        thumbPp = defaultThumb;
+      }
 
       await conn.sendMessage(chatId, {
         text: profileText,
@@ -64,7 +77,7 @@ module.exports = {
           externalAdReply: {
             title: "Profile Info",
             body: `Ini Adalah Profile ${pushName}`,
-            thumbnailUrl: thumbnail,
+            thumbnailUrl: thumbPp,
             mediaType: 1,
             renderLargerThumbnail: true,
           },
