@@ -24,17 +24,20 @@ module.exports = {
       text: `Soal MTK: ${question} = ?\n\nBalas pesan ini dengan jawabanmu!`
     }, { quoted: msg });
 
-    const session = global.load(global.pPath);
-    const sessionKey = `soal${Object.keys(session).length + 1}`;
+    const data = global.load(global.pPath);
+    const gameData = data.FunctionGame || {};
+    const sessionKey = `soal${Object.keys(gameData).length + 1}`;
 
-    session[sessionKey] = {
+    gameData[sessionKey] = {
       soal: question,
       jawaban: result,
       created: Date.now(),
       id: res.key.id,
-      chance: 3
+      chance: 3,
+      status: true
     };
 
-    global.save(session, global.pPath);
+    data.FunctionGame = gameData;
+    global.save(data, global.pPath);
   }
 };

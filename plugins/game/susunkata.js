@@ -8,13 +8,12 @@ module.exports = {
   run: async (conn, msg, {
     chatInfo
   }) => {
-    const { chatId } = chatInfo;
+    const { chatId, senderId } = chatInfo;
     const { susunKata } = await global.loadFunc();
-    const user = msg.sender;
+    const user = senderId;
 
-    let session = global.load(global.pPath);
-    session = global.bersih(session);
-    global.save(session, global.pPath);
+    let data = global.load(global.pPath);
+    let session = global.bersih(data.FunctionGame);
 
     const existing = Object.entries(session).find(([_, v]) =>
       v.status && v.chatId === chatId && v.Nomor === user
@@ -32,8 +31,8 @@ module.exports = {
       text: `🎮 *Susun Kata!*\n\nSusun huruf berikut menjadi kata:\n➤ ${soal.soal}\nKategori: ${soal.tipe}`,
     }, { quoted: msg });
 
-    const sessionKey = `soal${Object.keys(session).length + 1}`;
-    session[sessionKey] = {
+    const sessionKey = `soal${Object.keys(data.FunctionGame).length + 1}`;
+    data.FunctionGame[sessionKey] = {
       status: true,
       id: sent.key.id,
       Nomor: user,
@@ -46,6 +45,6 @@ module.exports = {
       }
     };
 
-    global.save(session, global.pPath);
+    global.save(data, global.pPath);
   }
 };

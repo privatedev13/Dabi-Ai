@@ -7,35 +7,35 @@ module.exports = {
   desc: 'Game tebak gambar',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     const { chatId, senderId } = chatInfo;
 
     try {
-      let session = global.load(global.pPath);
-      session = global.bersih(session);
-      global.save(session, global.pPath);
+      const data = global.load(global.pPath);
+      const gameData = global.bersih(data.FunctionGame || {});
+      data.FunctionGame = gameData;
+      global.save(data, global.pPath);
 
-      const isPlaying = Object.values(session).some(
-        v => v.status && v.chatId === chatId && v.Nomor === senderId
+      const isPlaying = Object.values(gameData).some(v =>
+        v.status && v.chatId === chatId && v.Nomor === senderId
       );
 
-      if (isPlaying)
+      if (isPlaying) {
         return conn.sendMessage(chatId, {
-          text: `🎮 Kamu masih punya soal tebak gambar yang belum dijawab.\nSilakan jawab dulu.`,
+          text: `Kamu masih punya soal tebak gambar yang belum dijawab. Silakan jawab dulu.`,
         }, { quoted: msg });
+      }
 
-      const { data } = await axios.get('https://raw.githubusercontent.com/Zyknn/database/main/tebakgambar.json');
-      const soal = data[Math.floor(Math.random() * data.length)];
+      const { data: soalList } = await axios.get('https://raw.githubusercontent.com/Zyknn/database/main/tebakgambar.json');
+      const soal = soalList[Math.floor(Math.random() * soalList.length)];
 
       const sent = await conn.sendMessage(chatId, {
         image: { url: soal.img },
-        caption: `🧠 *Tebak Gambar!*\n\n${soal.deskripsi}\n\nBalas dengan jawaban kamu!`
+        caption: `Tebak Gambar!\n\n${soal.deskripsi}\n\nBalas dengan jawaban kamu!`
       }, { quoted: msg });
 
-      const sessionKey = `soal${Object.keys(session).length + 1}`;
-      session[sessionKey] = {
+      const sessionKey = `soal${Object.keys(gameData).length + 1}`;
+      gameData[sessionKey] = {
         status: true,
         id: sent.key.id,
         Nomor: senderId,
@@ -48,12 +48,13 @@ module.exports = {
         }
       };
 
-      global.save(session, global.pPath);
+      data.FunctionGame = gameData;
+      global.save(data, global.pPath);
 
     } catch (e) {
       console.error('[TEBAK-GAMBAR ERROR]', e);
       conn.sendMessage(chatId, {
-        text: `❌ Terjadi kesalahan saat memulai game. Coba lagi nanti.`
+        text: `Terjadi kesalahan saat memulai game. Coba lagi nanti.`
       }, { quoted: msg });
     }
   }
