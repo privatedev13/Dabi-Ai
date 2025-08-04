@@ -67,13 +67,14 @@ setInterval(async () => {
 
 const mute = async (chatId, senderId, conn) => {
   const db = getDB();
-  const groupData = Object.values(db.Grup).find((g) => g.Id === chatId);
+  const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
 
   if (groupData?.mute) {
-    const groupMetadata = await conn.groupMetadata(chatId);
-    const groupAdmins = groupMetadata.participants.filter((p) => p.admin);
-    const isAdmin = groupAdmins.some((admin) => admin.id === senderId);
-
+    const metadata = await conn.groupMetadata(chatId);
+    const isAdmin = metadata.participants
+      .filter(p => p.admin)
+      .some(p => p.jid === senderId);
+      
     if (!isAdmin) return true;
   }
 
@@ -230,11 +231,13 @@ const startBot = async () => {
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
         const sender = chatInfo.senderId;
-
+      
         for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
-          const userData = getUser(getDB(), senderId);
+          if (prefixUsed) authUser(msg, chatInfo);
+
+          const userData = getUser(getDB(), sender);
           const pluginPrefix = plugin.prefix;
           const allowRun =
             pluginPrefix === 'both' ||
@@ -242,12 +245,6 @@ const startBot = async () => {
             ((pluginPrefix === true || pluginPrefix === undefined) && prefixUsed);
 
           if (!allowRun) continue;
-          if (prefixUsed && !userData && !plugin.whiteLiss) {
-            await conn.sendMessage(chatInfo.chatId, {
-              text: '❌ Kamu belum terdaftar.\nKetik *.daftar* untuk mendaftar.'
-            }, { quoted: msg });
-            return;
-          }
 
           try {
             await plugin.run(conn, msg, { ...parsed, isPrefix, store });

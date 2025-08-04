@@ -1,6 +1,6 @@
 {
   "name": "Dabi-Ai",
-  "version": "1.3.3",
+  "version": "1.3.3-Beta_Version",
   "description": "Hari yang menyenangkan teman-teman. Kali ini saya akan memberikan sebuah informasi tentang script BaseBot ini, ini adalah sebuah script BaseBot/Base Bot WhatsApp, dalam rangkaian kali ini saya benar-benar berterima kasih kepada kalian yang menggunakan script ini.",
   "main": "index.js",
   "scripts": {
@@ -19,13 +19,13 @@
   "homepage": "https://github.com/MaouDabi0/Dabi-Ai#readme",
   "dependencies": {
     "@distube/ytdl-core": "^4.16.5",
-    "@whiskeysockets/baileys": "^6.7.17",
+    "@whiskeysockets/baileys": "npm:@yupra/baileys@latest",
     "adm-zip": "^0.5.16",
     "axios": "^1.8.2",
     "cheerio": "^0.22.0",
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.2",
-    "jimp": "^0.16.13",
+    "jimp": "^0.22.12",
     "jsdom": "^26.0.0",
     "moment-timezone": "^0.5.47",
     "node-fetch": "^2.7.0",
