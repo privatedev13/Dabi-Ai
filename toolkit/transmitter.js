@@ -128,7 +128,7 @@ async function mtData(id, conn) {
     setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
     return metadata;
   } catch (e) {
-    console.error(chalk.redBright.bold('Gagal ambil metadata grup:', e));
+    console.error('Gagal ambil metadata grup:', e);
     return null;
   }
 }
@@ -380,26 +380,6 @@ async function watchCfg() {
   fs.watchFile(p, loadConfig);
 }
 
-async function clean(conn) {
-  exec("df / | awk 'NR==2 {print $5}' | sed 's/%//'", async (err, stdout) => {
-    if (err) return;
-    const used = parseInt(stdout.trim());
-    if (used >= 90) {
-      try {
-        if (global.gc) global.gc();
-      } catch {}
-
-      exec('npm cache clean --force');
-      exec('find . -name "*.log" -delete', async () => {
-        if (conn && conn.sendMessage) {
-          await conn.sendMessage("6288215052251@s.whatsapp.net", { text: "Ram berhasil di reset✅" });
-        }
-        process.exit(1);
-      });
-    }
-  });
-}
-
 function timer(conn) {
   setInterval(() => {
     clean(conn);
@@ -560,7 +540,6 @@ module.exports = {
   loadFunc,
   cache,
   watchCfg,
-  clean,
   timer,
   getStId,
   logicBella,

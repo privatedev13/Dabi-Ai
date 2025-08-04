@@ -12,38 +12,41 @@ const dbPath = './toolkit/db/datatoko.json';
 
 const loadPlug = () => {
   if (!fs.existsSync(pluginDir)) {
-    return console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
+    console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
+    return;
   }
+
+  global.plugins = {};
+  global.categories = {};
 
   let loaded = 0, failed = 0;
   const errors = [];
 
-  fs.readdirSync(pluginDir)
-    .filter(name => fs.statSync(path.join(pluginDir, name)).isDirectory())
-    .forEach(folder => {
-      const folderPath = path.join(pluginDir, folder);
-      fs.readdirSync(folderPath)
-        .filter(file => file.endsWith('.js'))
-        .forEach(file => {
-          const filePath = path.join(folderPath, file);
-          try {
-            const plugin = require(filePath);
-            if (plugin?.run) {
-              const name = path.basename(file, '.js');
-              global.plugins[name] = plugin;
+  for (const folder of fs.readdirSync(pluginDir)) {
+    const folderPath = path.join(pluginDir, folder);
+    if (!fs.statSync(folderPath).isDirectory()) continue;
 
-              const tag = plugin.tags || 'Uncategorized';
-              global.categories[tag] = global.categories[tag] || [];
-              global.categories[tag].push(plugin.command);
+    for (const file of fs.readdirSync(folderPath).filter(f => f.endsWith('.js'))) {
+      const filePath = path.join(folderPath, file);
+      try {
+        delete require.cache[require.resolve(filePath)];
+        const plugin = require(filePath);
+        if (plugin?.run) {
+          const name = path.basename(file, '.js');
+          global.plugins[name] = plugin;
 
-              loaded++;
-            }
-          } catch (err) {
-            failed++;
-            errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
-          }
-        });
-    });
+          const tag = plugin.tags || 'Uncategorized';
+          global.categories[tag] = global.categories[tag] || [];
+          global.categories[tag].push(plugin.command);
+
+          loaded++;
+        }
+      } catch (err) {
+        failed++;
+        errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
+      }
+    }
+  }
 
   if (!failed) {
     console.log(chalk.greenBright.bold(`✅ ${loaded} plugin berhasil dimuat.`));
@@ -156,10 +159,10 @@ const exGrp = async (conn, chatId, senderId) => {
   const metadata = await mtData(chatId, conn);
   if (!metadata) return {};
 
+  const participants = metadata.participants || [];
   const groupName = metadata.subject;
-  const botNumber = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-  const participants = metadata.participants;
-  const adminList = participants.filter(p => p.admin).map(p => p.id);
+  const botNumber = conn.user?.id?.split(':')[0] + '@s.whatsapp.net';
+  const adminList = participants.filter(p => p.admin).map(p => p.jid);
 
   return {
     metadata,
@@ -175,12 +178,10 @@ const Format = {
   time: () => moment().format('HH:mm'),
   realTime: () => moment().tz('Asia/Jakarta').format('HH:mm:ss DD-MM-YYYY'),
   date: ts => moment(ts * 1000).format('DD-MM-YYYY'),
-
   uptime: () => {
     const sec = process.uptime();
     return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
   },
-
   duration: (start, end) => {
     const dur = end - start;
     const d = Math.floor(dur / 86400000);
@@ -188,7 +189,6 @@ const Format = {
     const m = Math.floor((dur % 3600000) / 60000);
     return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit' : ''}`.trim();
   },
-
   toTime: (ms) => {
     if (!ms || typeof ms !== 'number') return '-';
     const d = Math.floor(ms / 86400000);
@@ -197,11 +197,14 @@ const Format = {
     const s = Math.floor((ms % 60000) / 1000);
     return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit ' : ''}${s ? s + ' Detik' : ''}`.trim();
   },
-
   parseDuration: str => {
     const [, num, unit] = /^(\d+)([smhd])$/i.exec(str) || [];
     const map = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
     return map[unit?.toLowerCase()] ? parseInt(num) * map[unit.toLowerCase()] : null;
+  },
+  toNumber: num => {
+    if (typeof num !== 'number') return '-';
+    return num.toLocaleString('id-ID');
   }
 };
 
@@ -433,6 +436,45 @@ const parseNoPrefix = (msg) => {
   };
 };
 
+const randomId = () => {
+  const abjad = 'abcdefghijklmnopqrstuvwxyz';
+  return [...Array(7)].map(() => abjad[Math.floor(Math.random() * 26)]).join('') + (Math.floor(Math.random() * 100) + 1);
+};
+
+const authUser = (msg, chatInfo) => {
+  const db = getDB();
+  const { senderId, isGroup, chatId } = chatInfo;
+  const nama = (msg.pushName || '-').trim().slice(0, 30);
+  const nomor = senderId;
+
+  if (Object.values(db.Private || {}).some(u => u.Nomor === nomor)) return;
+
+  const fromParticipant = msg?.key?.participant || null;
+  if (isGroup && senderId !== fromParticipant) return;
+  if (!isGroup && Object.values(db.Private || {}).some(u => u.Nomor === chatId)) return;
+
+  db.Private ??= {};
+  let finalName = nama;
+  let count = 1;
+  while (db.Private[finalName]) {
+    finalName = `${nama}_${count++}`;
+  }
+
+  db.Private[finalName] = {
+    Nomor: nomor,
+    noId: randomId(),
+    autoai: false,
+    bell: false,
+    cmd: 0,
+    claim: false,
+    money: { amount: 300000 },
+    isPremium: { isPrem: false, time: 0 },
+    afk: {}
+  };
+
+  saveDB();
+};
+
 async function shopHandle(conn, msg, textMessage, chatId, senderId) {
   const quoted = msg.message?.extendedTextMessage?.contextInfo;
   if (!quoted || textMessage?.trim().toLowerCase() !== 'done') return;
@@ -477,7 +519,8 @@ module.exports = {
   parseMessage,
   parseNoPrefix,
   exGrp,
-  shopHandle
+  shopHandle,
+  authUser
 };
 
 fs.watchFile(__filename, () => {

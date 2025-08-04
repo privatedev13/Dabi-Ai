@@ -50,6 +50,7 @@ global.stGcL = Sys.stGcL;
 global.stGcW = Sys.stGcW;
 global.stGrup = Sys.exGrp;
 global.updateBio = Sys.updateBio;
+global.authUser = Sys.authUser;
 
 global.afkCencel = emtData.afkCencel;
 global.afkTgR = emtData.afkTgR;
@@ -73,6 +74,10 @@ global.load = SysGame.load;
 global.save = SysGame.save;
 global.bersih = SysGame.bersih;
 global.pPath = SysGame.p;
+global.loadBank = SysGame.loadBank;
+global.saveBank = SysGame.saveBank;
+global.loadStore = SysGame.loadStore;
+global.saveStore = SysGame.saveStore;
 
 Object.assign(global, {
     autoBio: setting.botSetting.autoBio,
