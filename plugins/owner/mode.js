@@ -12,31 +12,29 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
+    args,
     prefix,
-    commandText,
-    args
+    commandText
   }) => {
     const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
-    const Mode = args[0]?.toLowerCase();
-    if (!['group', 'private', 'off'].includes(Mode)) {
+    const mode = args[0]?.toLowerCase();
+    const validModes = ['group', 'private', 'off'];
+
+    if (!validModes.includes(mode)) {
       return conn.sendMessage(chatId, {
-        text: `⚠️ Mode tidak valid!\n\nContoh penggunaan:\n${prefix}${commandText} group\n${prefix}${commandText} private\n${prefix}off\n\nMode saat ini: *${global.setting?.botSetting?.Mode || 'unknown'}*`
+        text: `⚠️ Mode tidak valid!\n\nContoh:\n${prefix}${commandText} group\n${prefix}${commandText} private\n${prefix}${commandText} off\n\nMode saat ini: *${global.setting?.botSetting?.Mode || 'unknown'}*`
       }, { quoted: msg });
     }
 
     try {
       const config = JSON.parse(fs.readFileSync(configPath));
-      config.botSetting = config.botSetting || {};
-      config.botSetting.Mode = Mode;
+      config.botSetting = { ...config.botSetting, Mode: mode };
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-      if (typeof global.watchCfg === 'function') global.watchCfg();
-
       conn.sendMessage(chatId, {
-        text: `✅ Mode bot berhasil diubah menjadi *${Mode}*.`
+        text: `✅ Mode bot diubah menjadi *${mode}*.`
       }, { quoted: msg });
     } catch (err) {
       console.error(err);
