@@ -14,43 +14,42 @@ module.exports = {
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const img = quoted?.imageMessage || msg.message?.imageMessage;
-    const vid = quoted?.videoMessage || msg.message?.videoMessage;
+    const main = msg.message;
 
-    if (!img && !vid)
-      return conn.sendMessage(chatId, { text: '⚠️ Balas atau kirim gambar/video dengan caption *.tourl*' }, { quoted: msg });
+    const media = quoted?.imageMessage || quoted?.videoMessage || main?.imageMessage || main?.videoMessage;
+    if (!media) return conn.sendMessage(chatId, { text: '⚠️ Kirim atau balas gambar/video dengan caption *.tourl*' }, { quoted: msg });
 
     try {
       const buffer = await downloadMediaMessage(
-        { message: quoted || msg.message },
+        { message: quoted || main },
         'buffer',
         {},
         { logger: conn.logger, reuploadRequest: conn.updateMediaMessage }
       );
-
       if (!buffer) throw new Error('Media tidak terunduh!');
 
-      const mime = img?.mimetype || vid?.mimetype || 'application/octet-stream';
+      const mime = media.mimetype || 'application/octet-stream';
       const ext = mime.includes('image') ? 'jpg' : mime.includes('video') ? 'mp4' : 'bin';
-      const temp = path.join(__dirname, `temp_${Date.now()}.${ext}`);
 
-      fs.writeFileSync(temp, buffer);
+      const tempDir = path.join(__dirname, '../../temp/');
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+      const tempFile = path.join(tempDir, `tourl_${Date.now()}.${ext}`);
+      fs.writeFileSync(tempFile, buffer);
 
       const form = new FormData();
       form.append('reqtype', 'fileupload');
-      form.append('fileToUpload', fs.createReadStream(temp));
+      form.append('fileToUpload', fs.createReadStream(tempFile));
 
-      const res = await axios.post('https://catbox.moe/user/api.php', form, { headers: form.getHeaders() });
-      fs.unlinkSync(temp);
+      const { data } = await axios.post('https://catbox.moe/user/api.php', form, { headers: form.getHeaders() });
+      fs.unlinkSync(tempFile);
 
-      if (typeof res.data === 'string' && res.data.startsWith('https://')) {
-        return conn.sendMessage(chatId, { text: `✅ URL:\n${res.data}` }, { quoted: msg });
-      }
+      if (typeof data === 'string' && data.startsWith('https://'))
+        return conn.sendMessage(chatId, { text: `✅ URL:\n${data}` }, { quoted: msg });
 
       throw new Error('Respons dari server tidak valid');
     } catch (err) {
       console.error('[ERROR] tourl:', err);
-      return conn.sendMessage(chatId, { text: `❌ Terjadi kesalahan: ${err.message}` }, { quoted: msg });
+      conn.sendMessage(chatId, { text: `❌ Terjadi kesalahan: ${err.message}` }, { quoted: msg });
     }
   }
 };
