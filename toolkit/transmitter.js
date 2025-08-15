@@ -4,7 +4,6 @@ const path = require('path');
 const vm = require('vm');
 const chalk = require('chalk');
 const { exec } = require('child_process');
-const dbPath = path.join(__dirname, './db/database.json');
 
 const memoryCache = {};
 const groupCache = new Map();
@@ -118,7 +117,7 @@ async function ai(textMessage, msg, senderId) {
   }
 }
 
-async function mtData(id, conn) {
+async function mtData(id, conn, retry = 2) {
   if (!global.groupCache) global.groupCache = new Map();
   if (global.groupCache.has(id)) return global.groupCache.get(id);
 
@@ -128,8 +127,21 @@ async function mtData(id, conn) {
     setTimeout(() => global.groupCache.delete(id), 2 * 60 * 1000);
     return metadata;
   } catch (e) {
-    console.error('Gagal ambil metadata grup:', e);
+    if (retry > 0) {
+      console.warn(`Gagal ambil metadata grup, coba ulang... (${3 - retry}/2)`, e?.message);
+      await new Promise(r => setTimeout(r, 1000));
+      return mtData(id, conn, retry - 1);
+    }
+    console.error('Gagal ambil metadata grup setelah percobaan ulang:', e);
     return null;
+  }
+}
+
+async function saveLid(meta) {
+  for (const p of meta?.participants || []) {
+    const phone = p.phoneNumber?.replace(/@.*/, '');
+    const lid = p.id?.endsWith('@lid') ? p.id : null;
+    if (phone && lid) global.lidCache[phone] = lid;
   }
 }
 
@@ -252,10 +264,8 @@ async function translate(q, tl = 'id') {
 }
 
 async function colNumb(input) {
-  let number = input.replace(/[^0-9]/g, '');
-  number = number.replace(/^0/, '62');
-  if (!number.startsWith('62')) number = '62' + number;
-  return number;
+  let number = input.replace(/\D/g, '');
+  return number.startsWith('0') ? '62' + number.slice(1) : number;
 }
 
 async function bdWord(conn, msg, chatId, senderId, isGroup) {
@@ -396,73 +406,34 @@ async function getStId(msg) {
   }
 }
 
-const voiceList = [  
-  'prabowo',  
-  'yanzgpt',  
-  'bella',  
-  'megawati',  
-  'echilling',  
-  'adam',  
-  'thomas_shelby',  
-  'michi_jkt48',  
-  'nokotan',  
-  'jokowi',  
-  'boboiboy',  
-  'keqing',  
-  'anya',  
-  'yanami_anna',  
-  'MasKhanID',  
-  'Myka',  
-  'raiden',  
-  'CelzoID'  
-];
+const voiceList = new Set([
+  'prabowo','yanzgpt','bella','megawati','echilling','adam','thomas_shelby',
+  'michi_jkt48','nokotan','jokowi','boboiboy','keqing','anya','yanami_anna',
+  'MasKhanID','Myka','raiden','CelzoID'
+]);
 
-async function voiceCmd(message, isPrefix = '.') {  
-  if (!message || !message.startsWith(isPrefix)) return null;
+async function labvn(message, msg, conn, chatId, prefix = '.') {
+  if (!message?.startsWith(prefix)) return;
 
-  const [commandText, ...rest] = message.slice(isPrefix.length).trim().split(/\s+/);  
-  const voice = commandText.toLowerCase();  
+  const [cmd, ...args] = message.slice(prefix.length).trim().split(/\s+/);
+  const voice = cmd.toLowerCase();
+  if (!voiceList.has(voice)) return;
 
-  const matchedVoice = voiceList.find(v => v.toLowerCase() === voice);
-  if (!matchedVoice) return null;
+  if (!(await isPrem({ premium: true }, conn, msg))) return;
 
-  return {  
-    voice: matchedVoice,  
-    text: rest.join(' ').trim()  
-  };  
-}
-
-async function labvn(message, msg, conn, chatId, isPrefix = '.') {
-  const result = await voiceCmd(message, isPrefix);
-  if (!result) return;
-  const prm = await isPrem({ premium: true }, conn, msg);
-  if (!prm) return;
-
-  const { voice, text } = result;
+  const text = args.join(' ').trim();
+  if (!text) return;
 
   try {
-    const pitch = 0;
-    const speed = 0.9;
+    const url = `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=0&speed=0.9&key=${termaiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const url = `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`;
-
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const audioBuffer = await response.arrayBuffer();
-    const audioMessage = Buffer.from(audioBuffer);
-
-    await conn.sendMessage(chatId, {
-      audio: audioMessage,
-      mimetype: 'audio/mp4',
-      ptt: true
-    }, { quoted: msg });
-
-  } catch (error) {
-    console.error(error);
-    return conn.sendMessage(chatId, {
-      text: `⚠️ *Gagal membuat suara!*`
-    }, { quoted: msg });
+    const audio = Buffer.from(await res.arrayBuffer());
+    await conn.sendMessage(chatId, { audio, mimetype: 'audio/mp4', ptt: true }, { quoted: msg });
+  } catch (err) {
+    console.error(err);
+    await conn.sendMessage(chatId, { text: '⚠️ *Gagal membuat suara!*' }, { quoted: msg });
   }
 }
 
@@ -544,5 +515,6 @@ module.exports = {
   getStId,
   logicBella,
   labvn,
-  msgDate
+  msgDate,
+  saveLid
 };

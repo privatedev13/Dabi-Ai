@@ -16,9 +16,6 @@ const loadPlug = () => {
     return;
   }
 
-  global.plugins = {};
-  global.categories = {};
-
   let loaded = 0, failed = 0;
   const errors = [];
 
@@ -159,14 +156,15 @@ const exGrp = async (conn, chatId, senderId) => {
   const metadata = await mtData(chatId, conn);
   if (!metadata) return {};
 
-  const participants = metadata.participants || [];
-  const groupName = metadata.subject;
+  const adminList = (metadata.participants || [])
+    .filter(p => p.admin)
+    .map(p => p.phoneNumber);
+
   const botNumber = conn.user?.id?.split(':')[0] + '@s.whatsapp.net';
-  const adminList = participants.filter(p => p.admin).map(p => p.jid);
 
   return {
     metadata,
-    groupName,
+    groupName: metadata.subject,
     botNumber,
     botAdmin: adminList.includes(botNumber),
     userAdmin: adminList.includes(senderId),
@@ -209,19 +207,28 @@ const Format = {
 };
 
 const target = (msg, senderId) => {
-  const context = msg.message?.extendedTextMessage?.contextInfo || {};
-  const isReply = context.quotedMessage && context.participant;
-  const isMention = context.mentionedJid?.length;
+  const c = msg.message?.extendedTextMessage?.contextInfo || {};
+  const clean = jid => jid?.replace(/@s\.whatsapp\.net$/i, '').replace(/\D/g, '');
 
-  if (isReply) return context.participant.replace(/@s\.whatsapp\.net$/, '');
-  if (isMention) return context.mentionedJid[0].replace(/@s\.whatsapp\.net$/, '');
-  return senderId.replace(/@s\.whatsapp\.net$/, '');
+  if (c.quotedMessage && c.participant)
+    return clean(c.participant);
+
+  if (Array.isArray(c.mentionedJid) && c.mentionedJid.length)
+    return clean(c.mentionedJid[0]);
+
+  if (msg.key?.participant)
+    return clean(msg.key.participant);
+
+  return clean(senderId);
 };
 
 const getSenderId = (msg) => {
   const chatId = msg?.key?.remoteJid;
-  const isGroup = chatId.endsWith('@g.us');
-  return { chatId, senderId: isGroup ? msg.key.participant : chatId };
+  const isGroup = chatId?.endsWith('@g.us');
+  const senderId = isGroup
+    ? (msg.key.participant || msg.key.participant)
+    : chatId;
+  return { chatId, senderId };
 };
 
 const chkOwner = async (plugin, conn, msg) => {
@@ -250,14 +257,14 @@ const chkPrem = async (plugin, conn, msg) => {
           externalAdReply: {
             title: "Stop",
             body: "Hanya Untuk Pengguna Premium",
-            thumbnailUrl: 'https://files.catbox.moe/to26f6.jpg',
+            thumbnailUrl: 'https://c.termai.cc/i56/Fg50KYE.jpg',
             mediaType: 1,
             renderLargerThumbnail: true,
           },
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363310100263711@newsletter'
+            newsletterJid: idCh
           }
         }
       }, { quoted: msg });
@@ -285,47 +292,16 @@ const updateBio = async conn => {
   }, 60000);
 };
 
-const AiDB = (senderId, chatId) => {
-  const database = getDB();
+const getDBFlag = (senderId, chatId, key) => {
+  const db = getDB();
+  const isPrivate = chatId.endsWith('@s.whatsapp.net');
+  const target = isPrivate ? db.Private : db.Grup;
 
-  if (chatId.endsWith('@s.whatsapp.net')) {
-    for (const key in database.Private) {
-      const user = database.Private[key];
-      if (user.Nomor === senderId) {
-        return user.autoai === true;
-      }
-    }
-  } else if (chatId.endsWith('@g.us')) {
-    for (const key in database.Grup) {
-      const group = database.Grup[key];
-      if (group.Id === chatId) {
-        return group.autoai === true;
-      }
+  for (const item of Object.values(target)) {
+    if ((isPrivate && item.Nomor === senderId) || (!isPrivate && item.Id === chatId)) {
+      return item[key] === true;
     }
   }
-
-  return false;
-};
-
-const BellDB = (senderId, chatId) => {
-  const database = getDB();
-
-  if (chatId.endsWith('@s.whatsapp.net')) {
-    for (const key in database.Private) {
-      const user = database.Private[key];
-      if (user.Nomor === senderId) {
-        return user.bell === true;
-      }
-    }
-  } else if (chatId.endsWith('@g.us')) {
-    for (const key in database.Grup) {
-      const group = database.Grup[key];
-      if (group.Id === chatId) {
-        return group.bell === true;
-      }
-    }
-  }
-
   return false;
 };
 
@@ -334,17 +310,18 @@ const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
   const botName = global.botName?.toLowerCase();
   const prefixes = [].concat(global.setting?.isPrefix || '.');
 
-  if (prefixes.some(prefix => textMessage?.startsWith(prefix))) return false;
+  if (prefixes.some(p => textMessage?.startsWith(p))) return false;
   if (senderId === conn.user?.id || msg.key.fromMe) return false;
 
   const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
   const { mentionedJid = [], participant = '' } = ctx;
   const replyBot = participant === botId;
   const mentionBot = mentionedJid.includes(botId);
+
   if (ctx && participant && !replyBot && !mentionBot) return false;
 
-  const ai = AiDB(senderId, chatId);
-  const bell = BellDB?.(senderId, chatId);
+  const ai = getDBFlag(senderId, chatId, 'autoai');
+  const bell = getDBFlag(senderId, chatId, 'bell');
   if (!ai && !bell) return false;
 
   const trigger = textMessage?.toLowerCase().includes(botName) || replyBot || mentionBot;
@@ -363,7 +340,6 @@ const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
       await conn.sendMessage(chatId, { text: res.msg }, { quoted: msg });
     }
   }
-
   return true;
 };
 
@@ -372,10 +348,10 @@ const exCht = (msg = {}) => {
   const isGroup = chatId.endsWith('@g.us');
 
   const senderId = msg?.key?.fromMe
-    ? msg?.key?.remoteJid
-    : msg?.key?.participant || msg?.key?.remoteJid;
+    ? chatId
+    : msg?.key?.participant || msg?.key?.participant || chatId;
 
-  const pushName = msg?.pushName || global.botName || 'User';
+  const pushName = (msg?.pushName || global.botName || 'User').trim();
 
   return { chatId, isGroup, senderId, pushName };
 };
@@ -450,15 +426,12 @@ const authUser = (msg, chatInfo) => {
   if (Object.values(db.Private || {}).some(u => u.Nomor === nomor)) return;
 
   const fromParticipant = msg?.key?.participant || null;
-  if (isGroup && senderId !== fromParticipant) return;
+  if (isGroup && fromParticipant && senderId !== fromParticipant) return;
   if (!isGroup && Object.values(db.Private || {}).some(u => u.Nomor === chatId)) return;
 
   db.Private ??= {};
-  let finalName = nama;
-  let count = 1;
-  while (db.Private[finalName]) {
-    finalName = `${nama}_${count++}`;
-  }
+  let finalName = nama, count = 1;
+  while (db.Private[finalName]) finalName = `${nama}_${count++}`;
 
   db.Private[finalName] = {
     Nomor: nomor,
@@ -522,10 +495,3 @@ module.exports = {
   shopHandle,
   authUser
 };
-
-fs.watchFile(__filename, () => {
-  fs.unwatchFile(__filename);
-  console.log(`[UPDATE] ${__filename}`);
-  delete require.cache[require.resolve(__filename)];
-  require(__filename);
-});

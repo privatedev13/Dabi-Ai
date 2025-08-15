@@ -26,7 +26,8 @@ const loadToko = () => readJSON(tokoPath, { pendingOrders: [] });
 const saveToko = data => writeJSON(tokoPath, data);
 const loadBank = () => {
   const bank = readJSON(bankPath);
-  if (!bank.bank || typeof bank.bank.saldo !== 'number') bank.bank = { saldo: 0 };
+  if (!bank.bank || typeof bank.bank.saldo !== 'number') bank.bank = { saldo: 0, tax: '3%' };
+  if (!('tax' in bank.bank)) bank.bank.tax = '3%';
   return bank;
 };
 const saveBank = data => writeJSON(bankPath, data);

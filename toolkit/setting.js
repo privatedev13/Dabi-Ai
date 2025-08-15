@@ -7,6 +7,7 @@ const Sys = require('./helper');
 const databasePath = './toolkit/db/database.json';
 const packageJsonPath = path.join(__dirname, '../package.json');
 const settingPath = './toolkit/set/config.json';
+const gameSet = require(path.join(__dirname, './set/gameSetting.json'));
 const tokoPath = './toolkit/set/toko.json';
 const SysGame = require('./funcGame.js');
 
@@ -126,7 +127,11 @@ Object.assign(global, {
     siptzKey: setting.apiKey.siputKey.web,
     termaiKey: setting.apiKey.termai.key,
     termaiWeb: setting.apiKey.termai.web,
-    zellApi: setting.apiKey.zellApi.web
+    zellApi: setting.apiKey.zellApi.web,
+    lvl: gameSet.setGame.rpg.newAccount.level,
+    inv: gameSet.setGame.rpg.newAccount.inventory,
+    ore: gameSet.setGame.rpg.ore,
+    wood: gameSet.setGame.rpg.wood
 });
 
 module.exports = { ...global };
