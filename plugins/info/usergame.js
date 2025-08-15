@@ -32,15 +32,16 @@ module.exports = {
       const u = users[nama];
       const inv = u.inv || {};
 
-      const formatInv = (obj, prefix = '') => {
-        return Object.entries(obj).reduce((out, [k, v]) => {
-          if (v == null) return out;
-          if (typeof v === 'object' && !Array.isArray(v)) {
-            const inner = formatInv(v, `${prefix}${k}.`);
-            return inner ? out + inner : out;
+      const formatInv = (obj, indent = '') => {
+        let output = '';
+        for (const [key, val] of Object.entries(obj)) {
+          if (val && typeof val === 'object' && !Array.isArray(val)) {
+            output += `${indent}• ${key}\n` + formatInv(val, indent + '  ');
+          } else {
+            output += `${indent}• ${key} ${val}\n`;
           }
-          return out + `• ${prefix}${k} x${v}\n`;
-        }, '');
+        }
+        return output;
       };
 
       const invText = Object.keys(inv).length ? formatInv(inv).trim() : '(kosong)';

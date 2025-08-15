@@ -4,6 +4,7 @@ module.exports = {
   tags: 'Info Menu',
   desc: 'Mengirim kontak owner bot',
   prefix: true,
+  owner: true,
 
   run: async (conn, msg, {
     chatInfo,
@@ -14,6 +15,7 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
+      if (!(await isOwner(module.exports, conn, msg))) return;
       const owner = global.ownerName || 'Owner';
       const ownerNumber = global.contact;
       const bot = global.botName || 'Bot';
