@@ -6,20 +6,12 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
+  run: async (conn, msg, { chatInfo }) => {
+    const { chatId } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
     await conn.sendMessage(chatId, { text: "🔄 Bot akan restart dalam 2 detik..." }, { quoted: msg });
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
+    await new Promise(r => setTimeout(r, 2000));
     process.exit(1);
   }
 };

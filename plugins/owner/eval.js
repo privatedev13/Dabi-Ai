@@ -12,7 +12,7 @@ module.exports = {
     commandText,
     args
   }) => {
-    const { chatId } = chatInfo;
+    const { chatId, senderId, pushName } = chatInfo;
     if (!(await isOwner(module.exports, conn, msg))) return;
 
     const code = args.join(' ').trim();
@@ -47,8 +47,8 @@ module.exports = {
       if (commandText !== '~>') {
         const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
         const response = output && output !== 'undefined'
-          ? `✅ *Output:*\n\`\`\`${output}\`\`\``
-          : '✅ *Kode berhasil dijalankan tanpa output.*';
+          ? `${output}`
+          : '✅'
         await conn.sendMessage(chatId, { text: response }, { quoted: msg });
       }
 
