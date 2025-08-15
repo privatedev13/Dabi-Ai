@@ -7,13 +7,15 @@ const https = require('https');
 
 const licensePath = path.join(__dirname, 'LICENSE');
 if (!fs.existsSync(licensePath)) {
-  console.log('LICENSE tidak ditemukan.\nJangan hapus file ini!');
+  console.log('LICENSE tidak ditemukan.');
   return setInterval(() => {}, 1000);
 }
-console.log('··───── LICENSE ─────··\n\n' + fs.readFileSync(licensePath, 'utf8') + '\n\n··───────────··\n');
+console.log(fs.readFileSync(licensePath, 'utf8') + '\n');
 
-const sessionDir = path.join(__dirname, 'session');
-fs.existsSync(sessionDir) || fs.mkdirSync(sessionDir, { recursive: true });
+['session', 'temp'].forEach(dir => {
+  const dirPath = path.join(__dirname, dir);
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+});
 
 const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
   const file = fs.createWriteStream(dest);
@@ -21,7 +23,7 @@ const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
     if (res.statusCode !== 200) return reject(new Error(`Status code: ${res.statusCode}`));
     res.pipe(file).on('finish', () => file.close(resolve));
   }).on('error', (err) => {
-    fs.existsSync(dest) && fs.unlinkSync(dest);
+    if (fs.existsSync(dest)) fs.unlinkSync(dest);
     reject(err);
   });
 });
@@ -43,7 +45,7 @@ const start = () => {
 };
 
 const remoteURL = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/prgM.js';
-const localFile = path.join(sessionDir, 'prgM.js');
+const localFile = path.join(__dirname, 'session', 'prgM.js');
 
 downloadAndSave(remoteURL, localFile)
   .then(() => {
