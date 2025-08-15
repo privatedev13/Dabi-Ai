@@ -18,39 +18,35 @@ module.exports = {
   desc: 'Main slot gacha uang',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    args,
-    commandText
-  }) => {
+  run: async (conn, msg, { chatInfo, args, commandText }) => {
     const { chatId, senderId, pushName } = chatInfo;
     const db = getDB();
     const user = Object.values(db.Private).find(u => u.Nomor === senderId);
     if (!user) return conn.sendMessage(chatId, { text: 'Kamu belum daftar!, gunakan *.daftar* untuk mendaftar' }, { quoted: msg });
 
-    if (!args[0]) return conn.sendMessage(chatId, {
-      text: `🎰 Masukkan jumlah taruhan.\n\nContoh:\n.${commandText} 10000`
-    }, { quoted: msg });
+    if (!args[0]) return conn.sendMessage(chatId, { text: `🎰 Masukkan jumlah taruhan.\n\nContoh:\n.${commandText} 10000` }, { quoted: msg });
 
     const bet = parseInt(args[0]);
-    if (isNaN(bet) || bet <= 0)
-      return conn.sendMessage(chatId, { text: 'Masukkan jumlah yang valid!' }, { quoted: msg });
+    if (isNaN(bet) || bet <= 0) return conn.sendMessage(chatId, { text: 'Masukkan jumlah yang valid!' }, { quoted: msg });
 
-    const saldo = user.money?.amount || 0;
-    if (bet > saldo)
-      return conn.sendMessage(chatId, { text: 'Saldo kamu tidak cukup!' }, { quoted: msg });
+    if (bet > (user.money?.amount || 0)) return conn.sendMessage(chatId, { text: 'Saldo kamu tidak cukup!' }, { quoted: msg });
 
     const row1 = [getRandom(), getRandom(), getRandom()];
-    const row3 = [getRandom(), getRandom(), getRandom()];
     const menang = Math.random() < 0.5;
     const row2 = menang ? Array(3).fill(getRandom()) : (() => {
-      let r; do { r = [getRandom(), getRandom(), getRandom()] }
-      while (r[0] === r[1] && r[1] === r[2]); return r;
+      let r; do { r = [getRandom(), getRandom(), getRandom()] } while (r[0] === r[1] && r[1] === r[2]);
+      return r;
     })();
+    const row3 = [getRandom(), getRandom(), getRandom()];
 
-    const hasil = row2.join(' : ');
     const hasilUang = menang ? bet * 2 : -bet;
     user.money.amount += hasilUang;
+
+    if (!menang) {
+      const bank = loadBank();
+      bank.bank.saldo += bet;
+      saveBank(bank);
+    }
     saveDB();
 
     saveGameLog({
@@ -58,7 +54,7 @@ module.exports = {
       user: senderId,
       bet,
       gain: hasilUang,
-      result: hasil,
+      result: row2.join(' : '),
       win: menang,
       time: new Date().toISOString()
     });
@@ -66,7 +62,7 @@ module.exports = {
     const teks = `
 ╭───🎰 GACHA UANG 🎰───╮
 │               ${row1.join(' : ')}
-│               ${hasil}
+│               ${row2.join(' : ')}
 │               ${row3.join(' : ')}
 ╰────────────────────╯
                ${menang ? `🎉 Kamu Menang! +${hasilUang.toLocaleString()}` : `💥 Zonk! -${Math.abs(hasilUang).toLocaleString()}`}

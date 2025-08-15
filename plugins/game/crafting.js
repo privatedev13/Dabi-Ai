@@ -13,13 +13,10 @@ module.exports = {
     const { chatId, senderId } = chatInfo;
 
     try {
-      const { rsc } = await global.loadFunc();
+      const { ore } = await global.loadFunc();
       const db = JSON.parse(fs.readFileSync(gameFile));
       const users = db.tca?.user || {};
       const nama = Object.keys(users).find(k => users[k].id === senderId);
-
-      console.log('[DEBUG] Sender ID:', senderId);
-      console.log('[DEBUG] Nama pengguna ditemukan:', nama);
 
       if (!nama) {
         return conn.sendMessage(chatId, {
@@ -37,49 +34,50 @@ module.exports = {
       const inv = u.inv = u.inv || {};
       const [tool, mat] = args;
       const bahan = mat.toLowerCase();
-      const kayu = 'wood';
 
-      console.log('[DEBUG] Tool:', tool);
-      console.log('[DEBUG] Material:', bahan);
-      console.log('[DEBUG] Inventory saat ini:', inv);
-
-      const m = rsc.mat.find(([_, n]) => n === bahan);
-      console.log('[DEBUG] Data material ditemukan:', m);
-
-      if (!m) {
+      const dataMat = ore.mat.find(([_, n]) => n === bahan);
+      if (!dataMat) {
         return conn.sendMessage(chatId, {
-          text: `Material *${bahan}* tidak dikenali.`
+          text: `Material ${bahan} tidak dikenali.`
         }, { quoted: msg });
       }
 
-      if ((inv[bahan] || 0) < 1 || (inv[kayu] || 0) < 1) {
+      const durability = dataMat[2] || 1000;
+      const kayuKey = 'wood';
+      const oreKey = 'ore';
+
+      const kayuAda = Object.values(inv.wood || {}).reduce((a, b) => a + b, 0) > 0;
+      const bahanAda = (inv.ore?.[bahan] || 0) > 0;
+
+      if (!kayuAda || !bahanAda) {
         return conn.sendMessage(chatId, {
-          text: `Bahan tidak cukup!\nDibutuhkan: 1 ${bahan} & 1 ${kayu}`
+          text: `Bahan tidak cukup!\nDibutuhkan: 1 ${bahan} (ore) & 1 kayu`
         }, { quoted: msg });
       }
 
-      // Kurangi bahan
-      if (--inv[bahan] === 0) delete inv[bahan];
-      if (--inv[kayu] === 0) delete inv[kayu];
+      inv.ore[bahan]--;
+      if (inv.ore[bahan] === 0) delete inv.ore[bahan];
 
-      // Tambahkan item hasil crafting
+      const woodTypes = Object.keys(inv.wood || {});
+      if (woodTypes.length) {
+        const w = woodTypes[0];
+        inv.wood[w]--;
+        if (inv.wood[w] === 0) delete inv.wood[w];
+      }
+
       inv[tool] = inv[tool] || {};
-      inv[tool][bahan] = { durabilty: m[2] || 1000 };
+      inv[tool][bahan] = { durabilty: durability };
 
-      console.log('[DEBUG] Item baru ditambahkan:', inv[tool][bahan]);
-
-      // Simpan ke file
       fs.writeFileSync(gameFile, JSON.stringify(db, null, 2));
-      console.log('[DEBUG] Data game berhasil disimpan.');
 
       conn.sendMessage(chatId, {
-        text: `✅ Berhasil membuat *${tool}.${bahan}* dengan durabilitas ${m[2] || 1000}.\nBahan telah dikurangi.`
+        text: `Berhasil membuat ${tool}.${bahan} dengan durabilitas ${durability}.\nBahan telah dikurangi.`
       }, { quoted: msg });
 
     } catch (err) {
-      console.error('[ERROR] Terjadi kesalahan saat crafting:', err);
+      console.error(err);
       conn.sendMessage(chatId, {
-        text: '❌ Terjadi kesalahan saat crafting!'
+        text: 'Terjadi kesalahan saat crafting!'
       }, { quoted: msg });
     }
   }
