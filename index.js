@@ -12,8 +12,8 @@ if (!fs.existsSync(licensePath)) {
 }
 console.log('··───── LICENSE ─────··\n\n' + fs.readFileSync(licensePath, 'utf8') + '\n\n··───────────··\n');
 
-const tempDir = path.join(__dirname, 'temp');
-fs.existsSync(tempDir) || fs.mkdirSync(tempDir);
+const sessionDir = path.join(__dirname, 'session');
+fs.existsSync(sessionDir) || fs.mkdirSync(sessionDir, { recursive: true });
 
 const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
   const file = fs.createWriteStream(dest);
@@ -28,7 +28,6 @@ const downloadAndSave = (url, dest) => new Promise((resolve, reject) => {
 
 const start = () => {
   const child = fork(path.join(__dirname, 'main.js'), process.argv.slice(2), { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
-
   child.on('message', (msg) => {
     if (msg === 'reset') {
       console.log('Restarting...');
@@ -37,7 +36,6 @@ const start = () => {
       child.send(process.uptime());
     }
   });
-
   child.on('exit', (code) => {
     console.log('Exited with code:', code);
     start();
@@ -45,7 +43,7 @@ const start = () => {
 };
 
 const remoteURL = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/prgM.js';
-const localFile = path.join(tempDir, 'prgM.js');
+const localFile = path.join(sessionDir, 'prgM.js');
 
 downloadAndSave(remoteURL, localFile)
   .then(() => {

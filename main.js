@@ -13,7 +13,7 @@ const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys
 const { isPrefix } = globalSetting;
 const { loadPlug, usrMsg, shopHandle } = require('./toolkit/helper');
 const { makeInMemoryStore } = require('./toolkit/store.js')
-const Cc = require('./temp/prgM.js');
+const Cc = require('./session/prgM.js');
 const { handleGame } = require('./toolkit/funcGame');
 const {
   set,
@@ -22,6 +22,7 @@ const {
   reset,
   timer,
   labvn,
+  saveLid,
   msgDate
 } = require('./toolkit/transmitter.js');
 
@@ -31,6 +32,7 @@ let conn;
 
 global.plugins = {};
 global.categories = {};
+global.lidCache = {};
 
 intDB();
 
@@ -92,6 +94,28 @@ const Public = (senderId) => {
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
+function replaceLid(obj) {
+  if (Array.isArray(obj)) return obj.map(replaceLid);
+
+  if (obj && typeof obj === 'object') {
+    for (const k in obj) obj[k] = replaceLid(obj[k]);
+    return obj;
+  }
+
+  if (typeof obj === 'string') {
+    if (obj.endsWith('@lid')) {
+      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === obj);
+      return phone ? `${phone}@s.whatsapp.net` : obj;
+    }
+    return obj.replace(/@(\d+)@lid/g, (_, id) => {
+      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${id}@lid`);
+      return phone ? `@${phone}` : `@${id}@lid`;
+    });
+  }
+
+  return obj;
+}
+
 const startBot = async () => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
@@ -140,6 +164,14 @@ const startBot = async () => {
       const msg = messages?.[0];
       if (!msg?.message) return;
 
+      const { chatId, isGroup } = exCht(msg);
+      if (isGroup && chatId.endsWith('@g.us')) {
+        const meta = await mtData(chatId, conn);
+        if (meta) await saveLid(meta);
+      }
+
+      replaceLid(msg);
+
       const { textMessage, mediaInfo } = msgDate(msg);
       if (!textMessage && !mediaInfo) return;
 
@@ -150,7 +182,7 @@ const startBot = async () => {
         setTimeout(() => conn.reactionCache.delete(msgId), 180000);
       }
 
-      const { chatId, isGroup, senderId, pushName } = exCht(msg);
+      const { senderId, pushName } = exCht(msg);
       const time = Format.time();
       const senderNumber = senderId?.split('@')[0];
       if (!senderNumber) return console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
@@ -160,12 +192,10 @@ const startBot = async () => {
       const isPrem = userDb.isPremium?.isPrem;
 
       let displayName = pushName || 'Pengguna';
-      if (isGroup && chatId.endsWith('@g.us')) {
-        const meta = await mtData(chatId, conn);
-        displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
-      } else if (chatId === 'status@broadcast') {
-        displayName += ' | Status';
-      }
+        if (isGroup && chatId.endsWith('@g.us')) {
+          const meta = await mtData(chatId, conn);
+          displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
+        }
 
       console.log(chalk.yellowBright.bold(`【 ${displayName} 】:`) + chalk.cyanBright.bold(` [ ${time} ]`));
       if (mediaInfo && textMessage)
