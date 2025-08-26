@@ -11,9 +11,10 @@ const chalk = require('chalk');
 const readline = require('readline');
 const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const { isPrefix } = globalSetting;
-const { loadPlug, usrMsg, shopHandle } = require('./toolkit/helper');
+const { loadPlug, usrMsg, shopHandle, banned } = require('./toolkit/helper');
 const { makeInMemoryStore } = require('./toolkit/store.js')
 const Cc = require('./session/prgM.js');
+const { cekSholat } = require('./toolkit/pengingat.js');
 const { handleGame } = require('./toolkit/funcGame');
 const {
   set,
@@ -94,28 +95,6 @@ const Public = (senderId) => {
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
-function replaceLid(obj) {
-  if (Array.isArray(obj)) return obj.map(replaceLid);
-
-  if (obj && typeof obj === 'object') {
-    for (const k in obj) obj[k] = replaceLid(obj[k]);
-    return obj;
-  }
-
-  if (typeof obj === 'string') {
-    if (obj.endsWith('@lid')) {
-      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === obj);
-      return phone ? `${phone}@s.whatsapp.net` : obj;
-    }
-    return obj.replace(/@(\d+)@lid/g, (_, id) => {
-      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${id}@lid`);
-      return phone ? `@${phone}` : `@${id}@lid`;
-    });
-  }
-
-  return obj;
-}
-
 const startBot = async () => {
   try {
     const { state, saveCreds } = await useMultiFileAuthState('./session');
@@ -144,6 +123,7 @@ const startBot = async () => {
 
     timer(conn);
     if (!conn.reactionCache) conn.reactionCache = new Map();
+    rl.close();
 
     conn.ev.on('connection.update', ({ connection }) => {
       const messages = {
@@ -164,7 +144,7 @@ const startBot = async () => {
       const msg = messages?.[0];
       if (!msg?.message) return;
 
-      const { chatId, isGroup } = exCht(msg);
+      const { chatId, isGroup, senderId, pushName } = exCht(msg);
       if (isGroup && chatId.endsWith('@g.us')) {
         const meta = await mtData(chatId, conn);
         if (meta) await saveLid(meta);
@@ -182,8 +162,7 @@ const startBot = async () => {
         setTimeout(() => conn.reactionCache.delete(msgId), 180000);
       }
 
-      const { senderId, pushName } = exCht(msg);
-      const time = Format.time();
+      const time = Format.indoTime("Asia/Jakarta", "HH:mm");
       const senderNumber = senderId?.split('@')[0];
       if (!senderNumber) return console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
 
@@ -192,19 +171,19 @@ const startBot = async () => {
       const isPrem = userDb.isPremium?.isPrem;
 
       let displayName = pushName || 'Pengguna';
-        if (isGroup && chatId.endsWith('@g.us')) {
-          const meta = await mtData(chatId, conn);
-          displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
-        }
+      if (isGroup) {
+        const meta = await mtData(chatId, conn);
+        displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
+      }
 
       console.log(chalk.yellowBright.bold(`【 ${displayName} 】:`) + chalk.cyanBright.bold(` [ ${time} ]`));
-      if (mediaInfo && textMessage)
-        console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ] | [ ${textMessage} ]`));
-      else if (mediaInfo)
-        console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ]`));
-      else if (textMessage)
-        console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
+      if (mediaInfo && textMessage) console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ] | [ ${textMessage} ]`));
+      else if (mediaInfo) console.log(chalk.whiteBright.bold(`  [ ${mediaInfo} ]`));
+      else if (textMessage) console.log(chalk.whiteBright.bold(`  [ ${textMessage} ]`));
 
+      if (banned(senderId)) return console.log(`⚠️ User ${senderId} dibanned`);
+
+      await cekSholat(conn, msg, { chatId });
       await labvn(textMessage, msg, conn, chatId);
       await Cc(conn, msg, textMessage);
 
@@ -261,7 +240,7 @@ const startBot = async () => {
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
         const sender = chatInfo.senderId;
-      
+
         for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
