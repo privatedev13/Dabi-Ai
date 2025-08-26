@@ -91,7 +91,7 @@ async function handleGame(conn, msg, chatId, text) {
     if (!key) return false;
 
     if (!userKey) {
-      await conn.sendMessage(chatId, { text: 'Kamu belum daftar. Ketik *.daftar* untuk mulai.' }, { quoted: msg });
+      await conn.sendMessage(chatId, { text: 'Kamu belum daftar. Ketik *.menu* untuk mendaftar otomatis.' }, { quoted: msg });
       return true;
     }
 
@@ -102,7 +102,37 @@ async function handleGame(conn, msg, chatId, text) {
       : [item.jawaban || item.data?.jawaban]
     ).map(j => String(j).toLowerCase());
 
+    if (jawaban === 'nyerah') {
+      await conn.sendMessage(chatId, {
+        text: `Kamu menyerah. Jawaban yang benar adalah: ${listJawaban.join(', ')}`
+      }, { quoted: msg });
+      delete db.FunctionGame[key];
+      save(db);
+      return true;
+    }
+
     if (listJawaban.includes(jawaban)) {
+      if (listJawaban.length > 1) {
+        const idx = listJawaban.indexOf(jawaban);
+        if (idx !== -1) {
+          if (Array.isArray(item.jawaban)) {
+            item.jawaban.splice(idx, 1);
+          } else if (Array.isArray(item.data?.jawaban)) {
+            item.data.jawaban.splice(idx, 1);
+          }
+        }
+
+        const sisa = (item.jawaban || item.data?.jawaban)?.length || 0;
+        if (sisa > 0) {
+          db.FunctionGame[key] = item;
+          save(db);
+          await conn.sendMessage(chatId, {
+            text: `Jawaban benar! Masih ada ${sisa} jawaban lagi yang belum terjawab.`
+          }, { quoted: msg });
+          return true;
+        }
+      }
+
       const bank = loadBank();
       const reward = 10000;
       const tax = parseFloat((bank.bank.tax || '0%').replace('%', '')) || 0;
@@ -115,7 +145,7 @@ async function handleGame(conn, msg, chatId, text) {
         saveBank(bank);
         global.saveDB(dbUser);
         await conn.sendMessage(chatId, {
-          text: `Jawaban benar! Kamu mendapat Rp${final.toLocaleString('id-ID')}.\n(Pajak ${tax}% = Rp${taxAmount.toLocaleString('id-ID')})`
+          text: `Selamat! Semua jawaban benar! Kamu mendapat Rp${final.toLocaleString('id-ID')}.\n(Pajak ${tax}% = Rp${taxAmount.toLocaleString('id-ID')})`
         }, { quoted: msg });
       } else {
         await conn.sendMessage(chatId, { text: 'Jawaban benar, tapi saldo bank tidak cukup untuk memberikan reward.' }, { quoted: msg });

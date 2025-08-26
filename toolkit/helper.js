@@ -173,9 +173,9 @@ const exGrp = async (conn, chatId, senderId) => {
 };
 
 const Format = {
-  time: () => moment().format('HH:mm'),
-  realTime: () => moment().tz('Asia/Jakarta').format('HH:mm:ss DD-MM-YYYY'),
-  date: ts => moment(ts * 1000).format('DD-MM-YYYY'),
+  time: () => moment().format("HH:mm"),
+  realTime: () => moment().tz("Asia/Jakarta").format("HH:mm:ss DD-MM-YYYY"),
+  date: ts => moment(ts * 1000).format("DD-MM-YYYY"),
   uptime: () => {
     const sec = process.uptime();
     return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
@@ -185,15 +185,15 @@ const Format = {
     const d = Math.floor(dur / 86400000);
     const h = Math.floor((dur % 86400000) / 3600000);
     const m = Math.floor((dur % 3600000) / 60000);
-    return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit' : ''}`.trim();
+    return `${d ? d + " Hari " : ""}${h ? h + " Jam " : ""}${m ? m + " Menit" : ""}`.trim();
   },
-  toTime: (ms) => {
-    if (!ms || typeof ms !== 'number') return '-';
+  toTime: ms => {
+    if (!ms || typeof ms !== "number") return "-";
     const d = Math.floor(ms / 86400000);
     const h = Math.floor((ms % 86400000) / 3600000);
     const m = Math.floor((ms % 3600000) / 60000);
     const s = Math.floor((ms % 60000) / 1000);
-    return `${d ? d + ' Hari ' : ''}${h ? h + ' Jam ' : ''}${m ? m + ' Menit ' : ''}${s ? s + ' Detik' : ''}`.trim();
+    return `${d ? d + " Hari " : ""}${h ? h + " Jam " : ""}${m ? m + " Menit " : ""}${s ? s + " Detik" : ""}`.trim();
   },
   parseDuration: str => {
     const [, num, unit] = /^(\d+)([smhd])$/i.exec(str) || [];
@@ -201,8 +201,11 @@ const Format = {
     return map[unit?.toLowerCase()] ? parseInt(num) * map[unit.toLowerCase()] : null;
   },
   toNumber: num => {
-    if (typeof num !== 'number') return '-';
-    return num.toLocaleString('id-ID');
+    if (typeof num !== "number") return "-";
+    return num.toLocaleString("id-ID");
+  },
+  indoTime: (zone = "Asia/Jakarta", format = "HH:mm:ss DD-MM-YYYY") => {
+    return moment().tz(zone).format(format);
   }
 };
 
@@ -344,14 +347,17 @@ const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
 };
 
 const exCht = (msg = {}) => {
-  const chatId = msg?.key?.remoteJid || '';
+  let chatId = msg?.key?.remoteJid || '';
   const isGroup = chatId.endsWith('@g.us');
 
-  const senderId = msg?.key?.fromMe
+  let senderId = msg?.key?.fromMe
     ? chatId
-    : msg?.key?.participant || msg?.key?.participant || chatId;
+    : msg?.key?.participant || chatId;
 
   const pushName = (msg?.pushName || global.botName || 'User').trim();
+
+  chatId = replaceLid(chatId);
+  senderId = replaceLid(senderId);
 
   return { chatId, isGroup, senderId, pushName };
 };
@@ -440,12 +446,25 @@ const authUser = (msg, chatInfo) => {
     bell: false,
     cmd: 0,
     claim: false,
+    ban: false,
     money: { amount: 300000 },
     isPremium: { isPrem: false, time: 0 },
     afk: {}
   };
 
   saveDB();
+};
+
+const banned = (senderId) => {
+  const db = getDB();
+  let userData = Object.values(db.Private).find(u => u.Nomor === senderId);
+
+  if (!userData) {
+    const cleanedSender = senderId.replace(/\D/g, '');
+    userData = Object.values(db.Private).find(u => u.Nomor.replace(/\D/g, '').endsWith(cleanedSender));
+  }
+
+  return userData?.ban === true;
 };
 
 async function shopHandle(conn, msg, textMessage, chatId, senderId) {
@@ -493,5 +512,6 @@ module.exports = {
   parseNoPrefix,
   exGrp,
   shopHandle,
-  authUser
+  authUser,
+  banned
 };

@@ -11,6 +11,34 @@ const groupCache = new Map();
 const sesiBell = path.join(__dirname, '../temp/BellaSession.json');
 const sesiAi = path.join(__dirname, '../temp/AiSesion.json');
 
+function replaceLid(obj) {
+  if (Array.isArray(obj)) return obj.map(replaceLid);
+
+  if (obj && typeof obj === 'object') {
+    for (const k in obj) obj[k] = replaceLid(obj[k]);
+    return obj;
+  }
+
+  if (typeof obj === 'string') {
+    if (obj.endsWith('@lid')) {
+      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === obj);
+      return phone ? `${phone}@s.whatsapp.net` : obj;
+    }
+
+    obj = obj.replace(/@(\d+)(?!@)/g, (match, lid) => {
+      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${lid}@lid`);
+      return phone ? `@${phone}` : match;
+    });
+
+    return obj.replace(/@(\d+)@lid/g, (_, id) => {
+      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${id}@lid`);
+      return phone ? `@${phone}` : `@${id}@lid`;
+    });
+  }
+
+  return obj;
+}
+
 function loadSession(file) {
   if (!fs.existsSync(file)) return {};
   return JSON.parse(fs.readFileSync(file));
@@ -67,6 +95,8 @@ async function logicBella(text, msg, senderId, conn) {
       }
     }]
   });
+  console.log(res);
+  console.log(bell);
 
   if (!res.status) {
     console.error('Bella response failed:', res.msg);
@@ -472,18 +502,18 @@ function msgDate(msg) {
   }
 
   const mediaTypes = {
-    imageMessage: '[ Gambar ]',
-    videoMessage: '[ Video ]',
-    audioMessage: '[ Audio ]',
-    documentMessage: '[ Dokumen ]',
-    stickerMessage: '[ Stiker ]',
-    locationMessage: '[ Lokasi ]',
-    contactMessage: '[ Kontak ]',
-    pollCreationMessage: '[ Polling ]',
-    liveLocationMessage: '[ Lokasi Live ]',
-    reactionMessage: '[ Reaksi ]',
-    protocolMessage: '[ Sistem ]',
-    ephemeralMessage: '[ Sekali Lihat ]'
+    imageMessage: 'Gambar',
+    videoMessage: 'Video',
+    audioMessage: 'Audio',
+    documentMessage: 'Dokumen',
+    stickerMessage: 'Stiker',
+    locationMessage: 'Lokasi',
+    contactMessage: 'Kontak',
+    pollCreationMessage: 'Polling',
+    liveLocationMessage: 'Lokasi Live',
+    reactionMessage: 'Reaksi',
+    protocolMessage: 'Sistem',
+    ephemeralMessage: 'Sekali Lihat'
   };
 
   for (const [key, value] of Object.entries(mediaTypes)) {
@@ -516,5 +546,6 @@ module.exports = {
   logicBella,
   labvn,
   msgDate,
-  saveLid
+  saveLid,
+  replaceLid
 };
