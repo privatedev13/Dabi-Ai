@@ -1,61 +1,33 @@
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
-const { pinterestHeaders } = require('../../toolkit/scrape/pin');
+const { pinterestSearch } = require('../../toolkit/scrape/pin.js');
 
 module.exports = {
-  name: 'pinterest',
+  name: 'Pinterest',
   command: ['pin', 'pinterest'],
-  tags: 'Download Menu',
-  desc: 'Mencari media dari pinterest',
+  tags: 'Downloader',
+  desc: 'Cari gambar dari Pinterest',
   prefix: true,
-  premium: false,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-    const query = args.join(' ');
-    if (!query) {
-      return conn.sendMessage(chatId, { text: `Contoh: ${prefix}${commandText} christy jkt48` }, { quoted: msg });
-    }
-
+  run: async (conn, msg, { chatInfo, args }) => {
+    const { chatId } = chatInfo;
     try {
-      const res = await fetch(`https://id.pinterest.com/search/pins/?q=${encodeURIComponent(query)}`, {
-        headers: pinterestHeaders
-      });
-      const html = await res.text();
-      const $ = cheerio.load(html);
-
-      const imageUrls = [];
-      $('img').each((_, el) => {
-        const src = $(el).attr('src');
-        if (src && src.startsWith('https://i.pinimg.com')) {
-          imageUrls.push(src);
-        }
-      });
-
-      if (imageUrls.length === 0) {
-        return conn.sendMessage(chatId, { text: 'Gambar tidak ditemukan.' }, { quoted: msg });
+      if (!args[0]) {
+        return conn.sendMessage(chatId, { text: "Masukkan kata kunci pencarian" }, { quoted: msg });
       }
 
-      const index = isNaN(args[1]) ? 0 : Math.min(parseInt(args[1]), imageUrls.length - 1);
-      const hasil = imageUrls[index];
+      const results = await pinterestSearch(args.join(" "));
+      if (!results.length) {
+        return conn.sendMessage(chatId, { text: "Tidak ada hasil ditemukan." }, { quoted: msg });
+      }
 
-      await conn.sendMessage(chatId, {
-        image: { url: hasil },
-        caption: `Menampilkan gambar ke *${index + 1}* dari *${imageUrls.length}* hasil pencarian *${query}*.`,
-        footer: '',
-        headerType: 4
-      }, { quoted: msg });
-
-    } catch (err) {
-      console.error(err);
-      conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat scraping.' }, { quoted: msg });
+      for (const r of results) {
+        await conn.sendMessage(chatId, {
+          image: { url: r.url },
+          caption: `📌 *${r.title}*\n🔗 Pin: ${r.pin}`
+        }, { quoted: msg });
+      }
+    } catch (e) {
+      conn.sendMessage(chatId, { text: "Terjadi kesalahan." }, { quoted: msg });
+      console.error(e);
     }
   }
 };
