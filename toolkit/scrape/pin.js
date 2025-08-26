@@ -2,7 +2,7 @@ const axios = require("axios");
 
 async function pinterestSearch(query, type = "image") {
   try {
-    const res = await axios.post("https://api.siputzx.my.id/api/s/pinterest", { query, type }, {
+    const res = await axios.post(`${siptzKey}/api/s/pinterest`, { query, type }, {
       headers: { "Content-Type": "application/json", accept: "*/*" }
     });
 
