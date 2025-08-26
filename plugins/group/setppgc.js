@@ -1,7 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 
 module.exports = {
   name: 'setppgc',
@@ -12,53 +9,40 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
     prefix,
-    commandText,
-    args
+    commandText
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) {
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup' }, { quoted: msg });
     }
 
     const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
-
     if (!userAdmin) {
-      return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: 'Kamu bukan Admin' }, { quoted: msg });
     }
-
     if (!botAdmin) {
-    return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: 'Bot bukan admin' }, { quoted: msg });
     }
 
-    const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    if (!quoted || !quoted.imageMessage) {
-      return conn.sendMessage(chatId, { text: '⚠️ Balas gambar dengan perintah *setppgc* untuk mengubah foto grup.' }, { quoted: msg });
+    const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+    const imageSource = quotedMsg?.imageMessage || msg.message?.imageMessage;
+
+    if (!imageSource) {
+      return conn.sendMessage(chatId, {
+        text: `Kirim atau balas gambar dengan caption *${prefix}${commandText}* untuk mengubah foto grup`
+      }, { quoted: msg });
     }
 
     try {
-      const stream = await downloadContentFromMessage(quoted.imageMessage, 'image');
-      let buffer = Buffer.from([]);
-      for await (const chunk of stream) {
-        buffer = Buffer.concat([buffer, chunk]);
-      }
+      const buffer = await downloadMediaMessage({ message: quotedMsg || msg.message }, 'buffer', {});
+      if (!buffer) throw new Error('Gagal mengunduh gambar');
 
-      if (!buffer.length) {
-        throw new Error('Gagal mengunduh gambar.');
-      }
-
-      const tempFilePath = path.join(os.tmpdir(), `group-profile-${chatId}.jpg`);
-      fs.writeFileSync(tempFilePath, buffer);
-
-      await conn.updateProfilePicture(chatId, { url: tempFilePath });
-
-      fs.unlinkSync(tempFilePath);
-
-      conn.sendMessage(chatId, { text: '✅ Foto profil grup berhasil diperbarui!' }, { quoted: msg });
-    } catch (err) {
-      console.error(err);
-      conn.sendMessage(chatId, { text: '❌ Gagal mengubah foto grup. Pastikan gambar yang dikirim tidak bermasalah.' }, { quoted: msg });
+      await conn.updateProfilePicture(chatId, buffer);
+      conn.sendMessage(chatId, { text: 'Foto profil grup berhasil diperbarui' }, { quoted: msg });
+    } catch (e) {
+      console.error('Error setppgc:', e);
+      conn.sendMessage(chatId, { text: `Gagal mengubah foto grup: ${e.message}` }, { quoted: msg });
     }
   }
 };
