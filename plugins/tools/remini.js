@@ -3,7 +3,7 @@ const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 
 module.exports = {
   name: 'remini',
-  command: ['remini'],
+  command: ['remini', 'hd'],
   tags: 'Tools Menu',
   desc: 'Upscale kualitas gambar (scale 2-4)',
   prefix: true,
