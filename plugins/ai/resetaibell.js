@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 module.exports = {
   name: 'reset-ai-bell',
   command: ['resetbell', 'resetai'],
-  tags: 'AI Menu',
+  tags: 'Ai Menu',
   desc: 'Mereset sesi AI Bell untuk user',
   prefix: true,
 
