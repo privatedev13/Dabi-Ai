@@ -24,7 +24,8 @@ const {
   timer,
   labvn,
   saveLid,
-  msgDate
+  msgDate,
+  checkSpam
 } = require('./toolkit/transmitter.js');
 
 const logger = pino({ level: 'silent' });
@@ -68,16 +69,16 @@ setInterval(async () => {
   saveDB();
 }, 60000);
 
-const mute = async (chatId, senderId, conn) => {
-  const db = getDB();
-  const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
+const mute = async (chatId, senderId, conn, textMessage = "") => {
+  const groupData = gcData(chatId);
 
   if (groupData?.mute) {
     const metadata = await conn.groupMetadata(chatId);
     const isAdmin = metadata.participants
       .filter(p => p.admin)
       .some(p => p.jid === senderId);
-      
+
+    if (isAdmin) return true;
     if (!isAdmin) return true;
   }
 
@@ -121,7 +122,6 @@ const startBot = async () => {
       console.log(chalk.greenBright.bold('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
     }
 
-    timer(conn);
     if (!conn.reactionCache) conn.reactionCache = new Map();
     rl.close();
 
@@ -244,7 +244,12 @@ const startBot = async () => {
         for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
-          if (prefixUsed) authUser(msg, chatInfo);
+          if (prefixUsed) {
+            authUser(msg, chatInfo);
+
+            const spam = await checkSpam(sender, conn, chatInfo.chatId);
+            if (spam) return;
+          }
 
           const userData = getUser(getDB(), sender);
           const pluginPrefix = plugin.prefix;
@@ -313,7 +318,6 @@ const startBot = async () => {
 console.log(chalk.cyanBright.bold('Create By Dabi\n'));
 loadPlug();
 startBot();
-watchCfg();
 
 let file = require.resolve(__filename);
 fs.watchFile(file, () => {
