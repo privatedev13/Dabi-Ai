@@ -11,13 +11,13 @@ const dbFile = path.join(dbFolder, 'database.json');
 const dbPath = './toolkit/db/datatoko.json';
 
 const loadPlug = () => {
-  if (!fs.existsSync(pluginDir)) {
-    console.log(chalk.yellowBright.bold(`⚠️ Plugin folder tidak ditemukan: ${pluginDir}`));
-    return;
-  }
+  if (!fs.existsSync(pluginDir)) return;
 
   let loaded = 0, failed = 0;
   const errors = [];
+
+  global.plugins = {};
+  global.categories = {};
 
   for (const folder of fs.readdirSync(pluginDir)) {
     const folderPath = path.join(pluginDir, folder);
@@ -30,25 +30,23 @@ const loadPlug = () => {
         const plugin = require(filePath);
         if (plugin?.run) {
           const name = path.basename(file, '.js');
+          plugin.__path = filePath;
           global.plugins[name] = plugin;
-
           const tag = plugin.tags || 'Uncategorized';
           global.categories[tag] = global.categories[tag] || [];
           global.categories[tag].push(plugin.command);
-
           loaded++;
         }
       } catch (err) {
         failed++;
-        errors.push(chalk.redBright.bold(`❌ Gagal memuat plugin ${file}: ${err.message}`));
+        errors.push(`❌ ${file}: ${err.message}`);
       }
     }
   }
 
-  if (!failed) {
-    console.log(chalk.greenBright.bold(`✅ ${loaded} plugin berhasil dimuat.`));
-  } else {
-    errors.forEach(msg => console.log(msg));
+  if (!failed) console.log(chalk.greenBright.bold(`✅ ${loaded} plugin dimuat.`));
+  else {
+    errors.forEach(msg => console.log(chalk.redBright.bold(msg)));
     console.log(chalk.yellowBright.bold(`⚠️ ${loaded} plugin dimuat, ${failed} gagal.`));
   }
 
@@ -81,44 +79,47 @@ const saveDB = () => {
   }
 };
 
-const getUser = (db, number) => {
-  if (!db || typeof db !== 'object' || !db.Private) return null;
-
-  const key = Object.keys(db.Private).find(k => db.Private[k].Nomor === number);
-  if (!key) return null;
-  return { key, value: db.Private[key] };
+const getUser = (senderId) => {
+  const db = getDB();
+  if (!db?.Private) return null;
+  const key = Object.keys(db.Private).find(k => db.Private[k]?.Nomor === senderId);
+  return key ? { key, value: db.Private[key] } : null;
 };
 
-const getGrpDB = (chatId) => {
-  const db = getDB();
-  return Object.values(db.Grup || {}).find(g => (g.Id || '').toString() === chatId.toString());
+const getGrpDB = (db, chatId) => {
+  if (!db?.Grup) return null;
+  return Object.values(db.Grup).find(g => String(g?.Id) === String(chatId)) || null;
 };
 
 const enGcW = (chatId) => {
-  const data = getGrpDB(chatId);
+  const db = getDB();
+  const data = getGrpDB(db, chatId);
   return data?.gbFilter?.Welcome?.welcome === true;
 };
 
 const getWelcTxt = (chatId) => {
-  const data = getGrpDB(chatId);
+  const db = getDB();
+  const data = getGrpDB(db, chatId);
   const text = data?.gbFilter?.Welcome?.welcomeText;
   return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat datang @user di grup!';
 };
 
 const enGcL = (chatId) => {
-  const data = getGrpDB(chatId);
+  const db = getDB();
+  const data = getGrpDB(db, chatId);
   return data?.gbFilter?.Left?.gcLeft === true;
 };
 
 const getLeftTxt = (chatId) => {
-  const data = getGrpDB(chatId);
+  const db = getDB();
+  const data = getGrpDB(db, chatId);
   const text = data?.gbFilter?.Left?.leftText;
   return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat tinggal @user!';
 };
 
 const loadGrpDB = (chatId) => {
   const db = getDB();
-  let groupData = getGrpDB(chatId);
+  let groupData = getGrpDB(db, chatId);
 
   if (!groupData) {
     db.Grup[chatId] = {
@@ -456,15 +457,18 @@ const authUser = (msg, chatInfo) => {
 };
 
 const banned = (senderId) => {
-  const db = getDB();
-  let userData = Object.values(db.Private).find(u => u.Nomor === senderId);
+  let userData = getUser(senderId);
 
   if (!userData) {
+    const db = getDB();
     const cleanedSender = senderId.replace(/\D/g, '');
-    userData = Object.values(db.Private).find(u => u.Nomor.replace(/\D/g, '').endsWith(cleanedSender));
+    const found = Object.values(db.Private || {}).find(
+      u => u?.Nomor?.replace(/\D/g, '').endsWith(cleanedSender)
+    );
+    if (found) userData = { value: found };
   }
 
-  return userData?.ban === true;
+  return userData?.value?.ban === true;
 };
 
 async function shopHandle(conn, msg, textMessage, chatId, senderId) {

@@ -67,7 +67,6 @@ global.loadFunc = emtData.loadFunc;
 global.mtData = emtData.mtData;
 global.translate = emtData.translate;
 global.tryFree = emtData.tryPrem;
-global.watchCfg = emtData.watchCfg;
 global.replaceLid = emtData.replaceLid;
 
 global.rctKey = reactId.rctKey;
@@ -91,7 +90,7 @@ Object.assign(global, {
     botName: setting.botSetting.botName || 'Belum Diset',
     btn: setting.menuSetting.btn,
     Cbrack: setting.menuSetting.brackets?.[1],
-    chshort: setting.botSetting.sendTextLink.chshort,
+    chShort: setting.botSetting.sendTextLink.chshort,
     contact: setting.ownerSetting.contact,
     footer: setting.botSetting.footer,
     foot: setting.menuSetting.frame.foot,

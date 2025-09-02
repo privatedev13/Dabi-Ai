@@ -8,7 +8,9 @@ const loadDB = () => {
   if (!fs.existsSync(file)) return { responApi: {}, pengingat: {} };
   try {
     const data = JSON.parse(fs.readFileSync(file, "utf-8"));
-    if (!data.pengingat || typeof data.pengingat !== "object" || Array.isArray(data.pengingat)) data.pengingat = {};
+    if (!data.pengingat || typeof data.pengingat !== "object" || Array.isArray(data.pengingat)) {
+      data.pengingat = {};
+    }
     return data;
   } catch {
     return { responApi: {}, pengingat: {} };
@@ -21,11 +23,11 @@ const saveDB = (data) => {
 
 const getNextJadwal = (responApi) => {
   if (!responApi?.waktu) return null;
-  const now = moment(Format.indoTime("Asia/Jakarta", "HH:mm"), "HH:mm");
-  for (const [nama, waktu] of Object.entries(responApi.waktu).sort((a, b) =>
-    moment(a[1], "HH:mm").diff(moment(b[1], "HH:mm"))
+  const now = moment(moment.tz("Asia/Jakarta").format("HH:mm"), "HH:mm");
+  for (const [nama, waktu] of Object.entries(responApi.waktu).sort(
+    (a, b) => moment(a[1], "HH:mm").diff(moment(b[1], "HH:mm"))
   )) {
-    if (moment(waktu, "HH:mm").isSameOrAfter(now)) return { nama, waktu };
+    if (moment(waktu, "HH:mm").isAfter(now)) return { nama, waktu };
   }
   return null;
 };
@@ -39,16 +41,18 @@ async function cekSholat(conn, msg, { chatId }) {
   const [grupName, g] = grupEntry;
   if (!g.jadwalSolat || !db.responApi?.waktu) return;
 
-  const key = chatId, now = moment(Format.indoTime("Asia/Jakarta", "HH:mm"), "HH:mm");
+  const key = chatId;
+  const now = moment(moment.tz("Asia/Jakarta").format("HH:mm"), "HH:mm");
+
   if (!db.pengingat[key]) {
     const next = getNextJadwal(db.responApi);
     if (next) {
       db.pengingat[key] = {
         id: key,
         name: grupName,
-        jadwal: { [next.nama]: db.responApi.waktu[next.nama] },
-        time: db.responApi.tanggal || Format.indoTime("Asia/Jakarta", "DD MMM YYYY"),
-        notifSent: false
+        jadwal: { [next.nama]: next.waktu },
+        time: db.responApi.tanggal || moment.tz("Asia/Jakarta").format("DD MMM YYYY"),
+        send: false
       };
       saveDB(db);
     }
@@ -59,6 +63,40 @@ async function cekSholat(conn, msg, { chatId }) {
   if (!nama || !waktu) return;
 
   const waktuMoment = moment(waktu, "HH:mm");
+
+  if (now.isSameOrAfter(waktuMoment) && db.pengingat[key].send === false) {
+    let sent = false;
+    try {
+      await conn.sendMessage(
+        chatId,
+        { text: `Waktu *${nama}* telah tiba!\nAyo jangan lupa sholat tepat waktu` },
+        { quoted: msg }
+      );
+      sent = true;
+    } catch {}
+    delete db.pengingat[key];
+    const next = getNextJadwal(db.responApi);
+    if (next) {
+      db.pengingat[key] = {
+        id: key,
+        name: grupName,
+        jadwal: { [next.nama]: next.waktu },
+        time: db.responApi.tanggal || moment.tz("Asia/Jakarta").format("DD MMM YYYY"),
+        send: false
+      };
+    } else if (!sent) {
+      db.pengingat[key] = {
+        id: key,
+        name: grupName,
+        jadwal: { [nama]: waktu },
+        time: db.responApi.tanggal || moment.tz("Asia/Jakarta").format("DD MMM YYYY"),
+        send: false
+      };
+    }
+    saveDB(db);
+    return;
+  }
+
   if (now.isAfter(waktuMoment.clone().add(1, "hours"))) {
     delete db.pengingat[key];
     const next = getNextJadwal(db.responApi);
@@ -66,22 +104,11 @@ async function cekSholat(conn, msg, { chatId }) {
       db.pengingat[key] = {
         id: key,
         name: grupName,
-        jadwal: { [next.nama]: db.responApi.waktu[next.nama] },
-        time: db.responApi.tanggal || Format.indoTime("Asia/Jakarta", "DD MMM YYYY"),
-        notifSent: false
+        jadwal: { [next.nama]: next.waktu },
+        time: db.responApi.tanggal || moment.tz("Asia/Jakarta").format("DD MMM YYYY"),
+        send: false
       };
     }
-    saveDB(db);
-    return;
-  }
-
-  const batasAkhir = waktuMoment.clone().add(2, "minutes");
-  if (now.isBetween(waktuMoment, batasAkhir, null, "[]") && !db.pengingat[key].notifSent) {
-    try {
-      await conn.sendMessage(chatId, { text: `Waktu *${nama}* telah tiba!\nAyo jangan lupa sholat tepat waktu` }, { quoted: msg });
-    } catch {}
-    db.pengingat[key].notifSent = true;
-    delete db.pengingat[key];
     saveDB(db);
   }
 }

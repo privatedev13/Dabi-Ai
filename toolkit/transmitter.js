@@ -11,11 +11,17 @@ const groupCache = new Map();
 const sesiBell = path.join(__dirname, '../temp/BellaSession.json');
 const sesiAi = path.join(__dirname, '../temp/AiSesion.json');
 
-function replaceLid(obj) {
-  if (Array.isArray(obj)) return obj.map(replaceLid);
+function replaceLid(obj, visited = new WeakSet()) {
+  if (!obj) return obj;
 
-  if (obj && typeof obj === 'object') {
-    for (const k in obj) obj[k] = replaceLid(obj[k]);
+  if (typeof obj === 'object') {
+    if (visited.has(obj)) return obj;
+    visited.add(obj);
+
+    if (Array.isArray(obj)) return obj.map(i => replaceLid(i, visited));
+    if (Buffer.isBuffer(obj) || obj instanceof Uint8Array) return obj;
+
+    for (const k in obj) obj[k] = replaceLid(obj[k], visited);
     return obj;
   }
 
@@ -24,12 +30,10 @@ function replaceLid(obj) {
       const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === obj);
       return phone ? `${phone}@s.whatsapp.net` : obj;
     }
-
-    obj = obj.replace(/@(\d+)(?!@)/g, (match, lid) => {
+    obj = obj.replace(/@(\d+)(?!@)/g, (m, lid) => {
       const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${lid}@lid`);
-      return phone ? `@${phone}` : match;
+      return phone ? `@${phone}` : m;
     });
-
     return obj.replace(/@(\d+)@lid/g, (_, id) => {
       const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${id}@lid`);
       return phone ? `@${phone}` : `@${id}@lid`;
@@ -185,22 +189,20 @@ async function gcFilter(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const db = getDB();
-    const groupData = Object.values(db.Grup).find(g => g.Id === chatId);
+    const groupData = gcData(getDB(), chatId);
     if (!groupData || !groupData.gbFilter) return;
 
-    const metadata = await global.mtData(chatId, conn);
-    const isAdmin = metadata?.participants?.find(p => p.id === senderId)?.admin;
-    const botRawId = conn.user?.id || '';
-    const fromMe = senderId === botRawId || msg.key.fromMe;
+    const { userAdmin, botNumber } = await stGrup(conn, chatId, senderId);
+    const fromMe = senderId === botNumber || msg.key?.fromMe;
 
-    if (isAdmin || fromMe) return;
+    if (userAdmin || fromMe) return;
 
-    let textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+    let textMessage = msg.message?.conversation 
+      || msg.message?.extendedTextMessage?.text 
+      || '';
     const msgType = Object.keys(msg.message || {})[0];
 
-    const isTagSw = !!msg.message?.groupStatusMentionMessage;
-
+    const isTagSw = Boolean(msg.message?.groupStatusMentionMessage);
     if (isTagSw) textMessage = 'Grup ini disebut dalam status';
 
     const checks = [
@@ -252,11 +254,9 @@ async function gcFilter(conn, msg, chatId, senderId, isGroup) {
   }
 }
 
-async function tryPrem(nomor) {
+async function tryPrem(senderId) {
   try {
-    intDB();
-    const db = getDB();
-    const user = getUser(db, nomor);
+    const user = getUser(senderId);
 
     if (!user) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
     if (user.value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
@@ -302,16 +302,19 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const { Grup = {} } = getDB();
-    const group = Object.values(Grup).find(g => g.Id === chatId);
+    const group = gcData(getDB(), chatId);
     if (!group?.antibadword?.badword) return;
 
-    const metadata = await global.mtData(chatId, conn);
-    const isAdmin = metadata?.participants?.some(p => p.id === senderId && p.admin);
-    const fromMe = senderId === (conn.user?.id || '') || msg.key.fromMe;
-    if (isAdmin || fromMe) return;
+    const { userAdmin, botNumber } = await stGrup(conn, chatId, senderId);
+    const fromMe = senderId === botNumber || msg.key?.fromMe;
+    if (userAdmin || fromMe) return;
 
-    const badwords = group.antibadword.badwordText?.toLowerCase().split(',').map(v => v.trim()).filter(Boolean);
+    const badwords = group.antibadword.badwordText
+      ?.toLowerCase()
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+
     if (!badwords?.length) return;
 
     const text = (
@@ -323,28 +326,31 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
     ).toLowerCase();
 
     if (badwords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(text))) {
-      await conn.sendMessage(chatId, {
-        text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
-        mentions: [senderId]
-      }, { quoted: msg });
+      await conn.sendMessage(
+        chatId,
+        {
+          text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
+          mentions: [senderId]
+        },
+        { quoted: msg }
+      );
 
       await conn.sendMessage(chatId, { delete: msg.key });
     }
   } catch (err) {
-    console.error('Error in bdWord:', err);
+    console.error('[bdWord] Error:', err);
   }
 }
 
 async function afkCencel(senderId, chatId, msg, conn) {
-  const db = getDB();
-  const user = Object.values(db.Private).find(u => u.Nomor === senderId);
-  if (!user?.afk?.afkTime) return;
+  const user = getUser(senderId);
+  if (!user?.value?.afk?.afkTime) return;
 
-  const { afkTime, reason = 'Tidak ada alasan' } = user.afk;
+  const { afkTime, reason = 'Tidak ada alasan' } = user.value.afk;
   const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
 
-  user.afk = {};
-  saveDB(db);
+  user.value.afk = {};
+  saveDB();
 
   await conn.sendMessage(chatId, {
     text: `✅ *Kamu telah kembali dari AFK!*\n⏱️ Durasi: ${waktu}\n📌 Alasan sebelumnya: ${reason}`,
@@ -353,26 +359,27 @@ async function afkCencel(senderId, chatId, msg, conn) {
 }
 
 async function afkTgR(msg, conn) {
-  const db = getDB();
   const botNumber = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
   const { remoteJid: chatId, participant, fromMe } = msg.key;
   const sender = participant || chatId;
   if (fromMe || sender === botNumber) return;
 
   const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
-  const targets = [...(ctx.mentionedJid || []), ctx.participant].filter(jid => jid && jid !== botNumber);
+  const targets = [...(ctx.mentionedJid || []), ctx.participant]
+    .filter(jid => jid && jid !== botNumber);
 
   for (const jid of targets) {
-    const user = Object.values(db.Private).find(u => u.Nomor === jid && u.afk?.afkTime);
-    if (!user) continue;
+    const user = getUser(jid);
+    if (!user?.value?.afk?.afkTime) continue;
 
-    const { afkTime, reason = 'Tidak ada alasan' } = user.afk;
+    const { afkTime, reason = 'Tidak ada alasan' } = user.value.afk;
     const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
     const type = jid === ctx.participant ? 'reply' : 'mention';
 
-    const text = type === 'reply'
-      ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`
-      : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`;
+    const text =
+      type === 'reply'
+        ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`
+        : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`;
 
     await conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
   }
@@ -403,28 +410,6 @@ const cache = {
 
 setInterval(cache.reset, 60 * 60 * 1000);
 cache.reset();
-
-async function watchCfg() {
-  const p = path.join(__dirname, '../toolkit/set/config.json');
-
-  const loadConfig = async () => {
-    try {
-      const data = await fs.promises.readFile(p, 'utf-8');
-      global.setting = JSON.parse(data);
-    } catch (e) {
-      console.error(chalk.redBright.bold('❌ Gagal reload config.json:'), e);
-    }
-  };
-
-  await loadConfig();
-  fs.watchFile(p, loadConfig);
-}
-
-function timer(conn) {
-  setInterval(() => {
-    clean(conn);
-  }, 28800000);
-}
 
 async function getStId(msg) {
   try {
@@ -527,6 +512,40 @@ function msgDate(msg) {
   return { textMessage, mediaInfo };
 }
 
+const userSpam = {};
+
+async function checkSpam(senderId, conn, chatId, msg) {
+  const user = getUser(senderId);
+  if (!user) return false;
+
+  const now = Date.now();
+  const key = user.key;
+
+  if (!userSpam[key]) {
+    userSpam[key] = { count: 1, last: now };
+    return false;
+  }
+
+  const diff = now - userSpam[key].last;
+
+  if (diff <= 3000) {
+    userSpam[key].count++;
+    userSpam[key].last = now;
+
+    if (userSpam[key].count >= 3) {
+      await conn.sendMessage(chatId, { text: "Jangan spam" }, { quoted: msg });
+      userSpam[key].count = 0;
+      return true;
+    }
+  } else if (diff > 7000) {
+    userSpam[key] = { count: 1, last: now };
+  } else {
+    userSpam[key].last = now;
+  }
+
+  return false;
+}
+
 module.exports = {
   ai,
   mtData,
@@ -540,12 +559,11 @@ module.exports = {
   afkTgR,
   loadFunc,
   cache,
-  watchCfg,
-  timer,
   getStId,
   logicBella,
   labvn,
   msgDate,
   saveLid,
-  replaceLid
+  replaceLid,
+  checkSpam
 };
