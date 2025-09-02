@@ -13,18 +13,16 @@ module.exports = {
 
     try {
       intDB();
-      const db = getDB();
-      const userEntry = Object.entries(db.Private).find(([, v]) => v.Nomor === mention);
-      const user = userEntry?.[1];
+      const user = getUser(mention);
 
-      if (!user) {
+      if (!user?.value) {
         return conn.sendMessage(chatId, {
           text: `Pengguna belum terdaftar di database!\n\nKetik *.daftar* untuk mendaftar.`,
           mentions: [mention]
         }, { quoted: msg });
       }
 
-      const moneyAmount = user.money?.amount ?? 0;
+      const moneyAmount = user.value.money?.amount ?? 0;
       const formattedMoney = new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR'
@@ -38,8 +36,8 @@ module.exports = {
       }, { quoted: msg });
 
     } catch (err) {
-      console.error("Error di plugin cekdompet.js:", err);
-      conn.sendMessage(chatId, {
+      console.error("[cekdompet] Error:", err);
+      await conn.sendMessage(chatId, {
         text: "Terjadi kesalahan saat memeriksa dompet."
       }, { quoted: msg });
     }
