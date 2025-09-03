@@ -4,7 +4,7 @@ const catatanPath = path.join(__dirname, '../../toolkit/db/catatan.json');
 
 module.exports = {
   name: 'addcatat',
-  command: ['addcatat'],
+  command: ['addcatat', 'addcatatan'],
   tags: 'Tools Menu',
   desc: 'Tambah nama catatan',
   prefix: true,
@@ -12,12 +12,11 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
     prefix,
     args
   }) => {
+    const { chatId } = chatInfo;
     try {
-      const { chatId } = chatInfo;
       if (!(await isOwner(module.exports, conn, msg))) return;
 
       if (!fs.existsSync(catatanPath)) fs.writeFileSync(catatanPath, '{}');
@@ -29,11 +28,11 @@ module.exports = {
 
       catatan[nama] = {};
       fs.writeFileSync(catatanPath, JSON.stringify(catatan, null, 2));
-      conn.sendMessage(chatId, { text: `Berhasil membuat catatan *${nama}*.` }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: `Berhasil membuat catatan *${nama}*.` }, { quoted: msg });
 
     } catch (err) {
       console.error('Error:', err);
-      conn.sendMessage(chatId, { text: `Error: ${err}`, quoted: msg });
+      return conn.sendMessage(chatId, { text: `Error: ${err.message}` }, { quoted: msg });
     }
   }
 };
