@@ -10,48 +10,35 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!isGroup)
-      return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
+    if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
 
     try {
       const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
-      if (!userAdmin)
-        return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
-      if (!botAdmin)
-        return conn.sendMessage(chatId, { text: '❌ Bot bukan admin!' }, { quoted: msg });
+      if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
+      if (!botAdmin) return conn.sendMessage(chatId, { text: 'Bot bukan admin!' }, { quoted: msg });
 
-      intDB();
-      const db = getDB();
-      const groupKey = Object.keys(db.Grup).find(k => db.Grup[k].Id === chatId);
-      if (!groupKey)
-        return conn.sendMessage(chatId, { text: '❌ Grup belum terdaftar di database.' }, { quoted: msg });
+      const groupData = gcData(getDB(), chatId);
+      if (!groupData) return conn.sendMessage(chatId, { text: 'Grup belum terdaftar di database.\nGunakan *daftargc* untuk mendaftar.' }, { quoted: msg });
 
-      const groupData = db.Grup[groupKey];
       groupData.gbFilter ??= {};
-      groupData.gbFilter.closeTime ??= {};
+      groupData.gbFilter.close ??= {};
 
       if (args[0]) {
         const duration = Format.parseDuration(args[0]);
-        if (!duration)
-          return conn.sendMessage(chatId, {
-            text: '❌ Format waktu tidak valid. Gunakan contoh: 1h, 30m, 1d, dsb.'
-          }, { quoted: msg });
-
-        groupData.gbFilter.closeTime = { active: true, until: Date.now() + duration };
-        saveDB(db);
-
-        return conn.sendMessage(chatId, {
-          text: `⏳ Grup akan ditutup otomatis dalam *${args[0]}*`
-        }, { quoted: msg });
+        if (!duration) {
+          return conn.sendMessage(chatId, { text: 'Format waktu tidak valid.\nGunakan contoh: 1h, 30m, 1d, dsb.' }, { quoted: msg });
+        }
+        groupData.gbFilter.close = { active: true, until: Date.now() + duration };
+        saveDB();
+        return conn.sendMessage(chatId, { text: `Grup akan ditutup otomatis dalam *${args[0]}*.` }, { quoted: msg });
       }
 
       await conn.groupSettingUpdate(chatId, 'announcement');
+      return conn.sendMessage(chatId, { text: 'Grup berhasil ditutup.' }, { quoted: msg });
 
     } catch (err) {
       console.error('Close Group Error:', err);
-      return conn.sendMessage(chatId, {
-        text: '❌ Gagal memproses perintah. Coba lagi nanti.'
-      }, { quoted: msg });
+      return conn.sendMessage(chatId, { text: 'Gagal memproses perintah. Coba lagi nanti.' }, { quoted: msg });
     }
   }
 };
