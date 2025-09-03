@@ -5,6 +5,22 @@
       "toko": "panel",
       "barang": "3gb",
       "harga": "3k"
+    },
+    {
+      "chance": {
+        "idKey": "soal4",
+        "barang": 3,
+        "status": true,
+        "id": "62887437445295@s.whatsapp.net"
+      }
+    },
+    {
+      "chance": {
+        "idKey": "soal4",
+        "barang": 3,
+        "status": true,
+        "id": "628983784564@s.whatsapp.net"
+      }
     }
   ]
 }
