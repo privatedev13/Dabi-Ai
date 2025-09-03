@@ -47,17 +47,6 @@ module.exports = {
         return conn.sendMessage(chatId, { text: 'Kamu sedang di penjara dan tidak bisa merampok.' }, { quoted: msg });
       }
 
-      const now = Date.now();
-      if (pelaku.lastRampok) {
-        const diff = now - pelaku.lastRampok;
-        if (diff <= 3000 && diff >= 1000) pelaku.cooldownRampok = now;
-        if (pelaku.cooldownRampok && now - pelaku.cooldownRampok < 5000) {
-          const sisa = ((5000 - (now - pelaku.cooldownRampok)) / 1000).toFixed(1);
-          return conn.sendMessage(chatId, { text: `Tunggu ${sisa} detik lagi sebelum merampok lagi.` }, { quoted: msg });
-        }
-      }
-
-      pelaku.lastRampok = now;
       pelaku.money = pelaku.money || { amount: 0 };
       korban.money = korban.money || { amount: 0 };
 
