@@ -10,14 +10,15 @@ module.exports = {
     const { chatId, isGroup } = chatInfo;
 
     try {
-      if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: msg });
+      if (!isGroup) 
+        return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: msg });
 
       intDB();
       const db = getDB();
       db.Grup ??= {};
 
       const { subject: groupName } = await conn.groupMetadata(chatId);
-      if (Object.values(db.Grup).some(g => g.Id === chatId)) {
+      if (gcData(db, chatId)) {
         return conn.sendMessage(chatId, { text: 'Grup ini sudah terdaftar di database.' }, { quoted: msg });
       }
 

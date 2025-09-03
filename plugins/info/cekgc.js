@@ -13,7 +13,7 @@ module.exports = {
       }
 
       const db = getDB();
-      const data = Object.values(db.Grup || {}).find(g => g.Id === chatId);
+      const data = gcData(db, chatId);
       if (!data) {
         return conn.sendMessage(chatId, { text: 'Grup ini belum terdaftar.' }, { quoted: msg });
       }

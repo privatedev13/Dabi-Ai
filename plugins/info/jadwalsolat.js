@@ -23,8 +23,7 @@ module.exports = {
       }
 
       const db = getDB();
-      const g = Object.values(db.Grup).find(x => x.Id === chatId);
-
+      const g = gcData(db, chatId);
       if (!g) {
         return conn.sendMessage(chatId, { text: 'Grup belum terdaftar di database.' }, { quoted: msg });
       }
