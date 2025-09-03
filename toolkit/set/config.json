@@ -1,8 +1,7 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "6285194993977",
-      "6288215052251"
+      "62851xxxx"
     ],
     "ownerName": "Yumi",
     "contact": "6285194993977",
@@ -13,7 +12,7 @@
       "fb": ""
     },
     "ownerStore": {
-      "dana": "6285725892962",
+      "dana": "",
       "gopay": "",
       "ovo": ""
     },
@@ -77,7 +76,8 @@
     "Toko Menu": "Menampilkan toko menu",
     "Ai Menu": "Menampilkan menu ai",
     "Other Menu": "Fitur lainnya",
-    "Rpg Menu": "Menu Game Rpg"
+    "Rpg Menu": "Menu Game Rpg",
+    "Nsfw Menu": "Menu hentai"
   },
   "msg": {
     "rejectMsg": {
@@ -98,11 +98,11 @@
       "web": "https://api.siputzx.my.id"
     },
     "HamzApi": {
-      "key": "DabiKey",
+      "key": "YOUR_APIKEY",
       "web": "https://api.hamsoffc.me"
     },
     "termai": {
-      "key": "DabiKEY",
+      "key": "Bell409",
       "web": "https://api.termai.cc"
     }
   }
