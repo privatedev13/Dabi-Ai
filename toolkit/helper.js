@@ -83,7 +83,7 @@ const getUser = (senderId) => {
   const db = getDB();
   if (!db?.Private) return null;
   const key = Object.keys(db.Private).find(k => db.Private[k]?.Nomor === senderId);
-  return key ? { key, value: db.Private[key] } : null;
+  return key ? { key, value: db.Private[key], db } : null;
 };
 
 const getGrpDB = (db, chatId) => {

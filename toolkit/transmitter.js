@@ -66,7 +66,7 @@ async function bell(body) {
   }
 }
 
-async function Elevenlabs(text, voice = "bella", pitch = 0, speed = 1.0) {
+async function Elevenlabs(text, voice = "dabi", pitch = 0, speed = 0.9) {
   try {
     const response = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`);
     if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -261,7 +261,7 @@ async function tryPrem(senderId) {
     if (!user) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
     if (user.value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
 
-    const key = user.key;
+    const { key, db } = user;
     const now = Date.now();
     const claimPrem = 3 * 24 * 60 * 60 * 1000;
     const remainPrem = db.Private[key].isPremium?.time || 0;
@@ -424,7 +424,7 @@ async function getStId(msg) {
 const voiceList = new Set([
   'prabowo','yanzgpt','bella','megawati','echilling','adam','thomas_shelby',
   'michi_jkt48','nokotan','jokowi','boboiboy','keqing','anya','yanami_anna',
-  'MasKhanID','Myka','raiden','CelzoID'
+  'MasKhanID','Myka','raiden','CelzoID', 'dabi'
 ]);
 
 async function labvn(message, msg, conn, chatId, prefix = '.') {
