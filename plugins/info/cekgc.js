@@ -19,8 +19,8 @@ module.exports = {
       }
 
       const { gbFilter = {}, antibadword = {} } = data;
-      const close = gbFilter.closeTime || {};
-      const open = gbFilter.openTime || {};
+      const close = gbFilter.close || {};
+      const open = gbFilter.open || {};
 
       const toTime = (timestamp) => {
         if (!timestamp) return '-';
@@ -46,8 +46,8 @@ module.exports = {
       teks += `${side} ${btn} Anti Bot: ${gbFilter.antibot ? 'Aktif' : 'Tidak'}\n`;
       teks += `${side} ${btn} Anti Tag Sw: ${gbFilter.antiTagSw ? 'Aktif' : 'Tidak'}\n`;
       teks += `${side} ${btn} Jadwal Solat: ${data.jadwalSolat ? 'Aktif' : 'Tidak'}\n`;
-      teks += `${side} ${btn} Close Time: ${close.active ? 'Aktif' : 'Tidak'} (${toTime(close.until)})\n`;
-      teks += `${side} ${btn} Open Time: ${open.active ? 'Aktif' : 'Tidak'} (${toTime(open.until)})\n`;
+      teks += `${side} ${btn} Close Time: ${close.active ? 'Aktif' : 'Tidak'} (${toTime(close.until)})\n`;   // ✅ sinkron
+      teks += `${side} ${btn} Open Time: ${open.active ? 'Aktif' : 'Tidak'} (${toTime(open.until)})\n`;     // ✅ sinkron
 
       teks += `${foot}${garis}\n`;
       teks += `${head} ${Obrack} *Filter Kasar* ${Cbrack}\n`;
