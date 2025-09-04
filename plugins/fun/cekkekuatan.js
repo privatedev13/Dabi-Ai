@@ -13,11 +13,11 @@ module.exports = {
     args
   }) => {
     try {
-      const { cekKuat } = await global.loadFunc();
+      const { cekkekuatan } = await global.loadFunc();
       const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(msg, senderId);
       const mentionTarget = targetId;
-      const cek = cekKuat[Math.floor(Math.random() * cekKuat.length)];
+      const cek = cekkekuatan[Math.floor(Math.random() * cekkekuatan.length)];
 
       const teks = `Nama: @${mentionTarget}\nKekuatan: ${cek}`
 
@@ -28,9 +28,8 @@ module.exports = {
     } catch (error) {
       console.error('Error:', error);
       conn.sendMessage(msg.key.remoteJid, {
-        text: `Error: ${error.message || error}`,
-        quoted: msg,
-      });
+        text: `Error: ${error.message || error}`
+      }, { quoted: msg });
     }
   }
 }
