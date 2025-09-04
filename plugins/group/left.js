@@ -13,18 +13,25 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!isGroup) return conn.sendMessage(chatId, { text: "Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg });
+    if (!isGroup) {
+      return conn.sendMessage(chatId, { text: "Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg });
+    }
 
     const groupData = gcData(getDB(), chatId);
-    if (!groupData) return conn.sendMessage(chatId, { text: "Grup belum terdaftar.\nGunakan *.daftargc* untuk mendaftar." }, { quoted: msg });
+
+    if (!groupData) {
+      return conn.sendMessage(chatId, { text: "Grup belum terdaftar.\nGunakan *.daftargc* untuk mendaftar." }, { quoted: msg });
+    }
 
     const { userAdmin } = await stGrup(conn, chatId, senderId);
-    if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
+    if (!userAdmin) {
+      return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
+    }
 
     const sub = args[0]?.toLowerCase();
     groupData.gbFilter ??= {};
-    groupData.gbFilter.left ??= { gcLeft: false, leftText: '' };
-    const leftConfig = groupData.gbFilter.left;
+    groupData.gbFilter.Left ??= { gcLeft: false, leftText: '' };
+    const leftConfig = groupData.gbFilter.Left;
 
     const saveAndReply = (text) => {
       saveDB();
@@ -42,7 +49,9 @@ module.exports = {
 
       case "set": {
         const newText = textMessage.replace(`${prefix}${commandText} set`, "").trim();
-        if (!newText) return conn.sendMessage(chatId, { text: "Gunakan perintah:\n.left set <teks selamat tinggal>" }, { quoted: msg });
+        if (!newText) {
+          return conn.sendMessage(chatId, { text: "Gunakan perintah:\n.left set <teks selamat tinggal>" }, { quoted: msg });
+        }
         Object.assign(leftConfig, { gcLeft: true, leftText: newText });
         return saveAndReply(`Pesan selamat tinggal diperbarui:\n\n${newText}`);
       }
