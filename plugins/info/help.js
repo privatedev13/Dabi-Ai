@@ -1,19 +1,18 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-module.exports = {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default {
   name: 'help',
   command: ['help', 'info'],
   tags: 'Info Menu',
   desc: 'Lihat info plugin',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    prefix,
-    commandText,
-    args
-  }) => {
+  run: async (conn, msg, { chatInfo, prefix, commandText, args }) => {
     const { chatId } = chatInfo;
 
     if (!args.length) {
@@ -24,7 +23,8 @@ module.exports = {
 
     const baseDir = path.join(__dirname, '..');
     const folders = fs.readdirSync(baseDir).filter(f =>
-      fs.lstatSync(path.join(baseDir, f)).isDirectory());
+      fs.lstatSync(path.join(baseDir, f)).isDirectory()
+    );
 
     let plugin = null;
     let filename = '';
@@ -33,7 +33,7 @@ module.exports = {
       const files = fs.readdirSync(path.join(baseDir, folder)).filter(f => f.endsWith('.js'));
       for (const file of files) {
         if (path.parse(file).name.toLowerCase() === args[0].toLowerCase()) {
-          plugin = require(path.join(baseDir, folder, file));
+          plugin = (await import(path.join(baseDir, folder, file))).default;
           filename = file;
           break;
         }
@@ -47,18 +47,10 @@ module.exports = {
       }, { quoted: msg });
     }
 
-    const {
-      name,
-      command,
-      desc,
-      owner = false,
-      prefix: usesPrefix = false,
-      premium = false
-    } = plugin;
-
+    const { name, command, desc, owner = false, prefix: usesPrefix = false, premium = false } = plugin;
     const cmdList = Array.isArray(command) ? command.map(c => `${prefix}${c}`).join(', ') : '-';
 
-    const text =
+    const text = 
       `Plugin Info\n` +
       `• File: ${filename}\n` +
       `• Nama: ${name || '-'}\n` +

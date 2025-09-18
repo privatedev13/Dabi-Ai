@@ -1,12 +1,13 @@
-const fs = require('fs');
+import fs from 'fs';
 const tokoPath = './toolkit/set/toko.json';
 
-module.exports = {
+export default {
   name: 'listtoko',
   command: ['listtoko', 'daftartoko'],
   tags: 'Info Menu',
   desc: 'Menampilkan daftar toko yang terdaftar',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

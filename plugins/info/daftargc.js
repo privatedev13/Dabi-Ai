@@ -1,10 +1,10 @@
-module.exports = {
+export default {
   name: 'daftargc',
   command: ['daftargc'],
   tags: 'Info Menu',
   desc: 'Mendaftarkan grup ke database.',
   prefix: true,
-  whiteLiss: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId, isGroup } = chatInfo;
@@ -13,12 +13,12 @@ module.exports = {
       if (!isGroup) 
         return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan di dalam grup.' }, { quoted: msg });
 
-      intDB();
+      initDB();
       const db = getDB();
       db.Grup ??= {};
 
       const { subject: groupName } = await conn.groupMetadata(chatId);
-      if (gcData(db, chatId)) {
+      if (getGc(db, chatId)) {
         return conn.sendMessage(chatId, { text: 'Grup ini sudah terdaftar di database.' }, { quoted: msg });
       }
 

@@ -1,11 +1,12 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-module.exports = {
+export default {
   name: 'cuaca',
   command: ['cuaca', 'cekcuaca'],
   tags: 'Tools Menu',
   desc: 'Cek cuaca berdasarkan nama kota',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

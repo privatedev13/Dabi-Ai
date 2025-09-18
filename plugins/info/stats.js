@@ -1,19 +1,17 @@
-const os = require('os');
-const fs = require('fs');
-const { execSync } = require('child_process');
-const { performance } = require('perf_hooks');
-const moment = require("moment-timezone");
+import os from 'os';
+import fs from 'fs';
+import { execSync } from 'child_process';
+import { performance } from 'perf_hooks';
+import moment from 'moment-timezone';
 
-module.exports = {
+export default {
   name: 'stats',
   command: ['stats', 'info', 'st', 'ping', 'device'],
   tags: 'Info Menu',
   desc: 'Menampilkan status device dan statik bot',
   prefix: true,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     const start = performance.now();
     const { chatId, senderId } = chatInfo;
 
@@ -22,27 +20,31 @@ module.exports = {
     const uptime = process.uptime();
     const totalMem = os.totalmem();
     const usedMem = totalMem - os.freemem();
-    const cpu = os.cpus()[0]?.model || 'Tidak diketahui';
+    const cpu = os.cpus()?.[0]?.model ?? 'Tidak diketahui';
     const platform = os.platform();
     const arch = os.arch();
-    const botName = global.botName || 'Bot';
-    const botFullName = global.botFullName || botName;
+
+    const botName = global.botName ?? 'Bot';
+    const botFullName = global.botFullName ?? botName;
 
     const formatBytes = bytes => (bytes / 1024 / 1024).toFixed(2);
     const deviceUptime = Format.toTime(os.uptime() * 1000);
-    const timeNow = Format.indoTime("Asia/Jakarta", "DD MMM YYYY HH:mm");
+    const timeNow = Format.indoTime('Asia/Jakarta', 'DD MMM YYYY HH:mm');
 
-    let totalDisk = 'Tidak diketahui', usedDisk = 'Tidak diketahui', freeDisk = 'Tidak diketahui';
+    let totalDisk = 'Tidak diketahui',
+        usedDisk = 'Tidak diketahui',
+        freeDisk = 'Tidak diketahui';
     try {
-      const disk = execSync('df -h /', { encoding: 'utf8' }).split('\n')[1].split(/\s+/);
+      const disk = execSync('df -h /', { encoding: 'utf8' })
+        .split('\n')[1]
+        .split(/\s+/);
       [totalDisk, usedDisk, freeDisk] = [disk[1], disk[2], disk[3]];
-    } catch (e) {
-      console.error('❌ Gagal mendapatkan disk info:', e.message);
+    } catch (err) {
+      console.error('❌ Gagal mendapatkan disk info:', err.message);
     }
 
     const db = getDB?.();
     let privateCmd = '-', maxCmd = 0;
-
     if (db?.Private) {
       for (const user of Object.values(db.Private)) {
         if (user.Nomor === senderId) privateCmd = user.cmd || 0;
@@ -74,22 +76,26 @@ Stats System
 ┖ ${btn} Storage: ${usedDisk} / ${totalDisk} (Free: ${freeDisk})
 `.trim();
 
-    await conn.sendMessage(chatId, {
-      text: stats,
-      contextInfo: {
-        externalAdReply: {
-          title: `Informasi Status Bot`,
-          body: `Ini adalah status ${botFullName}`,
-          thumbnailUrl: thumbnail,
-          mediaType: 1,
-          renderLargerThumbnail: true
+    await conn.sendMessage(
+      chatId,
+      {
+        text: stats,
+        contextInfo: {
+          externalAdReply: {
+            title: 'Informasi Status Bot',
+            body: `Ini adalah status ${botFullName}`,
+            thumbnailUrl: thumbnail,
+            mediaType: 1,
+            renderLargerThumbnail: true,
+          },
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: idCh,
+          },
         },
-        forwardingScore: 1,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: idCh
-        }
-      }
-    }, { quoted: msg });
-  }
+      },
+      { quoted: msg }
+    );
+  },
 };

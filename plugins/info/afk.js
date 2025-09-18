@@ -1,18 +1,21 @@
-module.exports = {
+export default {
   name: 'afk',
   command: ['afk'],
   tags: 'Info Menu',
   desc: 'Menandai kamu sedang AFK.',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args
+  }) => {
+    const { senderId, pushName, chatId, isGroup } = chatInfo;
     try {
-      const { senderId, pushName, chatId, isGroup } = chatInfo;
-
-      intDB();
+      initDB();
       const db = getDB();
 
-      const userKey = Object.keys(db.Private).find(key => db.Private[key].Nomor === senderId);
+      const userKey = getUser(senderId);
 
       if (!isGroup) {
         return conn.sendMessage(chatId, { 
@@ -29,7 +32,7 @@ module.exports = {
       const alasan = args.join(' ') || 'Tidak ada alasan';
       const now = Date.now();
 
-      db.Private[userKey].afk = {
+      db.Private[userKey.key].afk = {
         afkTime: now,
         reason: alasan
       };

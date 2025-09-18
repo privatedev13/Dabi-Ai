@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Info Grup',
   command: ['cekgc', 'cekidgc'],
   tags: 'Info Menu',
   desc: 'Cek data grup di database',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId, isGroup } = chatInfo;
@@ -13,7 +14,7 @@ module.exports = {
       }
 
       const db = getDB();
-      const data = gcData(db, chatId);
+      const data = getGc(db, chatId);
       if (!data) {
         return conn.sendMessage(chatId, { text: 'Grup ini belum terdaftar.' }, { quoted: msg });
       }
@@ -55,7 +56,7 @@ module.exports = {
       teks += `${side} ${btn} Respon: ${antibadword.badwordText || '-'}\n`;
       teks += `${foot}${garis}`;
 
-      const metadata = await mtData(chatId, conn);
+      const metadata = await getMetadata(chatId, conn);
       const groupName = metadata?.subject || 'Info Grup';
 
       await conn.sendMessage(chatId, {

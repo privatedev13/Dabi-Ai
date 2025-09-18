@@ -1,11 +1,12 @@
-const { getJadwal } = require('../../toolkit/scrape/jadwalsolat.js');
+import getJadwal from '../../toolkit/scrape/jadwalsolat.js';
 
-module.exports = {
+export default {
   name: 'jadwalsolat',
   command: ['jadwalsolat', 'solat'],
   tags: 'Group Menu',
   desc: 'Aktifkan atau matikan jadwal solat di grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -23,7 +24,7 @@ module.exports = {
       }
 
       const db = getDB();
-      const g = gcData(db, chatId);
+      const g = getGc(db, chatId);
       if (!g) {
         return conn.sendMessage(chatId, { text: 'Grup belum terdaftar di database.' }, { quoted: msg });
       }

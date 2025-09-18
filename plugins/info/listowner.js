@@ -1,8 +1,11 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 
-module.exports = {
+export default {
   name: 'listowner',
   command: ['listowner', 'lsow'],
   tags: 'Info Menu',
@@ -10,27 +13,17 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
-    const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
+  run: async (conn, msg, { chatInfo }) => {
+    const { chatId } = chatInfo;
     let config;
     try {
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      config = JSON.parse(configData);
-    } catch (err) {
-      console.error('Gagal membaca config:', err);
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    } catch {
       return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: msg });
     }
 
-    const owners = config.ownerSetting.ownerNumber;
-    if (owners.length === 0) {
+    const owners = config.ownerSetting?.ownerNumber || [];
+    if (!owners.length) {
       return conn.sendMessage(chatId, { text: 'Tidak ada owner yang terdaftar' }, { quoted: msg });
     }
 

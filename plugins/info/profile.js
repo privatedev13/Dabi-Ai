@@ -1,9 +1,10 @@
-module.exports = {
-  name: 'profile',
-  command: ['profile', 'profil', 'me', 'claim'],
-  tags: 'Info Menu',
-  desc: 'Menampilkan informasi profil.',
+export default {
+  name: "profile",
+  command: ["profile", "profil", "me", "claim"],
+  tags: "Info Menu",
+  desc: "Menampilkan informasi profil.",
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -15,27 +16,32 @@ module.exports = {
     const mention = `${targetId}@s.whatsapp.net`;
 
     try {
-      intDB();
+      initDB();
       const db = getDB();
-      const userEntry = Object.entries(db.Private).find(([, v]) => v.Nomor === mention);
-      const user = userEntry?.[1];
-      const username = userEntry?.[0];
+      const userEntry = getUser(mention);
+
+      const user = userEntry?.value;
+      const username = userEntry?.key;
 
       if (!user) {
-        return conn.sendMessage(chatId, {
-          text: `Kamu belum terdaftar di database!\n\nKetik ${prefix}daftar untuk mendaftar.`
-        }, { quoted: msg });
+        return conn.sendMessage(
+          chatId,
+          { text: `Kamu belum terdaftar di database!\n\nKetik ${prefix}daftar untuk mendaftar.` },
+          { quoted: msg }
+        );
       }
 
-      if (commandText.toLowerCase() === 'claim') {
-        const result = await tryFree(mention);
+      if (commandText.toLowerCase() === "claim") {
+        const result = await claimTrial(mention);
         return conn.sendMessage(chatId, { text: result.message }, { quoted: msg });
       }
 
       const isPrem = user.isPremium?.isPrem;
       const premTime = user.isPremium?.time || 0;
       const isPremiumText = isPrem
-        ? (premTime > 0 ? Format.duration(0, premTime).trim() : "Kadaluarsa")
+        ? premTime > 0
+          ? Format.duration(0, premTime).trim()
+          : "Kadaluarsa"
         : "Tidak";
 
       if (!user.money) {
@@ -44,14 +50,18 @@ module.exports = {
       }
 
       const moneyAmount = user.money?.amount || 0;
-      const formattedMoney = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(moneyAmount);
+      const formattedMoney = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+      }).format(moneyAmount);
 
       const claimText = user.claim
         ? "Kamu sudah claim trial"
         : `Kamu bisa claim trial premium dengan ${prefix}claim`;
 
-      const profileText = `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n` +
-        `${side} ${btn} *Nama:* ${username || 'Pengguna'}\n` +
+      const profileText =
+        `${head} ${Obrack} Profil @${targetId} ${Cbrack}\n` +
+        `${side} ${btn} *Nama:* ${username || "Pengguna"}\n` +
         `${side} ${btn} *Nomor:* ${user.Nomor.replace(/@s\.whatsapp\.net$/, "")}\n` +
         `${side} ${btn} *Auto AI:* ${user.autoai ? "Aktif ✅" : "Nonaktif ❌"}\n` +
         `${side} ${btn} *Private Cmd:* ${user.cmd || 0}\n` +
@@ -59,43 +69,44 @@ module.exports = {
         `${side} ${btn} *Status Premium:* ${isPrem ? "Ya ✅" : "Tidak ❌"}\n` +
         `${side} ${btn} *Premium Time:* ${isPremiumText}\n` +
         `${side} ${btn} *Nomor Id:* ${user.noId || "Tidak ada"}\n` +
-        `${side} ${btn} *Di Penjara:* ${user.jail ? "Iya" : "Tidak"}\n` +  
+        `${side} ${btn} *Di Penjara:* ${user.jail ? "Iya" : "Tidak"}\n` +
         `${foot}${garis}\n\n${claimText}`;
 
-      const defaultThumb = 'https://files.catbox.moe/6ylerz.jpg';
+      const defaultThumb = "https://files.catbox.moe/6ylerz.jpg";
       let thumbPp = defaultThumb;
 
       try {
-        thumbPp = await conn.profilePictureUrl(mention, 'image');
-      } catch (e) {
+        thumbPp = await conn.profilePictureUrl(mention, "image");
+      } catch {
         thumbPp = defaultThumb;
       }
 
-      await conn.sendMessage(chatId, {
-        text: profileText,
-        mentions: [mention],
-        contextInfo: {
-          externalAdReply: {
-            title: "Profile Info",
-            body: `Ini Adalah Profile ${pushName}`,
-            thumbnailUrl: thumbPp,
-            mediaType: 1,
-            renderLargerThumbnail: true,
+      await conn.sendMessage(
+        chatId,
+        {
+          text: profileText,
+          mentions: [mention],
+          contextInfo: {
+            externalAdReply: {
+              title: "Profile Info",
+              body: `Ini Adalah Profile ${pushName}`,
+              thumbnailUrl: thumbPp,
+              mediaType: 1,
+              renderLargerThumbnail: true,
+            },
+            mentionedJid: [mention],
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: idCh,
+            },
           },
-          mentionedJid: [mention],
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: idCh
-          }
-        }
-      }, { quoted: msg });
-
+        },
+        { quoted: msg }
+      );
     } catch (err) {
       console.error("Error di plugin profile.js:", err);
-      conn.sendMessage(chatId, {
-        text: "Terjadi kesalahan saat mengambil profil."
-      }, { quoted: msg });
+      conn.sendMessage(chatId, { text: "Terjadi kesalahan saat mengambil profil." }, { quoted: msg });
     }
   },
 };

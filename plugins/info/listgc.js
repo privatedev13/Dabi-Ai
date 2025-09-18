@@ -1,10 +1,10 @@
-module.exports = {
+export default {
   name: 'listgroup',
   command: ['listgc', 'listgroup'],
   tags: 'Info Menu',
   desc: 'Melihat semua grup yang bot masuki',
   prefix: true,
-  isPremium: true,
+  premium: true,
 
   run: async (conn, msg, {
     chatInfo,
@@ -14,8 +14,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     try {
       const groups = await conn.groupFetchAllParticipating();
       const groupList = Object.values(groups);

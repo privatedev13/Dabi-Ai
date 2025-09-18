@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'owner',
   command: ['owner', 'contact', 'admin'],
   tags: 'Info Menu',
@@ -6,24 +6,16 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, msg))) return;
+      const { chatId } = chatInfo;
       const owner = global.ownerName || 'Owner';
       const ownerNumber = global.contact;
       const bot = global.botName || 'Bot';
 
       if (!ownerNumber) {
         console.error('❌ ownerNumber tidak ditemukan. Pastikan config.json terisi dengan benar.');
-        await conn.sendMessage(chatId, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: msg });
-        return;
+        return conn.sendMessage(chatId, { text: 'Kontak owner tidak tersedia saat ini.' }, { quoted: msg });
       }
 
       const contactInfo = {
