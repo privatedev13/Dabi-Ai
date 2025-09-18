@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Create Store',
   command: ['ctoko'],
   tags: 'Shop Menu',
   desc: 'Create a store and save to toko.json',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

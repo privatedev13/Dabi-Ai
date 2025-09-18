@@ -1,7 +1,7 @@
-const fs = require('fs');
-const config = require('../../toolkit/set/config.json');
+import fs from 'fs';
+const config = '../../toolkit/set/config.json';
 
-module.exports = {
+export default {
   name: 'delbarang',
   command: ['delbarang', 'deleteitem', 'dropitem'],
   tags: 'Shop Menu',
@@ -17,8 +17,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const tokoName = args.shift();
     const itemName = args.join(' ').trim();
 

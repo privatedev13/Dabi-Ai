@@ -1,11 +1,12 @@
 const isNumber = x => !isNaN(x) && Number.isFinite(parseFloat(x));
 
-module.exports = {
+export default {
   name: 'Add Item',
   command: ['additem'],
   tags: 'Shop Menu',
   desc: 'Tambah item ke toko dengan potongan pajak',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

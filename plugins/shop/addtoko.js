@@ -1,22 +1,22 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-module.exports = {
+export default {
   name: 'addtoko',
   command: ['addtoko'],
   tags: 'Shop Menu',
   desc: 'Menambahkan toko',
   prefix: true,
   owner: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const tokoName = args.join(' ').trim();
+
     if (!tokoName) {
       return conn.sendMessage(chatId, { text: "Masukkan nama toko yang ingin ditambahkan!" }, { quoted: msg });
     }
@@ -32,7 +32,7 @@ module.exports = {
       return conn.sendMessage(chatId, { text: "Gagal membaca file toko.json" }, { quoted: msg });
     }
 
-    tokoData.storeSetting = tokoData.storeSetting || {};
+    tokoData.storeSetting ||= {};
 
     if (tokoData.storeSetting[tokoName]) {
       return conn.sendMessage(chatId, { text: "Toko sudah ada dalam daftar." }, { quoted: msg });
@@ -45,9 +45,9 @@ module.exports = {
 
     const tokoPluginPath = path.join(pluginFolder, `${tokoName}.js`);
     const tokoPluginCode = `
-const fs = require('fs');
+import fs from 'fs';
 
-module.exports = {
+export default {
   name: '${tokoName}',
   command: ['${tokoName}'],
   tags: 'Toko Menu',
@@ -56,8 +56,8 @@ module.exports = {
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
     const tokoPath = './toolkit/set/toko.json';
-    let tokoData;
 
+    let tokoData;
     try {
       tokoData = JSON.parse(fs.readFileSync(tokoPath, 'utf-8'));
     } catch {
@@ -65,7 +65,7 @@ module.exports = {
     }
 
     const items = tokoData.storeSetting['${tokoName}'];
-    if (!items || items.length === 0) {
+    if (!items?.length) {
       return conn.sendMessage(chatId, { text: "Toko ini belum memiliki barang." }, { quoted: msg });
     }
 

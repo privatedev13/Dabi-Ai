@@ -1,7 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-module.exports = {
+export default {
   name: 'settoko',
   command: ['settoko'],
   tags: 'Shop Menu',
@@ -17,8 +17,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const tokoName = args.shift();
     const itemName = args.shift();
     const itemPrice = args.shift();

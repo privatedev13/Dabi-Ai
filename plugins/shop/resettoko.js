@@ -1,7 +1,7 @@
-const fs = require('fs');
+import fs from 'fs';
 const tokoPath = './toolkit/set/toko.json';
 
-module.exports = {
+export default {
   name: 'resettoko',
   command: ['resettoko'],
   tags: 'Shop Menu',
@@ -18,8 +18,6 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, msg))) return;
-
       if (!fs.existsSync(tokoPath)) {
         return conn.sendMessage(chatId, { text: "❌ File toko.json tidak ditemukan." }, { quoted: msg });
       }
