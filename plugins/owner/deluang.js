@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'deluang',
   command: ['deluang'],
   tags: 'Owner Menu',
@@ -6,10 +6,13 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, { chatInfo, prefix, commandText, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix,
+    commandText,
+    args
+  }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
     if (args.length < 1 && !ctx) {
       return conn.sendMessage(chatId, {
@@ -18,7 +21,7 @@ module.exports = {
     }
 
     try {
-      intDB();
+      initDB();
       const db = getDB();
       let target = ctx?.mentionedJid?.[0] || ctx?.participant || null;
       let amount = parseInt(args.find(a => /^\d+$/.test(a)));

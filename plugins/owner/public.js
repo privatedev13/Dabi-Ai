@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const configPath = path.join(__dirname, '../../toolkit/set/config.json');
+import fs from 'fs';
+import path from 'path';
+const configPath = path.resolve('./toolkit/set/config.json');
 
-module.exports = {
+export default {
   name: 'public',
   command: ['public'],
   tags: 'Owner Menu',
@@ -17,8 +17,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const input = args[0]?.toLowerCase();
     if (!['on', 'off'].includes(input)) {
       return conn.sendMessage(chatId, { text: `⚠ Gunakan perintah:\n${prefix}${commandText} on/off\n\nStatus: ${global.public}` }, { quoted: msg });

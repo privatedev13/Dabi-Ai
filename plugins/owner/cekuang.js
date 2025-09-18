@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'Sebar Uang',
   command: ['sebaruang', 'ceksebaruang'],
   tags: 'Owner Menu',
@@ -13,7 +13,7 @@ module.exports = {
         text: '⏳ Sedang mengkalkulasi penyebaran uang...',
       }, { quoted: msg });
 
-      intDB();
+      initDB();
       const db = getDB().Private || {};
       const bank = loadBank();
       const saldoBank = bank.bank?.saldo || 0;

@@ -1,6 +1,6 @@
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 
-module.exports = {
+export default {
   name: 'Shell',
   command: ['sh', '$', 'shell'],
   tags: 'Owner Menu',
@@ -13,8 +13,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     if (args.length === 0) {
       return conn.sendMessage(chatId, { text: 'Masukkan perintah shell.' }, { quoted: msg });
     }

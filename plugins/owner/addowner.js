@@ -1,8 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, '../../toolkit/set/config.json');
 
-module.exports = {
+export default {
   name: 'addowner',
   command: ['addowner', 'adow'],
   tags: 'Owner Menu',
@@ -12,18 +16,12 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
-    prefix,
-    commandText,
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     let config;
     try {
-      const configData = fs.readFileSync(configPath, 'utf-8');
-      config = JSON.parse(configData);
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     } catch (err) {
       console.error('Gagal membaca config:', err);
       return conn.sendMessage(chatId, { text: 'Gagal membaca config.json' }, { quoted: msg });
@@ -34,8 +32,7 @@ module.exports = {
       return conn.sendMessage(chatId, { text: 'Masukkan nomor yang akan dijadikan owner' }, { quoted: msg });
     }
 
-    const number = await calNumber(rawInput);
-
+    const number = await normalizeNumber(rawInput);
     if (config.ownerSetting.ownerNumber.includes(number)) {
       return conn.sendMessage(chatId, { text: 'Nomor sudah terdaftar' }, { quoted: msg });
     }
@@ -43,11 +40,7 @@ module.exports = {
     config.ownerSetting.ownerNumber.push(number);
 
     try {
-      const fd = fs.openSync(configPath, 'w');
-      fs.writeFileSync(fd, JSON.stringify(config, null, 2), 'utf-8');
-      fs.fsyncSync(fd);
-      fs.closeSync(fd);
-
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
       conn.sendMessage(chatId, { text: `Nomor ${number} sudah ditambahkan sebagai owner` }, { quoted: msg });
     } catch (err) {
       console.error('Gagal menyimpan config:', err);

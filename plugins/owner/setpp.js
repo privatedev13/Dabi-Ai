@@ -1,7 +1,7 @@
-const fs = require("fs");
-const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
+import fs from 'fs';
+import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'setpp',
   command: ['setpp', 'setprofile'],
   tags: 'Owner Menu',
@@ -15,8 +15,6 @@ module.exports = {
     commandText
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const mtype = Object.keys(msg.message || {})[0];
     let media = null;
 

@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const configPath = path.join(__dirname, '../../toolkit/set/config.json');
+import fs from 'fs';
+import path from 'path';
+const configPath = path.resolve('./toolkit/set/config.json');
 
-module.exports = {
+export default {
   name: 'delowner',
   command: ['delowner', 'rmow'],
   tags: 'Owner Menu',
@@ -18,8 +18,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     let config;
     try {
       const configData = fs.readFileSync(configPath, 'utf-8');
@@ -34,7 +32,7 @@ module.exports = {
       return conn.sendMessage(chatId, { text: 'Masukkan nomor owner yang ingin dihapus' }, { quoted: msg });
     }
 
-    const number = await calNumber(rawInput);
+    const number = await normalizeNumber(rawInput);
     const index = config.ownerSetting.ownerNumber.indexOf(number);
     if (index === -1) {
       return conn.sendMessage(chatId, { text: 'Nomor tidak ditemukan dalam daftar owner' }, { quoted: msg });

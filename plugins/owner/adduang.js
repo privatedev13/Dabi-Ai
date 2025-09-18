@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'adduang',
   command: ['adduang'],
   tags: 'Owner Menu',
@@ -6,10 +6,13 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, { chatInfo, prefix, commandText, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix,
+    commandText,
+    args
+  }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
     if (args.length < 1 && !ctx) {
       return conn.sendMessage(chatId, {
@@ -18,7 +21,7 @@ module.exports = {
     }
 
     try {
-      intDB();
+      initDB();
       const db = getDB();
       let target = ctx?.mentionedJid?.[0] || ctx?.participant || null;
       let amount = parseInt(args.find(a => /^\d+$/.test(a)));
@@ -30,7 +33,7 @@ module.exports = {
         if (amt) amount = parseInt(amt);
       }
 
-      if (!target || !target.endsWith('@s.whatsapp.net')) {
+      if (!target?.endsWith('@s.whatsapp.net')) {
         return conn.sendMessage(chatId, { text: 'Nomor tidak valid atau tidak ditemukan!' }, { quoted: msg });
       }
 
@@ -39,7 +42,8 @@ module.exports = {
       }
 
       target = target.toLowerCase().trim();
-      const userKey = Object.keys(db.Private).find(k => (db.Private[k].Nomor || '').toLowerCase().trim() === target);
+      const userKey = Object.keys(db.Private)
+        .find(k => (db.Private[k].Nomor || '').toLowerCase().trim() === target);
 
       if (!userKey) {
         return conn.sendMessage(chatId, { text: 'Pengguna tidak ditemukan di database!' }, { quoted: msg });
@@ -59,5 +63,5 @@ module.exports = {
       console.error('Error adduang.js:', err);
       conn.sendMessage(chatId, { text: 'Terjadi kesalahan saat menambahkan uang!' }, { quoted: msg });
     }
-  },
+  }
 };

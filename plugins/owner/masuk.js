@@ -1,12 +1,13 @@
-const { isJidGroup } = require('@whiskeysockets/baileys');
+import { isJidGroup } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'masuk',
   command: ['masuk', 'gabung'],
   tags: 'Owner Menu',
   desc: 'Bot join grup',
   prefix: true,
-  isPremium: true,
+  premium: true,
+  owner: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,8 +17,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     let text = args.join(' ');
     if (!text && msg.message.extendedTextMessage?.contextInfo?.quotedMessage) {
       const q = msg.message.extendedTextMessage.contextInfo.quotedMessage;

@@ -1,7 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
 
-module.exports = {
+export default {
   name: 'autotyping',
   command: ['autotyping', 'at'],
   tags: 'Owner Menu',
@@ -16,9 +16,7 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
-    const configPath = path.join(__dirname, '../../toolkit/set/config.json');
+    const configPath = path.resolve('./toolkit/set/config.json');
     let config;
 
     try {

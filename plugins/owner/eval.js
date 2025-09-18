@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'Eval',
   command: ['>', '=>', '~>'],
   tags: 'Owner Menu',
@@ -8,35 +8,28 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
-    commandText,
-    args
+    args,
+    commandText
   }) => {
-    const { chatId, senderId, pushName } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
+    const { chatId } = chatInfo;
     const code = args.join(' ').trim();
-    if (!code) {
-      return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: msg });
-    }
+    if (!code) return conn.sendMessage(chatId, { text: '⚠️ Harap masukkan kode JavaScript yang ingin dijalankan!' }, { quoted: msg });
 
     try {
       let result;
+
       if (commandText === '~>') {
-        let outputLogs = [];
+        let logs = [];
         const originalLog = console.log;
-        console.log = (...args) => {
-          outputLogs.push(args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg))).join(' '));
-        };
+        console.log = (...v) => logs.push(v.map(x => typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x)).join(' '));
 
         result = await eval(`(async () => { ${code}; })()`);
         console.log = originalLog;
 
-        const logText = outputLogs.join('\n');
-        const resultText = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
-        const output = [logText, resultText].filter(Boolean).join('\n') || '✅ *Kode dijalankan tanpa output.*';
+        const output = [logs.join('\n'), typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)]
+          .filter(Boolean).join('\n') || '✅ *Kode dijalankan tanpa output.*';
 
-        await conn.sendMessage(chatId, { text: `✅ *Output:*\n\`\`\`${output}\`\`\`` }, { quoted: msg });
+        return conn.sendMessage(chatId, { text: `✅ *Output:*\n\`\`\`${output}\`\`\`` }, { quoted: msg });
 
       } else if (commandText === '=>') {
         result = await eval(`(async () => { return (${code}); })()`);
@@ -44,13 +37,8 @@ module.exports = {
         result = await eval(`(async () => { ${code}; })()`);
       }
 
-      if (commandText !== '~>') {
-        const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
-        const response = output && output !== 'undefined'
-          ? `${output}`
-          : '✅'
-        await conn.sendMessage(chatId, { text: response }, { quoted: msg });
-      }
+      const output = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+      await conn.sendMessage(chatId, { text: output && output !== 'undefined' ? output : '✅' }, { quoted: msg });
 
     } catch (err) {
       conn.sendMessage(chatId, { text: `❌ *Error:* ${err.message}` }, { quoted: msg });

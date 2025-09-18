@@ -1,7 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
 
-module.exports = {
+export default {
   name: 'autoread',
   command: ['autoread', 'ad'],
   tags: 'Owner Menu',
@@ -9,11 +9,13 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, { chatInfo, prefix, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix,
+    args
+  }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
-    const configPath = path.join(__dirname, '../../toolkit/set/config.json');
+    const configPath = path.resolve('./toolkit/set/config.json');
     let config;
 
     try {

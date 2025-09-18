@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'delbank',
   command: ['delbank'],
   tags: 'Owner Menu',
@@ -6,9 +6,11 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, { args, chatInfo }) => {
+  run: async (conn, msg, {
+    args,
+    chatInfo
+  }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
     try {
       if (args.length < 2)
         return conn.sendMessage(chatId, { text: `Format:\n.delbank saldo 500\n.delbank tax 2%` }, { quoted: msg });

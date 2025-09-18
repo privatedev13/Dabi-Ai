@@ -1,8 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import { fileURLToPath } from 'url';
 
-module.exports = {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default {
   name: 'update',
   command: ['update'],
   tags: 'Owner Menu',
@@ -15,7 +18,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
 
     if (args.length < 2) {
       return conn.sendMessage(chatId, { text: 'Format: .update file.js urlGithub' }, { quoted: msg });
@@ -34,14 +36,14 @@ module.exports = {
     }
 
     try {
-      const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) throw new Error('URL salah');
 
-      const raw = `https://raw.githubusercontent.com/${match[1]}/${match[2]}/main/${targetPath}`;
+      const rawUrl = `https://raw.githubusercontent.com/${match[1]}/${match[2]}/main/${targetPath}`;
       const resMsg = await conn.sendMessage(chatId, { text: 'Mengunduh file...' }, { quoted: msg });
       const statusMsg = resMsg.key;
 
-      https.get(raw, (res) => {
+      https.get(rawUrl, (res) => {
         if (res.statusCode !== 200) {
           return conn.sendMessage(chatId, {
             text: `Gagal download (${res.statusCode})`,
@@ -54,20 +56,10 @@ module.exports = {
         res.on('end', async () => {
           try {
             fs.writeFileSync(fullPath, data);
-            let note = '';
-
-            if (fullPath.includes('/plugins/')) {
-              try {
-                delete require.cache[require.resolve(fullPath)];
-                note = '\nPlugin dimuat ulang.';
-              } catch {
-                note = '\nGagal reload plugin.';
-              }
-            }
 
             await new Promise(r => setTimeout(r, 2000));
             await conn.sendMessage(chatId, {
-              text: `File diperbarui: ${targetPath}${note}`,
+              text: `File diperbarui: ${targetPath}`,
               edit: statusMsg
             }, { quoted: msg });
 
@@ -77,8 +69,7 @@ module.exports = {
               edit: statusMsg
             }, { quoted: msg });
 
-            await new Promise(r => setTimeout(r, 3000));
-            process.exit(1);
+            setTimeout(() => process.exit(1), 3000);
           } catch {
             await conn.sendMessage(chatId, {
               text: 'Gagal simpan file.',

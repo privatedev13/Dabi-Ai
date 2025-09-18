@@ -1,8 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const configPath = path.join(__dirname, "../../toolkit/set/config.json");
+import fs from 'fs';
+import path from 'path';
+const configPath = path.resolve("./toolkit/set/config.json");
 
-module.exports = {
+export default {
   name: 'setname',
   command: ['setname', 'setfullname'],
   tags: 'Owner Menu',
@@ -18,8 +18,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     const newName = args.join(" ");
     if (!newName) {
       return conn.sendMessage(chatId, { text: "Masukkan nama baru." }, { quoted: msg });

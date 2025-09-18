@@ -1,6 +1,6 @@
-const fs = require('fs');
+import fs from 'fs';
 
-module.exports = {
+export default {
   name: 'unbanchat',
   command: ['unbanned', 'unban'],
   tags: 'Owner Menu',
@@ -8,15 +8,16 @@ module.exports = {
   prefix: true,
   owner: true,
 
-  run: async (conn, msg, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args
+  }) => {
     const { chatId, senderId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     try {
       if (!args[0] && !msg.message?.extendedTextMessage?.contextInfo)
         return conn.sendMessage(chatId, { text: 'Reply/tag atau tulis nomor untuk diunbanned' }, { quoted: msg });
 
-      const nomorTarget = args[0] ? await calNumber(args[0]) : await calNumber(target(msg, senderId));
+      const nomorTarget = args[0] ? await normalizeNumber(args[0]) : await normalizeNumber(target(msg, senderId));
       const dbData = getDB();
       let found = false;
 
