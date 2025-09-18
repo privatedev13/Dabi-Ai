@@ -1,159 +1,191 @@
-const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-const chalk = require('chalk');
-const { exec } = require('child_process');
+import fs from "fs";
+import path from "path";
+import vm from "vm";
+import chalk from "chalk";
+import fetch from "node-fetch";
+import { exec } from "child_process";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const memoryCache = {};
 const groupCache = new Map();
 
-const sesiBell = path.join(__dirname, '../temp/BellaSession.json');
-const sesiAi = path.join(__dirname, '../temp/AiSesion.json');
+const sesiBell = path.join(__dirname, "../temp/BellaSession.json");
+const sesiAi = path.join(__dirname, "../temp/AiSesion.json");
+
+const loadSession = async file =>
+  (await fs.readFile(file, "utf8").catch(() => null)) ? JSON.parse(await fs.readFile(file, "utf8")) : {};
+
+const saveSession = (file, session) =>
+  fs.writeFile(file, JSON.stringify(session, null, 2));
+
+const fetchJSON = async (url, options = {}) => {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+};
+
+const fetchBuffer = async url => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return Buffer.from(await res.arrayBuffer());
+};
 
 function replaceLid(obj, visited = new WeakSet()) {
   if (!obj) return obj;
 
-  if (typeof obj === 'object') {
+  if (typeof obj === "object") {
     if (visited.has(obj)) return obj;
     visited.add(obj);
 
     if (Array.isArray(obj)) return obj.map(i => replaceLid(i, visited));
     if (Buffer.isBuffer(obj) || obj instanceof Uint8Array) return obj;
 
-    for (const k in obj) obj[k] = replaceLid(obj[k], visited);
+    for (const k in obj) {
+      obj[k] = replaceLid(obj[k], visited);
+    }
     return obj;
   }
 
-  if (typeof obj === 'string') {
-    if (obj.endsWith('@lid')) {
-      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === obj);
-      return phone ? `${phone}@s.whatsapp.net` : obj;
+  if (typeof obj === "string") {
+    if (/@lid$/.test(obj)) {
+      const phone = Object.entries(global.lidCache ?? {}).find(([, v]) => v === obj)?.[0];
+      if (phone) {
+        return `${phone}@s.whatsapp.net`;
+      }
     }
-    obj = obj.replace(/@(\d+)(?!@)/g, (m, lid) => {
-      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${lid}@lid`);
-      return phone ? `@${phone}` : m;
-    });
-    return obj.replace(/@(\d+)@lid/g, (_, id) => {
-      const phone = Object.keys(global.lidCache).find(k => global.lidCache[k] === `${id}@lid`);
-      return phone ? `@${phone}` : `@${id}@lid`;
-    });
+
+    return obj
+      .replace(/@(\d+)@lid/g, (_, id) => {
+        const phone = Object.entries(global.lidCache ?? {}).find(([, v]) => v === `${id}@lid`)?.[0];
+        return phone ? `@${phone}` : `@${id}@lid`;
+      })
+      .replace(/@(\d+)(?!@)/g, (m, lid) => {
+        const phone = Object.entries(global.lidCache ?? {}).find(([, v]) => v === `${lid}@lid`)?.[0];
+        return phone ? `@${phone}` : m;
+      });
   }
 
   return obj;
 }
 
-function loadSession(file) {
-  if (!fs.existsSync(file)) return {};
-  return JSON.parse(fs.readFileSync(file));
-}
-
-function saveSession(file, session) {
-  fs.writeFileSync(file, JSON.stringify(session, null, 2));
-}
-
 async function bell(body) {
   try {
-    const res = await fetch(`${termaiWeb}/api/chat/logic-bell?key=${termaiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    return await fetchJSON(`${termaiWeb}/api/chat/logic-bell?key=${termaiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    return await res.json();
   } catch (e) {
-    console.error(chalk.red('Request Error:'), e.message);
-    return { status: false, msg: 'Request gagal terkirim.' };
+    console.error(chalk.red("Request Error:"), e.message);
+    return { status: false, msg: "Request gagal terkirim." };
   }
 }
 
 async function Elevenlabs(text, voice = "dabi", pitch = 0, speed = 0.9) {
   try {
-    const response = await fetch(`${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`);
-    if (!response.ok) throw new Error(`Error: ${response.status} ${response.statusText}`);
-    return await response.arrayBuffer();
-  } catch (error) {
-    console.error('Fetch error:', error);
+    return await fetchBuffer(
+      `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=${pitch}&speed=${speed}&key=${termaiKey}`
+    );
+  } catch (e) {
+    console.error("Fetch error:", e.message);
     return null;
   }
 }
 
 async function logicBella(text, msg, senderId, conn) {
-  const session = loadSession(sesiBell);
-
+  const session = await loadSession(sesiBell);
   const res = await bell({
     text,
     id: senderId,
     fullainame: botFullName,
     nickainame: botName,
-    senderName: msg.pushName || 'Unknown',
+    senderName: msg.pushName ?? "Unknown",
     ownerName,
     date: new Date().toISOString(),
     role: "Sahabat Deket",
     msgtype: "text",
     custom_profile: logic,
-    commands: [{
-      description: "Jika perlu direspon dengan suara",
-      output: {
-        cmd: "voice",
-        msg: "Pesan di sini. Gunakan gaya bicara <nickainame> yang menarik dan realistis, lengkap dengan tanda baca yang tepat agar terdengar hidup saat diucapkan."
-      }
-    }]
+    commands: [{ description: "Jika perlu direspon dengan suara", output: { cmd: "voice", msg: "Pesan di sini..." } }]
   });
-  console.log(res);
-  console.log(bell);
 
   if (!res.status) {
-    console.error('Bella response failed:', res.msg);
-    return { cmd: 'text', msg: `Maaf, Bella lagi error. Coba lagi nanti ya.` };
+    console.error("Bella response failed:", res.msg);
+    return { cmd: "text", msg: "Maaf, Bella lagi error. Coba lagi nanti ya." };
   }
 
   const { msg: replyMsg, cmd } = res.data;
+  (session[senderId] ??= []).push({
+    time: new Date().toISOString(),
+    user: text,
+    response: replyMsg,
+    cmd
+  });
+  await saveSession(sesiBell, session);
 
-  session[senderId] ??= [];
-  session[senderId].push({ time: new Date().toISOString(), user: text, response: replyMsg, cmd });
-  saveSession(sesiBell, session);
-
-  if (cmd === 'voice') {
+  if (cmd === "voice") {
     const audio = await Elevenlabs(replyMsg);
-    return { cmd: 'voice', msg: replyMsg, audio };
+    return { cmd: "voice", msg: replyMsg, audio };
   }
-
   return { cmd, msg: replyMsg };
 }
 
 async function ai(textMessage, msg, senderId) {
-  const ctx = global.logic;
-  const url = `${global.siptzKey}/api/ai/gpt3`;
-  const ses = loadSession(sesiAi);
-
-  ses[senderId] ??= [{ role: "system", content: ctx }];
-  ses[senderId].push({ role: 'user', content: textMessage });
-
-  const body = JSON.stringify(ses[senderId].filter(v => v.role !== 'assistant'));
+  const ses = await loadSession(sesiAi);
+  ses[senderId] ??= [{ role: "system", content: global.logic }];
+  ses[senderId].push({ role: "user", content: textMessage });
 
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body
+    const res = await fetchJSON(`${global.siptzKey}/api/ai/gpt3`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ses[senderId].filter(v => v.role !== "assistant"))
     });
-
-    const json = await res.json();
-    if (json?.status && json?.data) {
-      ses[senderId].push({ role: "assistant", content: json.data });
-      saveSession(sesiAi, ses);
-      return json.data;
+    if (res?.status && res?.data) {
+      ses[senderId].push({ role: "assistant", content: res.data });
+      await saveSession(sesiAi, ses);
+      return res.data;
     }
     throw new Error("Invalid response");
   } catch (e) {
-    console.error(chalk.redBright.bold('Ai Error: ', e.message));
+    console.error(chalk.redBright.bold("Ai Error:", e.message));
     return "Maaf, terjadi kesalahan saat menghubungi AI.";
   }
 }
 
-async function mtData(id, conn, retry = 2) {
+const voiceList = new Set([
+  "prabowo","yanzgpt","bella","megawati","echilling","adam","thomas_shelby",
+  "michi_jkt48","nokotan","jokowi","boboiboy","keqing","anya","yanami_anna",
+  "MasKhanID","Myka","raiden","CelzoID","dabi"
+]);
+
+async function labvn(message, msg, conn, chatId, prefix = ".") {
+  if (!message?.startsWith(prefix)) return;
+  const [cmd, ...args] = message.slice(prefix.length).trim().split(/\s+/);
+  const voice = cmd.toLowerCase();
+  if (!voiceList.has(voice)) return;
+  if (!(await isPrem({ premium: true }, conn, msg))) return;
+
+  const text = args.join(" ").trim();
+  if (!text) return;
+
+  try {
+    const audio = await fetchBuffer(
+      `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=0&speed=0.9&key=${termaiKey}`
+    );
+    await conn.sendMessage(chatId, { audio, mimetype: "audio/mp4", ptt: true }, { quoted: msg });
+  } catch (err) {
+    console.error(err);
+    await conn.sendMessage(chatId, { text: "⚠️ *Gagal membuat suara!*" }, { quoted: msg });
+  }
+}
+
+async function getMetadata(id, conn, retry = 2) {
   if (!global.groupCache) global.groupCache = new Map();
-  if (global.groupCache.has(id)) return global.groupCache.get(id);
+  if (global.groupCache.has(id)) {
+    return global.groupCache.get(id);
+  }
 
   try {
     const metadata = await conn.groupMetadata(id);
@@ -162,157 +194,138 @@ async function mtData(id, conn, retry = 2) {
     return metadata;
   } catch (e) {
     if (retry > 0) {
-      console.warn(`Gagal ambil metadata grup, coba ulang... (${3 - retry}/2)`, e?.message);
       await new Promise(r => setTimeout(r, 1000));
-      return mtData(id, conn, retry - 1);
+      return getMetadata(id, conn, retry - 1);
     }
-    console.error('Gagal ambil metadata grup setelah percobaan ulang:', e);
     return null;
   }
 }
 
-async function saveLid(meta) {
-  for (const p of meta?.participants || []) {
-    const phone = p.phoneNumber?.replace(/@.*/, '');
-    const lid = p.id?.endsWith('@lid') ? p.id : null;
-    if (phone && lid) global.lidCache[phone] = lid;
+async function saveLidCache(metadata) {
+  for (const participant of metadata?.participants || []) {
+    const phone = participant.phoneNumber?.replace(/@.*/, "");
+    const lid = participant.id?.endsWith("@lid") ? participant.id : null;
+
+    if (phone && lid) {
+      global.lidCache[phone] = lid;
+    }
   }
 }
 
-async function gbLink(text) {
+async function isGroupLink(text) {
   if (!text) return false;
-  const regex = /https?:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{15,20}/i;
-  return regex.test(text);
+  return /https?:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{15,20}/i.test(text);
 }
 
-async function gcFilter(conn, msg, chatId, senderId, isGroup) {
+async function groupFilter(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const groupData = gcData(getDB(), chatId);
+    const groupData = getGc(getDB(), chatId);
     if (!groupData || !groupData.gbFilter) return;
 
-    const { userAdmin, botNumber } = await stGrup(conn, chatId, senderId);
-    const fromMe = senderId === botNumber || msg.key?.fromMe;
+    const { userAdmin, botNumber } = await exGrup(conn, chatId, senderId);
+    const isFromBot = senderId === botNumber || msg.key?.fromMe;
+    if (userAdmin || isFromBot) return;
 
-    if (userAdmin || fromMe) return;
+    let textMessage =
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      "";
+    const messageType = Object.keys(msg.message || {})[0];
+    const isTaggedStatus = Boolean(msg.message?.groupStatusMentionMessage);
+    if (isTaggedStatus) textMessage = "Grup ini disebut dalam status";
 
-    let textMessage = msg.message?.conversation 
-      || msg.message?.extendedTextMessage?.text 
-      || '';
-    const msgType = Object.keys(msg.message || {})[0];
-
-    const isTagSw = Boolean(msg.message?.groupStatusMentionMessage);
-    if (isTagSw) textMessage = 'Grup ini disebut dalam status';
-
-    const checks = [
-      {
-        enabled: groupData.gbFilter?.link?.antilink,
-        condition: await gbLink(textMessage),
-        reason: 'Link grup terdeteksi',
-      },
-      {
-        enabled: groupData.gbFilter?.stiker?.antistiker,
-        condition: msgType === 'stickerMessage',
-        reason: 'Stiker terdeteksi',
-      },
+    const filters = [
+      { enabled: groupData.gbFilter?.link?.antilink, condition: await isGroupLink(textMessage), reason: "Link grup terdeteksi" },
+      { enabled: groupData.gbFilter?.stiker?.antistiker, condition: messageType === "stickerMessage", reason: "Stiker terdeteksi" },
       {
         enabled: groupData.gbFilter?.antibot === true,
         condition: (() => {
           const context = msg.message?.contextInfo || {};
-          const fwdScore = context.forwardingScore || 0;
-          const isForwardedFromChannel = !!context.externalAdReply || context.forwardedNewsletterMessage != null;
-          const isForwarded = fwdScore > 0 || isForwardedFromChannel;
-          const hasMenuWords = /menu|owner|allmenu/i.test(textMessage);
-
-          const isDoc = msgType === 'documentMessage';
-          return isForwarded || hasMenuWords || isDoc;
+          const forwardingScore = context.forwardingScore || 0;
+          const forwardedFromChannel = !!context.externalAdReply || context.forwardedNewsletterMessage != null;
+          const isForwarded = forwardingScore > 0 || forwardedFromChannel;
+          const hasMenuKeywords = /menu|owner|allmenu/i.test(textMessage);
+          const isDocument = messageType === "documentMessage";
+          return isForwarded || hasMenuKeywords || isDocument;
         })(),
-        reason: 'Deteksi konten mencurigakan',
+        reason: "Deteksi konten mencurigakan",
       },
-      {
-        enabled: groupData.gbFilter?.antiTagSw === true,
-        condition: isTagSw,
-        reason: 'Tag status terdeteksi',
-      }
+      { enabled: groupData.gbFilter?.antiTagSw === true, condition: isTaggedStatus, reason: "Tag status terdeteksi" },
     ];
 
-    for (const check of checks) {
-      if (check.enabled && check.condition) {
-        await conn.sendMessage(chatId, {
-          text: `🚫 ${check.reason} dari @${senderId.split('@')[0]}!\nPesan akan dihapus.`,
-          mentions: [senderId],
-        }, { quoted: msg });
-
+    for (const filter of filters) {
+      if (filter.enabled && filter.condition) {
+        await conn.sendMessage(
+          chatId,
+          { text: `🚫 ${filter.reason} dari @${senderId.split("@")[0]}!\nPesan akan dihapus.`, mentions: [senderId] },
+          { quoted: msg }
+        );
         await conn.sendMessage(chatId, { delete: msg.key });
         return true;
       }
     }
-
-  } catch (err) {
-    console.error('Error GroupFilter:', err);
+  } catch (error) {
+    console.error("Error in groupFilter:", error);
   }
 }
 
-async function tryPrem(senderId) {
+async function claimTrial(senderId) {
   try {
     const user = getUser(senderId);
-
-    if (!user) return { success: false, message: 'Pengguna belum terdaftar.', claimable: false };
-    if (user.value.claim) return { success: false, message: '⚠️ Sudah pernah claim trial.', claimable: false };
+    if (!user) return { success: false, message: "Pengguna belum terdaftar.", claimable: false };
+    if (user.value.claim) return { success: false, message: "⚠️ Sudah pernah claim trial.", claimable: false };
 
     const { key, db } = user;
     const now = Date.now();
-    const claimPrem = 3 * 24 * 60 * 60 * 1000;
-    const remainPrem = db.Private[key].isPremium?.time || 0;
+    const trialDuration = 3 * 24 * 60 * 60 * 1000;
+    const remainingPremium = db.Private[key].isPremium?.time || 0;
 
-    db.Private[key].isPremium = {
-      isPrem: true,
-      time: remainPrem + claimPrem,
-      activatedAt: now
-    };
-
+    db.Private[key].isPremium = { isPrem: true, time: remainingPremium + trialDuration, activatedAt: now };
     db.Private[key].claim = true;
     saveDB(db);
 
-    return { success: true, message: '✅ Trial Premium 3 hari ditambahkan.', claimable: false };
-  } catch (e) {
-    console.error('tryPrem error:', e);
-    return { success: false, message: 'Terjadi kesalahan.', claimable: false };
+    return { success: true, message: "✅ Trial Premium 3 hari ditambahkan.", claimable: false };
+  } catch (error) {
+    console.error("claimTrial error:", error);
+    return { success: false, message: "Terjadi kesalahan.", claimable: false };
   }
 }
 
-async function translate(q, tl = 'id') {
+async function translateText(text, targetLang = "id") {
   try {
-    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=${tl}&q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    return data[0].map(item => item[0]).join('');
-  } catch (err) {
-    console.error('Error during translation:', err);
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=${targetLang}&q=${encodeURIComponent(text)}`
+    );
+    const data = await response.json();
+    return data[0].map(item => item[0]).join("");
+  } catch (error) {
+    console.error("Error during translation:", error);
     return null;
   }
 }
 
-async function colNumb(input) {
-  let number = input.replace(/\D/g, '');
-  return number.startsWith('0') ? '62' + number.slice(1) : number;
+async function normalizeNumber(input) {
+  const digits = input.replace(/\D/g, "");
+  return digits.startsWith("0") ? "62" + digits.slice(1) : digits;
 }
 
-async function bdWord(conn, msg, chatId, senderId, isGroup) {
+async function badwordFilter(conn, msg, chatId, senderId, isGroup) {
   if (!isGroup) return;
 
   try {
-    const group = gcData(getDB(), chatId);
+    const group = getGc(getDB(), chatId);
     if (!group?.antibadword?.badword) return;
 
-    const { userAdmin, botNumber } = await stGrup(conn, chatId, senderId);
-    const fromMe = senderId === botNumber || msg.key?.fromMe;
-    if (userAdmin || fromMe) return;
+    const { userAdmin, botNumber } = await exGrup(conn, chatId, senderId);
+    const isFromBot = senderId === botNumber || msg.key?.fromMe;
+    if (userAdmin || isFromBot) return;
 
     const badwords = group.antibadword.badwordText
       ?.toLowerCase()
-      .split(',')
-      .map(v => v.trim())
+      .split(",")
+      .map(word => word.trim())
       .filter(Boolean);
 
     if (!badwords?.length) return;
@@ -322,168 +335,141 @@ async function bdWord(conn, msg, chatId, senderId, isGroup) {
       msg.message?.extendedTextMessage?.text ||
       msg.message?.imageMessage?.caption ||
       msg.message?.videoMessage?.caption ||
-      ''
+      ""
     ).toLowerCase();
 
-    if (badwords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(text))) {
+    if (badwords.some(word => new RegExp(`\\b${word}\\b`, "i").test(text))) {
       await conn.sendMessage(
         chatId,
-        {
-          text: `⚠️ Pesan dari @${senderId.split('@')[0]} mengandung kata terlarang.\nPesan akan dihapus.`,
-          mentions: [senderId]
-        },
+        { text: `⚠️ Pesan dari @${senderId.split("@")[0]} mengandung kata terlarang.\nPesan akan dihapus.`, mentions: [senderId] },
         { quoted: msg }
       );
-
       await conn.sendMessage(chatId, { delete: msg.key });
     }
-  } catch (err) {
-    console.error('[bdWord] Error:', err);
+  } catch (error) {
+    console.error("[badwords] Error:", error);
   }
 }
 
-async function afkCencel(senderId, chatId, msg, conn) {
-  const user = getUser(senderId);
-  if (!user?.value?.afk?.afkTime) return;
+async function cancelAfk(senderId, chatId, msg, conn) {
+  try {
+    if (!senderId) return;
 
-  const { afkTime, reason = 'Tidak ada alasan' } = user.value.afk;
-  const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
+    const user = getUser(senderId);
+    if (!user || !user?.value?.afk?.afkTime) return;
 
-  user.value.afk = {};
-  saveDB();
+    const { afkTime, reason = 'Tidak ada alasan' } = user.value.afk;
+    if (typeof afkTime !== 'number' || afkTime <= 0) return;
 
-  await conn.sendMessage(chatId, {
-    text: `✅ *Kamu telah kembali dari AFK!*\n⏱️ Durasi: ${waktu}\n📌 Alasan sebelumnya: ${reason}`,
-    mentions: [senderId]
-  }, { quoted: msg });
+    const duration = Format.duration(afkTime, Date.now()) || 'Baru saja';
+
+    user.value.afk = {};
+    saveDB();
+
+    await conn.sendMessage(
+      chatId,
+      {
+        text: `✅ *Kamu telah kembali dari AFK!*\n⏱️ Durasi: ${duration}\n📌 Alasan sebelumnya: ${reason}`,
+        mentions: [senderId],
+      },
+      { quoted: msg }
+    );
+  } catch (error) {
+    throw error;
+  }
 }
 
-async function afkTgR(msg, conn) {
-  const botNumber = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
+async function afkTag(msg, conn) {
+  const botId = (conn.user?.id || '').split(':')[0] + '@s.whatsapp.net';
   const { remoteJid: chatId, participant, fromMe } = msg.key;
-  const sender = participant || chatId;
-  if (fromMe || sender === botNumber) return;
+  const senderId = participant || chatId;
+  if (fromMe || senderId === botId) return;
 
   const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
   const targets = [...(ctx.mentionedJid || []), ctx.participant]
-    .filter(jid => jid && jid !== botNumber);
+    .filter(jid => jid && jid !== botId);
 
-  for (const jid of targets) {
-    const user = getUser(jid);
-    if (!user?.value?.afk?.afkTime) continue;
+  for (const targetId of targets) {
+    const targetUser = getUser(targetId);
+    if (!targetUser?.value?.afk?.afkTime) continue;
 
-    const { afkTime, reason = 'Tidak ada alasan' } = user.value.afk;
-    const waktu = Format.duration(afkTime, Date.now()) || 'Baru saja';
-    const type = jid === ctx.participant ? 'reply' : 'mention';
+    const { afkTime, reason = 'Tidak ada alasan' } = targetUser.value.afk;
+    const duration = Format.duration(afkTime, Date.now()) || 'Baru saja';
+    const type = targetId === ctx.participant ? 'reply' : 'mention';
 
-    const text =
-      type === 'reply'
-        ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`
-        : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${waktu}\n📌 Alasan: ${reason}`;
+    const text = type === 'reply'
+      ? `*Jangan ganggu dia!*\nOrang yang kamu reply sedang AFK.\n⏱️ Durasi: ${duration}\n📌 Alasan: ${reason}`
+      : `*Jangan tag dia!*\nOrang yang kamu tag sedang AFK.\n⏱️ Durasi: ${duration}\n📌 Alasan: ${reason}`;
 
-    await conn.sendMessage(chatId, { text, mentions: [jid] }, { quoted: msg });
+    await conn.sendMessage(chatId, { text, mentions: [targetId] }, { quoted: msg });
   }
 }
 
-const funcUrl = 'https://raw.githubusercontent.com/MaouDabi0/Dabi-Ai-Documentation/main/assets/funcFile/function.js';
-
-const loadFunc = async () => {
-  const response = await fetch(funcUrl);
-  const code = await response.text();
-
-  const sandbox = { module: {}, exports: {}, require, console };
-  vm.createContext(sandbox);
-  vm.runInContext(code, sandbox);
-
-  return sandbox.module.exports;
-};
+async function loadFunctions() {
+  const funcUrl = "https://www.dabilines.my.id/lib/js/func.js";
+  const code = await fetch(funcUrl).then(r => r.text());
+  const dataUrl = "data:text/javascript;base64," + Buffer.from(code).toString("base64");
+  const mod = await import(dataUrl);
+  const funcs = mod.default;
+  Object.assign(global, funcs);
+  return funcs;
+}
 
 const cache = {
   set: (key, value) => (memoryCache[key] = value),
   get: key => memoryCache[key],
   delete: key => delete memoryCache[key],
   reset: () => {
-    for (const key in memoryCache) delete memoryCache[key];
-    console.log(chalk.yellowBright.bold(`[ CACHE ] Semua cache dihapus dari memori pada ${new Date().toLocaleString()}`));
-  }
+    Object.keys(memoryCache).forEach(key => delete memoryCache[key]);
+    console.log(chalk.yellowBright.bold(
+      `[ CACHE ] Semua cache dibersihkan pada ${new Date().toLocaleString()}`
+    ));
+  },
 };
 
-setInterval(cache.reset, 60 * 60 * 1000);
+setInterval(() => cache.reset(), 60 * 60 * 1000);
 cache.reset();
 
-async function getStId(msg) {
+async function getStanzaId(msg) {
   try {
-    const stanzaId = msg?.message?.extendedTextMessage?.contextInfo?.stanzaId || null
-    return stanzaId
+    return msg?.message?.extendedTextMessage?.contextInfo?.stanzaId || null;
   } catch (err) {
     console.error('Gagal mengambil stanzaId:', err);
-    return null
+    return null;
   }
 }
 
-const voiceList = new Set([
-  'prabowo','yanzgpt','bella','megawati','echilling','adam','thomas_shelby',
-  'michi_jkt48','nokotan','jokowi','boboiboy','keqing','anya','yanami_anna',
-  'MasKhanID','Myka','raiden','CelzoID', 'dabi'
-]);
-
-async function labvn(message, msg, conn, chatId, prefix = '.') {
-  if (!message?.startsWith(prefix)) return;
-
-  const [cmd, ...args] = message.slice(prefix.length).trim().split(/\s+/);
-  const voice = cmd.toLowerCase();
-  if (!voiceList.has(voice)) return;
-
-  if (!(await isPrem({ premium: true }, conn, msg))) return;
-
-  const text = args.join(' ').trim();
-  if (!text) return;
-
-  try {
-    const url = `${termaiWeb}/api/text2speech/elevenlabs?text=${encodeURIComponent(text)}&voice=${voice}&pitch=0&speed=0.9&key=${termaiKey}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const audio = Buffer.from(await res.arrayBuffer());
-    await conn.sendMessage(chatId, { audio, mimetype: 'audio/mp4', ptt: true }, { quoted: msg });
-  } catch (err) {
-    console.error(err);
-    await conn.sendMessage(chatId, { text: '⚠️ *Gagal membuat suara!*' }, { quoted: msg });
-  }
-}
-
-function msgDate(msg) {
+function messageContent(msg) {
   let textMessage = '';
   let mediaInfo = '';
 
   if (!msg?.message) return { textMessage, mediaInfo };
 
-  const m = msg.message;
+  const content = msg.message;
 
-  if (m.groupStatusMentionMessage) {
+  if (content.groupStatusMentionMessage) {
     mediaInfo = '[ Status Grup ]';
     textMessage = 'Grup ini disebut dalam status';
   }
 
-  if (m.conversation) {
-    textMessage = m.conversation;
-  } else if (m.extendedTextMessage?.text) {
-    textMessage = m.extendedTextMessage.text;
-  } else if (m.imageMessage?.caption) {
-    textMessage = m.imageMessage.caption;
-  } else if (m.videoMessage?.caption) {
-    textMessage = m.videoMessage.caption;
-  } else if (m.reactionMessage) {
-    const reactedText = m.reactionMessage.text;
-    textMessage = `Memberi reaksi ${reactedText}`;
-  } else if (m.protocolMessage?.type === 14) {
+  if (content.conversation) {
+    textMessage = content.conversation;
+  } else if (content.extendedTextMessage?.text) {
+    textMessage = content.extendedTextMessage.text;
+  } else if (content.imageMessage?.caption) {
+    textMessage = content.imageMessage.caption;
+  } else if (content.videoMessage?.caption) {
+    textMessage = content.videoMessage.caption;
+  } else if (content.reactionMessage) {
+    textMessage = `Memberi reaksi ${content.reactionMessage.text}`;
+  } else if (content.protocolMessage?.type === 14) {
     textMessage = `Pesan Diedit ${textMessage}`;
-  } else if (m.protocolMessage?.type === 0) {
+  } else if (content.protocolMessage?.type === 0) {
     textMessage = 'Pesan Dihapus';
-  } else if (m.ephemeralMessage?.message?.conversation) {
-    textMessage = m.ephemeralMessage.message.conversation;
-  } else if (m.ephemeralMessage?.message?.extendedTextMessage?.text) {
-    textMessage = m.ephemeralMessage.message.extendedTextMessage.text;
+  } else if (content.ephemeralMessage?.message?.conversation) {
+    textMessage = content.ephemeralMessage.message.conversation;
+  } else if (content.ephemeralMessage?.message?.extendedTextMessage?.text) {
+    textMessage = content.ephemeralMessage.message.extendedTextMessage.text;
   }
 
   const mediaTypes = {
@@ -498,13 +484,13 @@ function msgDate(msg) {
     liveLocationMessage: 'Lokasi Live',
     reactionMessage: 'Reaksi',
     protocolMessage: 'Sistem',
-    ephemeralMessage: 'Sekali Lihat'
+    ephemeralMessage: 'Sekali Lihat',
   };
 
   for (const [key, value] of Object.entries(mediaTypes)) {
-    if (m[key]) mediaInfo = value;
-    if (key === 'ephemeralMessage' && m.ephemeralMessage?.message) {
-      const nestedKey = Object.keys(m.ephemeralMessage.message)[0];
+    if (content[key]) mediaInfo = value;
+    if (key === 'ephemeralMessage' && content.ephemeralMessage?.message) {
+      const nestedKey = Object.keys(content.ephemeralMessage.message)[0];
       if (nestedKey && mediaTypes[nestedKey]) mediaInfo = mediaTypes[nestedKey];
     }
   }
@@ -512,58 +498,62 @@ function msgDate(msg) {
   return { textMessage, mediaInfo };
 }
 
-const userSpam = {};
+const spamTracker = {};
 
 async function checkSpam(senderId, conn, chatId, msg) {
   const user = getUser(senderId);
   if (!user) return false;
 
   const now = Date.now();
-  const key = user.key;
+  const userKey = user.key;
 
-  if (!userSpam[key]) {
-    userSpam[key] = { count: 1, last: now };
+  if (!spamTracker[userKey]) {
+    spamTracker[userKey] = { count: 1, last: now };
     return false;
   }
 
-  const diff = now - userSpam[key].last;
+  const diff = now - spamTracker[userKey].last;
 
   if (diff <= 3000) {
-    userSpam[key].count++;
-    userSpam[key].last = now;
+    spamTracker[userKey].count++;
+    spamTracker[userKey].last = now;
 
-    if (userSpam[key].count >= 3) {
-      await conn.sendMessage(chatId, { text: "Jangan spam" }, { quoted: msg });
-      userSpam[key].count = 0;
+    if (spamTracker[userKey].count >= 3) {
+      await conn.sendMessage(chatId, { text: '⚠️ Jangan spam!' }, { quoted: msg });
+      spamTracker[userKey].count = 0;
       return true;
     }
   } else if (diff > 7000) {
-    userSpam[key] = { count: 1, last: now };
+    spamTracker[userKey] = { count: 1, last: now };
   } else {
-    userSpam[key].last = now;
+    spamTracker[userKey].last = now;
   }
 
   return false;
 }
 
-module.exports = {
-  ai,
-  mtData,
-  gbLink,
-  gcFilter,
-  tryPrem,
-  translate,
-  colNumb,
-  bdWord,
-  afkCencel,
-  afkTgR,
-  loadFunc,
-  cache,
-  getStId,
-  logicBella,
-  labvn,
-  msgDate,
-  saveLid,
+const emtData = {
   replaceLid,
+  bell,
+  Elevenlabs,
+  logicBella,
+  ai,
+  labvn,
+  getMetadata,
+  saveLidCache,
+  isGroupLink,
+  groupFilter,
+  claimTrial,
+  translateText,
+  normalizeNumber,
+  badwordFilter,
+  cancelAfk,
+  afkTag,
+  loadFunctions,
+  cache,
+  getStanzaId,
+  messageContent,
   checkSpam
 };
+
+export default emtData;

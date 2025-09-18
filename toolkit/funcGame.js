@@ -1,38 +1,67 @@
-const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const p = path.join(__dirname, './db/game.json');
-const tokoPath = path.join(__dirname, './db/datatoko.json');
-const bankPath = path.join(__dirname, './db/bank.json');
-const storePath = path.join(__dirname, './set/toko.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const readJSON = (file, def = {}) => fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : def;
-const writeJSON = (file, data) => fs.writeFileSync(file, JSON.stringify(data, null, 2));
+const p = path.join(__dirname, "./db/game.json");
+const tokoPath = path.join(__dirname, "./db/datatoko.json");
+const bankPath = path.join(__dirname, "./db/bank.json");
+const storePath = path.join(__dirname, "./set/toko.json");
 
-const load = () => {
+if (!fs.existsSync(p)) {
+  fs.writeFileSync(
+    p,
+    JSON.stringify(
+      { FunctionGame: {}, tca: { user: {} }, historyGame: {} },
+      null,
+      2
+    )
+  );
+}
+
+const readJSON = (file, def = {}) =>
+  fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : def;
+
+const writeJSON = (file, data) =>
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+
+export const load = () => {
   const d = readJSON(p, {});
-  return { FunctionGame: d.FunctionGame || {}, tca: d.tca || {} };
+  return {
+    FunctionGame: d.FunctionGame || {},
+    tca: d.tca || {},
+    historyGame: d.historyGame || {},
+  };
 };
 
-const save = data => {
+export const save = (data) => {
   const current = readJSON(p, {});
   current.FunctionGame = data.FunctionGame || {};
+  current.tca = data.tca || {};
+  current.historyGame = data.historyGame || {};
   writeJSON(p, current);
 };
 
-const bersih = data => Object.fromEntries(Object.entries(data).filter(([_, v]) => v?.status));
-const loadToko = () => readJSON(tokoPath, { pendingOrders: [] });
-const saveToko = data => writeJSON(tokoPath, data);
-const loadBank = () => {
+export const bersih = (data) =>
+  Object.fromEntries(Object.entries(data).filter(([_, v]) => v?.status));
+
+export const loadToko = () => readJSON(tokoPath, { pendingOrders: [] });
+export const saveToko = (data) => writeJSON(tokoPath, data);
+
+export const loadBank = () => {
   const bank = readJSON(bankPath);
-  if (!bank.bank || typeof bank.bank.saldo !== 'number') bank.bank = { saldo: 0, tax: '3%' };
-  if (!('tax' in bank.bank)) bank.bank.tax = '3%';
+  if (!bank.bank || typeof bank.bank.saldo !== "number")
+    bank.bank = { saldo: 0, tax: "3%" };
+  if (!("tax" in bank.bank)) bank.bank.tax = "3%";
   return bank;
 };
-const saveBank = data => writeJSON(bankPath, data);
-const loadStore = () => readJSON(storePath, { shops: {} });
-const saveStore = data => writeJSON(storePath, data);
+
+export const saveBank = (data) => writeJSON(bankPath, data);
+
+export const loadStore = () => readJSON(storePath, { shops: {} });
+export const saveStore = (data) => writeJSON(storePath, data);
 
 async function handleGame(conn, msg, chatId, text) {
   try {
@@ -185,7 +214,7 @@ async function handleGame(conn, msg, chatId, text) {
   }
 }
 
-module.exports = {
+const SysGame = {
   handleGame,
   load,
   save,
@@ -196,5 +225,10 @@ module.exports = {
   saveBank,
   loadStore,
   saveStore,
-  p
+  p,
+  readJSON,
+  writeJSON,
+  gameData: readJSON(p, { FunctionGame: {}, tca: { user: {} }, historyGame: {} })
 };
+
+export default SysGame;

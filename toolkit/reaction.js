@@ -1,8 +1,14 @@
-const { run: kickRun } = require('../plugins/group/kick');
-const { run: promoteRun } = require('../plugins/group/promote');
-const { run: demoteRun } = require('../plugins/group/demote');
-const { run: playRun } = require('../plugins/download/play');
-const { run: elevenlabsRun } = require('../plugins/fun/elevenlabs');
+import kick from '../plugins/group/kick.js';
+import promote from '../plugins/group/promote.js';
+import demote from '../plugins/group/demote.js';
+import play from '../plugins/download/play.js';
+import elevenlabs from '../plugins/fun/elevenlabs.js';
+
+const { run: kickRun } = kick;
+const { run: promoteRun } = promote;
+const { run: demoteRun } = demote;
+const { run: playRun } = play;
+const { run: elevenlabsRun } = elevenlabs;
 
 async function rctKey(msg, conn) {
   try {
@@ -17,7 +23,7 @@ async function rctKey(msg, conn) {
     const isGroup = chatId.endsWith('@g.us');
     if (!isGroup) return;
 
-    const { botNumber, botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botNumber, botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
     const isTargetFromBot = participant === botNumber;
 
     const dummyMessage = {
@@ -103,7 +109,7 @@ async function rctKey(msg, conn) {
         if (!Msg) return;
         const quotedText = getTextFromMsg(Msg);
         if (!quotedText) return;
-        const translated = await translate(quotedText, 'id');
+        const translated = await translateText(quotedText, 'id');
         if (translated) {
           await conn.sendMessage(chatId, { text: `*Translate:* ${translated}` }, { quoted: Msg });
         }
@@ -116,10 +122,10 @@ async function rctKey(msg, conn) {
         if (!songText) return;
         await elevenlabsRun(conn, Msg, {
           chatInfo,
-          textMessage: `bella ${songText}`,
+          textMessage: `dabi ${songText}`,
           prefix: '.',
           commandText: 'elevenlabs',
-          args: ['bella', ...songText.trim().split(/\s+/)]
+          args: ['dabi', ...songText.trim().split(/\s+/)]
         });
         break;
 
@@ -142,4 +148,4 @@ async function rctKey(msg, conn) {
   }
 }
 
-module.exports = { rctKey };
+export default rctKey;

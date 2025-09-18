@@ -22,4 +22,4 @@ const makeInMemoryStore = () => {
   return { messages, bind, loadMessage };
 };
 
-module.exports = { makeInMemoryStore };
+export default makeInMemoryStore

@@ -1,6 +1,10 @@
-const fs = require("fs");
-const path = require("path");
-const moment = require("moment-timezone");
+import fs from 'fs';
+import path from 'path';
+import moment from 'moment-timezone';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const file = path.join(__dirname, "db/jadwalsolat.json");
 
@@ -113,4 +117,4 @@ async function cekSholat(conn, msg, { chatId }) {
   }
 }
 
-module.exports = { cekSholat };
+export { cekSholat };

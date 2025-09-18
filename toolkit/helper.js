@@ -1,70 +1,78 @@
-const fs = require('fs');
-const path = require('path');
-const moment = require('moment-timezone');
-const { exec } = require('child_process');
-const axios = require('axios');
-const chalk = require('chalk');
+import fs from "fs";
+import path from "path";
+import moment from "moment-timezone";
+import { exec } from "child_process";
+import axios from "axios";
+import chalk from "chalk";
+import { fileURLToPath } from "url";
 
-const pluginDir = path.join(__dirname, '../plugins');
-const dbFolder = path.join(__dirname, './db');
-const dbFile = path.join(dbFolder, 'database.json');
-const dbPath = './toolkit/db/datatoko.json';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const loadPlug = () => {
-  if (!fs.existsSync(pluginDir)) return;
+const plugDir = path.join(__dirname, "../plugins");
+const dbDir = path.join(__dirname, "./db");
+const dbFile = path.join(dbDir, "database.json");
 
-  let loaded = 0, failed = 0;
-  const errors = [];
+const loadPlug = async () => {
+  if (!fs.existsSync(plugDir)) return;
+
+  let ok = 0, fail = 0;
+  const logs = [];
 
   global.plugins = {};
   global.categories = {};
 
-  for (const folder of fs.readdirSync(pluginDir)) {
-    const folderPath = path.join(pluginDir, folder);
-    if (!fs.statSync(folderPath).isDirectory()) continue;
+  for (const folder of fs.readdirSync(plugDir)) {
+    const fPath = path.join(plugDir, folder);
+    if (!fs.statSync(fPath).isDirectory()) continue;
 
-    for (const file of fs.readdirSync(folderPath).filter(f => f.endsWith('.js'))) {
-      const filePath = path.join(folderPath, file);
+    for (const file of fs.readdirSync(fPath).filter(f => f.endsWith(".js"))) {
+      const fullPath = path.join(fPath, file);
+
       try {
-        delete require.cache[require.resolve(filePath)];
-        const plugin = require(filePath);
-        if (plugin?.run) {
-          const name = path.basename(file, '.js');
-          plugin.__path = filePath;
-          global.plugins[name] = plugin;
-          const tag = plugin.tags || 'Uncategorized';
-          global.categories[tag] = global.categories[tag] || [];
-          global.categories[tag].push(plugin.command);
-          loaded++;
+        const plug = (await import(`${fullPath}?update=${Date.now()}`)).default;
+
+        if (plug?.run) {
+          const name = path.basename(file, ".js");
+          plug.__path = fullPath;
+          global.plugins[name] = plug;
+
+          const tag = plug.tags || "Uncategorized";
+          global.categories[tag] ??= [];
+          global.categories[tag].push(plug.command);
+
+          ok++;
         }
-      } catch (err) {
-        failed++;
-        errors.push(`❌ ${file}: ${err.message}`);
+      } catch (e) {
+        fail++;
+        logs.push(`❌ ${file}: ${e.message}`);
       }
     }
   }
 
-  if (!failed) console.log(chalk.greenBright.bold(`✅ ${loaded} plugin dimuat.`));
-  else {
-    errors.forEach(msg => console.log(chalk.redBright.bold(msg)));
-    console.log(chalk.yellowBright.bold(`⚠️ ${loaded} plugin dimuat, ${failed} gagal.`));
+  if (!fail) {
+    console.log(chalk.greenBright.bold(`✅ ${ok} plugin dimuat.`));
+  } else {
+    logs.forEach(msg => console.log(chalk.redBright.bold(msg)));
+    console.log(chalk.yellowBright.bold(`⚠️ ${ok} plugin dimuat, ${fail} gagal.`));
   }
 
-  return { loaded, errors: failed, messages: errors };
+  return { ok, fail, logs };
 };
 
 let db = { Private: {}, Grup: {} };
 
-const intDB = () => {
-  if (!fs.existsSync(dbFolder)) fs.mkdirSync(dbFolder, { recursive: true });
+const initDB = () => {
+  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+
   if (!fs.existsSync(dbFile)) {
     fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
   } else {
     try {
-      const file = fs.readFileSync(dbFile, 'utf-8');
-      db = file ? JSON.parse(file) : db;
+      const raw = fs.readFileSync(dbFile, "utf-8");
+      db = raw ? JSON.parse(raw) : db;
     } catch (e) {
-      console.error('[DB] Gagal membaca file:', e);
+      console.error("[DB] Gagal membaca file:", e);
     }
   }
 };
@@ -75,101 +83,57 @@ const saveDB = () => {
   try {
     fs.writeFileSync(dbFile, JSON.stringify(db, null, 2));
   } catch (e) {
-    console.error('[DB] Gagal simpan:', e);
+    console.error("[DB] Gagal simpan:", e);
   }
 };
 
-const getUser = (senderId) => {
-  const db = getDB();
-  if (!db?.Private) return null;
-  const key = Object.keys(db.Private).find(k => db.Private[k]?.Nomor === senderId);
-  return key ? { key, value: db.Private[key], db } : null;
+const getUser = (id) => {
+  const { Private } = getDB();
+  if (!Private) return null;
+  const key = Object.keys(Private).find(k => Private[k]?.Nomor === id);
+  return key ? { key, value: Private[key], db } : null;
 };
 
-const getGrpDB = (db, chatId) => {
-  if (!db?.Grup) return null;
-  return Object.values(db.Grup).find(g => String(g?.Id) === String(chatId)) || null;
+const getGc = (db, chatId) => db?.Grup && Object.values(db.Grup).find(g => String(g?.Id) === String(chatId)) || null;
+
+const enWelcome = id => getGc(db, id)?.gbFilter?.Welcome?.welcome === true;
+const getWelTxt = id => getGc(db, id)?.gbFilter?.Welcome?.welcomeText?.trim() || "👋 Selamat datang @user di grup!";
+const enLeft = id => getGc(db, id)?.gbFilter?.Left?.gcLeft === true;
+const getLeftTxt = id => getGc(db, id)?.gbFilter?.Left?.leftText?.trim() || "👋 Selamat tinggal @user!";
+
+const ensureGc = (id) => {
+  db.Grup[id] ??= { id, gbFilter: {} };
+  return db.Grup[id];
 };
 
-const enGcW = (chatId) => {
-  const db = getDB();
-  const data = getGrpDB(db, chatId);
-  return data?.gbFilter?.Welcome?.welcome === true;
+const setWelcome = (id, on, txt) => {
+  const gc = ensureGc(id);
+  gc.gbFilter.Welcome = { ...(gc.gbFilter.Welcome || {}), welcome: on };
+  if (txt) gc.gbFilter.Welcome.welcomeText = txt;
+  saveDB();
 };
 
-const getWelcTxt = (chatId) => {
-  const db = getDB();
-  const data = getGrpDB(db, chatId);
-  const text = data?.gbFilter?.Welcome?.welcomeText;
-  return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat datang @user di grup!';
+const setLeft = (id, on, txt) => {
+  const gc = ensureGc(id);
+  gc.gbFilter.Left = { ...(gc.gbFilter.Left || {}), gcLeft: on };
+  if (txt) gc.gbFilter.Left.leftText = txt;
+  saveDB();
 };
 
-const enGcL = (chatId) => {
-  const db = getDB();
-  const data = getGrpDB(db, chatId);
-  return data?.gbFilter?.Left?.gcLeft === true;
-};
+const exGrup = async (conn, chatId, senderId) => {
+  const meta = await getMetadata(chatId, conn);
+  if (!meta) return {};
 
-const getLeftTxt = (chatId) => {
-  const db = getDB();
-  const data = getGrpDB(db, chatId);
-  const text = data?.gbFilter?.Left?.leftText;
-  return (typeof text === 'string' && text.trim()) ? text : '👋 Selamat tinggal @user!';
-};
-
-const loadGrpDB = (chatId) => {
-  const db = getDB();
-  let groupData = getGrpDB(db, chatId);
-
-  if (!groupData) {
-    db.Grup[chatId] = {
-      id: chatId,
-      gbFilter: {}
-    };
-    groupData = db.Grup[chatId];
-  }
-
-  groupData.gbFilter = groupData.gbFilter || {};
-  return { db, groupData };
-};
-
-const stGcW = (chatId, isOn, welcomeText) => {
-  const { db, groupData } = loadGrpDB(chatId);
-  groupData.gbFilter.Welcome = groupData.gbFilter.Welcome || {};
-  groupData.gbFilter.Welcome.welcome = isOn;
-  if (welcomeText !== undefined) {
-    groupData.gbFilter.Welcome.welcomeText = welcomeText;
-  }
-  saveDB(db);
-};
-
-const stGcL = (chatId, isOn, leftText) => {
-  const { db, groupData } = loadGrpDB(chatId);
-  groupData.gbFilter.Left = groupData.gbFilter.Left || {};
-  groupData.gbFilter.Left.gcLeft = isOn;
-  if (leftText !== undefined) {
-    groupData.gbFilter.Left.leftText = leftText;
-  }
-  saveDB(db);
-};
-
-const exGrp = async (conn, chatId, senderId) => {
-  const metadata = await mtData(chatId, conn);
-  if (!metadata) return {};
-
-  const adminList = (metadata.participants || [])
-    .filter(p => p.admin)
-    .map(p => p.phoneNumber);
-
-  const botNumber = conn.user?.id?.split(':')[0] + '@s.whatsapp.net';
+  const admins = (meta.participants || []).filter(p => p.admin).map(p => p.phoneNumber);
+  const botId = `${conn.user?.id?.split(":")[0]}@s.whatsapp.net`;
 
   return {
-    metadata,
-    groupName: metadata.subject,
-    botNumber,
-    botAdmin: adminList.includes(botNumber),
-    userAdmin: adminList.includes(senderId),
-    adminList
+    meta,
+    groupName: meta.subject,
+    botId,
+    botAdmin: admins.includes(botId),
+    userAdmin: admins.includes(senderId),
+    admins
   };
 };
 
@@ -178,15 +142,15 @@ const Format = {
   realTime: () => moment().tz("Asia/Jakarta").format("HH:mm:ss DD-MM-YYYY"),
   date: ts => moment(ts * 1000).format("DD-MM-YYYY"),
   uptime: () => {
-    const sec = process.uptime();
-    return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+    const s = process.uptime();
+    return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
   },
-  duration: (start, end) => {
-    const dur = end - start;
-    const d = Math.floor(dur / 86400000);
-    const h = Math.floor((dur % 86400000) / 3600000);
-    const m = Math.floor((dur % 3600000) / 60000);
-    return `${d ? d + " Hari " : ""}${h ? h + " Jam " : ""}${m ? m + " Menit" : ""}`.trim();
+  duration: (s, e) => {
+    const d = e - s;
+    const day = Math.floor(d / 86400000);
+    const h = Math.floor((d % 86400000) / 3600000);
+    const m = Math.floor((d % 3600000) / 60000);
+    return `${day ? day + " Hari " : ""}${h ? h + " Jam " : ""}${m ? m + " Menit" : ""}`.trim();
   },
   toTime: ms => {
     if (!ms || typeof ms !== "number") return "-";
@@ -196,80 +160,68 @@ const Format = {
     const s = Math.floor((ms % 60000) / 1000);
     return `${d ? d + " Hari " : ""}${h ? h + " Jam " : ""}${m ? m + " Menit " : ""}${s ? s + " Detik" : ""}`.trim();
   },
-  parseDuration: str => {
-    const [, num, unit] = /^(\d+)([smhd])$/i.exec(str) || [];
+  parseDur: str => {
+    const [, n, u] = /^(\d+)([smhd])$/i.exec(str) || [];
     const map = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
-    return map[unit?.toLowerCase()] ? parseInt(num) * map[unit.toLowerCase()] : null;
+    return map[u?.toLowerCase()] ? parseInt(n) * map[u.toLowerCase()] : null;
   },
-  toNumber: num => {
-    if (typeof num !== "number") return "-";
-    return num.toLocaleString("id-ID");
-  },
-  indoTime: (zone = "Asia/Jakarta", format = "HH:mm:ss DD-MM-YYYY") => {
-    return moment().tz(zone).format(format);
-  }
+  toNum: n => typeof n === "number" ? n.toLocaleString("id-ID") : "-",
+  indoTime: (zone = "Asia/Jakarta", fmt = "HH:mm:ss DD-MM-YYYY") => moment().tz(zone).format(fmt)
 };
 
-const target = (msg, senderId) => {
-  const c = msg.message?.extendedTextMessage?.contextInfo || {};
-  const clean = jid => jid?.replace(/@s\.whatsapp\.net$/i, '').replace(/\D/g, '');
+const target = (msg, sender) => {
+  const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
+  const clean = jid => jid?.replace(/@s\.whatsapp\.net$/i, "").replace(/\D/g, "");
 
-  if (c.quotedMessage && c.participant)
-    return clean(c.participant);
+  if (ctx.quotedMessage && ctx.participant) return clean(ctx.participant);
+  if (ctx.mentionedJid?.length) return clean(ctx.mentionedJid[0]);
+  if (msg.key?.participant) return clean(msg.key.participant);
 
-  if (Array.isArray(c.mentionedJid) && c.mentionedJid.length)
-    return clean(c.mentionedJid[0]);
-
-  if (msg.key?.participant)
-    return clean(msg.key.participant);
-
-  return clean(senderId);
+  return clean(sender);
 };
 
-const getSenderId = (msg) => {
+const getSender = (msg) => {
   const chatId = msg?.key?.remoteJid;
-  const isGroup = chatId?.endsWith('@g.us');
-  const senderId = isGroup
-    ? (msg.key.participant || msg.key.participant)
-    : chatId;
+  const isGc = chatId?.endsWith("@g.us");
+  const senderId = isGc ? msg.key.participant : chatId;
   return { chatId, senderId };
 };
 
-const chkOwner = async (plugin, conn, msg) => {
-  if (plugin.owner) {
-    const { chatId, senderId } = getSenderId(msg);
-    const num = senderId.replace(/\D/g, '');
-    if (!global.ownerNumber.includes(num)) {
-      await conn.sendMessage(chatId, { text: owner }, { quoted: msg });
-      return false;
+const isOwner = async (plugin, conn, msg) => {
+  try {
+    if (plugin.owner) {
+      const { chatId, senderId } = getSender(msg);
+      const num = senderId.replace(/\D/g, "");
+
+      if (!global.ownerNumber.includes(num)) {
+        await conn.sendMessage(chatId, { text: owner }, { quoted: msg });
+        return false;
+      }
     }
+    return true;
+  } catch (err) {
+    return false;
   }
-  return true;
 };
 
-const chkPrem = async (plugin, conn, msg) => {
+const isPrem = async (plugin, conn, msg) => {
   if (plugin.premium) {
-    const { chatId, senderId } = getSenderId(msg);
-    const user = global.getUserData(senderId);
-    if (!user) {
-      console.log(`User data not found for senderId: ${senderId}`);
-    }
-    if (!user?.isPremium?.isPrem) {
+    const { chatId, senderId } = getSender(msg);
+    const usr = global.getUserData(senderId);
+    if (!usr?.isPremium?.isPrem) {
       await conn.sendMessage(chatId, {
         text: prem,
         contextInfo: {
           externalAdReply: {
             title: "Stop",
             body: "Hanya Untuk Pengguna Premium",
-            thumbnailUrl: 'https://c.termai.cc/i56/Fg50KYE.jpg',
+            thumbnailUrl: "https://c.termai.cc/i56/Fg50KYE.jpg",
             mediaType: 1,
             renderLargerThumbnail: true,
           },
           forwardingScore: 1,
           isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: idCh
-          }
+          forwardedNewsletterMessageInfo: { newsletterJid: idCh }
         }
       }, { quoted: msg });
       return false;
@@ -279,7 +231,7 @@ const chkPrem = async (plugin, conn, msg) => {
 };
 
 const updateBio = async conn => {
-  if (global.bioInterval) clearInterval(global.bioInterval);
+  clearInterval(global.bioInterval);
 
   global.bioInterval = setInterval(async () => {
     if (!global.autoBio) return clearInterval(global.bioInterval);
@@ -288,56 +240,53 @@ const updateBio = async conn => {
       const bio = global.bioText
         .replace(/<waktu>|<time>/gi, Format.uptime())
         .replace(/<botName>/gi, global.botName);
-      
+
       await conn.updateProfileStatus(bio);
     } catch (err) {
-      console.error(chalk.redBright.bold('❌ Gagal memperbarui bio:'), err);
+      console.error(chalk.redBright.bold('❌ Bio gagal diperbarui:'), err);
     }
-  }, 60000);
+  }, 60_000);
 };
 
-const getDBFlag = (senderId, chatId, key) => {
+const getDBFlag = (userId, chatId, key) => {
   const db = getDB();
   const isPrivate = chatId.endsWith('@s.whatsapp.net');
-  const target = isPrivate ? db.Private : db.Grup;
+  const source = isPrivate ? db.Private : db.Grup;
 
-  for (const item of Object.values(target)) {
-    if ((isPrivate && item.Nomor === senderId) || (!isPrivate && item.Id === chatId)) {
-      return item[key] === true;
-    }
-  }
-  return false;
+  return Object.values(source || {}).some(entry =>
+    (isPrivate ? entry.Nomor === userId : entry.Id === chatId) && entry[key] === true
+  );
 };
 
-const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
+const chtEmt = async (txt, msg, userId, chatId, conn) => {
   const botId = conn.user?.id?.split(':')[0] + '@s.whatsapp.net';
   const botName = global.botName?.toLowerCase();
   const prefixes = [].concat(global.setting?.isPrefix || '.');
 
-  if (prefixes.some(p => textMessage?.startsWith(p))) return false;
-  if (senderId === conn.user?.id || msg.key.fromMe) return false;
+  if (prefixes.some(p => txt?.startsWith(p))) return false;
+  if (userId === conn.user?.id || msg.key.fromMe) return false;
 
-  const ctx = msg.message?.extendedTextMessage?.contextInfo || {};
+  const ctx = msg.message?.extendedTextMessage?.contextInfo ?? {};
   const { mentionedJid = [], participant = '' } = ctx;
-  const replyBot = participant === botId;
-  const mentionBot = mentionedJid.includes(botId);
+  const isReplyBot = participant === botId;
+  const isMentionBot = mentionedJid.includes(botId);
 
-  if (ctx && participant && !replyBot && !mentionBot) return false;
+  if (ctx && participant && !isReplyBot && !isMentionBot) return false;
 
-  const ai = getDBFlag(senderId, chatId, 'autoai');
-  const bell = getDBFlag(senderId, chatId, 'bell');
+  const ai = getDBFlag(userId, chatId, 'autoai');
+  const bell = getDBFlag(userId, chatId, 'bell');
   if (!ai && !bell) return false;
 
-  const trigger = textMessage?.toLowerCase().includes(botName) || replyBot || mentionBot;
-  if (!trigger) return false;
+  const triggered = txt?.toLowerCase().includes(botName) || isReplyBot || isMentionBot;
+  if (!triggered) return false;
 
   if (ai) {
-    const res = await global.ai(textMessage, msg, senderId);
+    const res = await global.ai(txt, msg, userId);
     await conn.sendMessage(chatId, { text: res || 'Maaf, saya tidak mengerti.' }, { quoted: msg });
   }
 
   if (bell) {
-    const res = await Bella(textMessage, msg, senderId);
+    const res = await Bella(txt, msg, userId);
     if (res.cmd === 'voice' && res.audio) {
       await conn.sendMessage(chatId, { audio: Buffer.from(res.audio), mimetype: 'audio/mpeg', ptt: true }, { quoted: msg });
     } else if (res.msg) {
@@ -348,13 +297,10 @@ const chtEmt = async (textMessage, msg, senderId, chatId, conn) => {
 };
 
 const exCht = (msg = {}) => {
-  let chatId = msg?.key?.remoteJid || '';
+  let chatId = msg?.key?.remoteJid ?? '';
   const isGroup = chatId.endsWith('@g.us');
 
-  let senderId = msg?.key?.fromMe
-    ? chatId
-    : msg?.key?.participant || chatId;
-
+  let senderId = msg?.key?.fromMe ? chatId : msg?.key?.participant || chatId;
   const pushName = (msg?.pushName || global.botName || 'User').trim();
 
   chatId = replaceLid(chatId);
@@ -363,77 +309,61 @@ const exCht = (msg = {}) => {
   return { chatId, isGroup, senderId, pushName };
 };
 
-const exTxtMsg = (msg) => {
-  return (
-    msg.body ||
-    msg.message?.conversation ||
-    msg.message?.extendedTextMessage?.text ||
-    msg.message?.imageMessage?.caption ||
-    msg.message?.videoMessage?.caption ||
-    msg.message?.documentMessage?.fileName ||
-    msg.message?.locationMessage?.name ||
-    msg.message?.locationMessage?.address ||
-    msg.message?.contactMessage?.displayName ||
-    msg.message?.pollCreationMessage?.name ||
-    msg.message?.reactionMessage?.text ||
-    ''
-  );
-};
+const exTxtMsg = msg =>
+  msg.body ||
+  msg.message?.conversation ||
+  msg.message?.extendedTextMessage?.text ||
+  msg.message?.imageMessage?.caption ||
+  msg.message?.videoMessage?.caption ||
+  msg.message?.documentMessage?.fileName ||
+  msg.message?.locationMessage?.name ||
+  msg.message?.locationMessage?.address ||
+  msg.message?.contactMessage?.displayName ||
+  msg.message?.pollCreationMessage?.name ||
+  msg.message?.reactionMessage?.text ||
+  '';
 
 const parseMessage = (msg, prefixes) => {
   const chatInfo = exCht(msg);
-  const textMessage = exTxtMsg(msg);
+  const txt = exTxtMsg(msg);
+  if (!txt) return null;
 
-  if (!textMessage) return null;
-
-  const prefix = prefixes.find(p => textMessage.startsWith(p));
+  const prefix = prefixes.find(p => txt.startsWith(p));
   if (!prefix) return null;
 
-  const args = textMessage.slice(prefix.length).trim().split(/\s+/);
+  const args = txt.slice(prefix.length).trim().split(/\s+/);
   const commandText = args.shift()?.toLowerCase();
 
-  return {
-    chatInfo,
-    textMessage,
-    prefix,
-    commandText,
-    args
-  };
+  return { chatInfo, textMessage: txt, prefix, commandText, args };
 };
 
-const parseNoPrefix = (msg) => {
+const parseNoPrefix = msg => {
   const chatInfo = exCht(msg);
-  const textMessage = exTxtMsg(msg);
+  const txt = exTxtMsg(msg);
+  if (!txt) return null;
 
-  if (!textMessage) return null;
-
-  const args = textMessage.trim().split(/\s+/);
+  const args = txt.trim().split(/\s+/);
   const commandText = args.shift()?.toLowerCase();
 
-  return {
-    chatInfo,
-    textMessage,
-    prefix: '',
-    commandText,
-    args
-  };
+  return { chatInfo, textMessage: txt, prefix: '', commandText, args };
 };
 
 const randomId = () => {
-  const abjad = 'abcdefghijklmnopqrstuvwxyz';
-  return [...Array(7)].map(() => abjad[Math.floor(Math.random() * 26)]).join('') + (Math.floor(Math.random() * 100) + 1);
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
+  const randStr = [...Array(7)].map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const randNum = Math.floor(Math.random() * 100) + 1;
+  return randStr + randNum;
 };
 
 const authUser = (msg, chatInfo) => {
   const db = getDB();
   const { senderId, isGroup, chatId } = chatInfo;
   const nama = (msg.pushName || '-').trim().slice(0, 30);
-  const nomor = senderId;
 
-  if (Object.values(db.Private || {}).some(u => u.Nomor === nomor)) return;
+  if (Object.values(db.Private || {}).some(u => u.Nomor === senderId)) return;
 
-  const fromParticipant = msg?.key?.participant || null;
-  if (isGroup && fromParticipant && senderId !== fromParticipant) return;
+  const fromP = msg?.key?.participant || null;
+  if (isGroup && fromP && senderId !== fromP) return;
   if (!isGroup && Object.values(db.Private || {}).some(u => u.Nomor === chatId)) return;
 
   db.Private ??= {};
@@ -441,7 +371,7 @@ const authUser = (msg, chatInfo) => {
   while (db.Private[finalName]) finalName = `${nama}_${count++}`;
 
   db.Private[finalName] = {
-    Nomor: nomor,
+    Nomor: senderId,
     noId: randomId(),
     autoai: false,
     bell: false,
@@ -456,25 +386,23 @@ const authUser = (msg, chatInfo) => {
   saveDB();
 };
 
-const banned = (senderId) => {
-  let userData = getUser(senderId);
+const banned = userId => {
+  let user = getUser(userId);
 
-  if (!userData) {
+  if (!user) {
     const db = getDB();
-    const cleanedSender = senderId.replace(/\D/g, '');
-    const found = Object.values(db.Private || {}).find(
-      u => u?.Nomor?.replace(/\D/g, '').endsWith(cleanedSender)
-    );
-    if (found) userData = { value: found };
+    const cleanId = userId.replace(/\D/g, '');
+    const found = Object.values(db.Private || {}).find(u => u?.Nomor?.replace(/\D/g, '').endsWith(cleanId));
+    if (found) user = { value: found };
   }
 
-  return userData?.value?.ban === true;
+  return user?.value?.ban === true;
 };
 
-async function shopHandle(conn, msg, textMessage, chatId, senderId) {
+async function shopHandle(conn, msg, txt, chatId, userId) {
   const quoted = msg.message?.extendedTextMessage?.contextInfo;
-  if (!quoted || textMessage?.trim().toLowerCase() !== 'done') return;
-  if (!global.ownerNumber.includes(senderId.replace(/\D/g, ''))) return;
+  if (!quoted || txt?.trim().toLowerCase() !== 'done') return;
+  if (!global.ownerNumber.includes(userId.replace(/\D/g, ''))) return;
 
   const { stanzaId: qId, participant: qUser } = quoted;
   if (!fs.existsSync(dbPath)) return;
@@ -482,7 +410,9 @@ async function shopHandle(conn, msg, textMessage, chatId, senderId) {
   const dbData = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
   const orders = dbData.pendingOrders || [];
   const order = orders.find(o => o.userId === qUser && o.idChat === qId);
-  if (!order) return conn.sendMessage(chatId, { text: "Transaksi tidak ditemukan." }, { quoted: msg });
+  if (!order) {
+    return conn.sendMessage(chatId, { text: "Transaksi tidak ditemukan." }, { quoted: msg });
+  }
 
   dbData.pendingOrders = orders.filter(o => o.userId !== qUser || o.idChat !== qId);
   fs.writeFileSync(dbPath, JSON.stringify(dbData, null, 2));
@@ -491,31 +421,35 @@ async function shopHandle(conn, msg, textMessage, chatId, senderId) {
   await conn.sendMessage(chatId, { text: res, mentions: [qUser] }, { quoted: msg });
 }
 
-module.exports = {
+const Sys = {
   loadPlug,
-  Format,
-  target,
-  chkOwner,
-  chkPrem,
-  getGrpDB,
-  intDB,
+  initDB,
   getDB,
   saveDB,
   getUser,
-  enGcW,
-  enGcL,
-  loadGrpDB,
-  getWelcTxt,
+  getGc,
+  enWelcome,
+  getWelTxt,
+  enLeft,
   getLeftTxt,
-  stGcW,
-  stGcL,
+  ensureGc,
+  setWelcome,
+  setLeft,
+  exGrup,
+  Format,
+  target,
+  getSender,
+  isOwner,
+  isPrem,
   updateBio,
+  getDBFlag,
   chtEmt,
   exCht,
   parseMessage,
   parseNoPrefix,
-  exGrp,
-  shopHandle,
   authUser,
-  banned
+  shopHandle,
+  banned,
 };
+
+export default Sys;
