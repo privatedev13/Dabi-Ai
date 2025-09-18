@@ -1,11 +1,11 @@
-module.exports = {
+export default {
   name: 'cekpinter',
   command: ['cekpinter', 'cekpintar', 'cekkepintaran'],
   tags: 'Fun Menu',
   desc: 'Cek seberapa pinter orang',
   prefix: true,
   owner: false,
-  isPremium: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,9 +16,6 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isOwner(module.exports, conn, msg))) return;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-
       let targetId = target(msg, senderId);
       const mentionTarget = targetId;
       const persentase = Math.floor(Math.random() * 101);

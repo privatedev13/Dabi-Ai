@@ -1,6 +1,6 @@
-const fetch = require("node-fetch");
+import fetch from 'node-fetch';
 
-module.exports = {
+export default {
   name: 'elevenlabs',
   command: ['elevenlabs'],
   tags: 'Fun Menu',
@@ -34,7 +34,8 @@ module.exports = {
       'MasKhanID',
       'Myka',
       'raiden',
-      'CelzoID'
+      'CelzoID',
+      'dabi'
     ];
 
     if (args.length < 2) {

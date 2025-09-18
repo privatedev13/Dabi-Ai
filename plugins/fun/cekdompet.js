@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'cekdompet',
   command: ['cekdompet', 'dompetcek'],
   tags: 'Fun Menu',
@@ -12,7 +12,7 @@ module.exports = {
     const mention = `${targetId}@s.whatsapp.net`;
 
     try {
-      intDB();
+      initDB();
       const user = getUser(mention);
 
       if (!user?.value) {

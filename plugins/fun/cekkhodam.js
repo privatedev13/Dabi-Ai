@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'CekKhodam',
   command: ['cekkodam', 'cekkhodam'],
   tags: 'Fun Menu',
   desc: 'Cek kodam pengguna',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -13,7 +14,7 @@ module.exports = {
     args
   }) => {
     try {
-      const { cekKhodam } = await global.loadFunc();
+      const { cekKhodam } = await global.loadFunctions();
 
       const { chatId, senderId } = chatInfo;
       let targetId = target(msg, senderId);

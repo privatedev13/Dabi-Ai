@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'ceklesbi',
   command: ['ceklesbi'],
   tags: 'Fun Menu',
   desc: 'Cek seberapa lesbi seseorang',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

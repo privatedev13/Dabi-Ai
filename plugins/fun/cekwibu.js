@@ -1,11 +1,11 @@
-module.exports = {
+export default {
   name: 'Cek wibu',
   command: ['cekwibu', 'cek wibu'],
   tags: 'Fun Menu',
   desc: 'Mengecek seberapa wibu orang',
   prefix: true,
-  isPremium: false,
   owner: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,8 +16,6 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-      if (!(await isOwner(module.exports, conn, msg))) return;
       const targetId = target(msg, senderId);
       const mentionTarget = targetId;
       const persentase = Math.floor(Math.random() * 101);

@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Cek kekuatan',
   command: ['cekkekuatan', 'cekkuat'],
   tags: 'Fun Menu',
   desc: 'Mengecek seberapa kuat orang',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -13,7 +14,7 @@ module.exports = {
     args
   }) => {
     try {
-      const { cekkekuatan } = await global.loadFunc();
+      const { cekkekuatan } = await global.loadFunctions();
       const { chatId, senderId, isGroup } = chatInfo;
       let targetId = target(msg, senderId);
       const mentionTarget = targetId;

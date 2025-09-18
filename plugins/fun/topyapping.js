@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'topyapping',
   command: ['topyapping', 'yapping'],
   tags: 'Fun Menu',
   desc: 'Tag 10 anggota grup secara acak sebagai yapping',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -23,7 +24,7 @@ module.exports = {
         }, { quoted: msg });
       }
 
-      const metadata = await mtData(chatId, conn);
+      const metadata = await getMetadata(chatId, conn);
       if (!metadata) {
         return await conn.sendMessage(chatId, {
           text: 'Gagal mengambil metadata grup.'

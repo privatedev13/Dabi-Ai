@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'cekjodoh',
   command: ['cekjodoh'],
   tags: 'Fun Menu',
   desc: 'Cek jodoh antara dua orang secara acak.',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -17,7 +18,7 @@ module.exports = {
       }, { quoted: msg });
     }
 
-    const metadata = await mtData(chatId, conn);
+    const metadata = await getMetadata(chatId, conn);
     if (!metadata) {
       return conn.sendMessage(chatId, {
         text: 'Tidak dapat mengambil data grup.'

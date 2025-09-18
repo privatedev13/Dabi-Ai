@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'kapan',
   command: ['kapan yah', 'kapan'],
   tags: 'Fun Menu',
   desc: 'Sambung kata dengan bot',
   prefix: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -12,7 +13,7 @@ module.exports = {
     args
   }) => {
     try {
-      const { when } = await global.loadFunc();
+      const { when } = await global.loadFunctions();
       const { chatId, senderId, isGroup } = chatInfo;
       const kapan = when[Math.floor(Math.random() * when.length)];
 

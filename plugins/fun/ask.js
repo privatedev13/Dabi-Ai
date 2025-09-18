@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Tanya jawab',
   command: ['apakah', 'Apakah', 'Bukan kah', 'Bukankah', 'Benarkah', 'Benar kah', 'bukan kah', 'bukankah', 'benarkah', 'benar kah'],
   tags: 'Fun Menu',
   desc: 'Bertanya kepada bot',
   prefix: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -13,7 +14,7 @@ module.exports = {
     args
   }) => {
     try {
-      const { ask } = await global.loadFunc();
+      const { ask } = await global.loadFunctions();
       const { chatId, senderId, isGroup } = chatInfo;
       const tanya = ask[Math.floor(Math.random() * ask.length)];
 

@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'ceksigma',
   command: ['ceksigma'],
   tags: 'Fun Menu',
   desc: 'Cek seberapa sigma seseorang',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
