@@ -1,12 +1,7 @@
-/*
-* Source Code By: Danzz
-* ch: https://whatsapp.com/channel/0029Vb9CW9bJUM2etAkmmC2q
-*/
+import axios from 'axios';
+import cheerio from 'cheerio';
 
-const axios = require('axios')
-const cheerio = require('cheerio')
-
-module.exports = {
+export default {
   name: 'rule34',
   command: ['rule34', 'rule'],
   tags: 'Nsfw Menu',
@@ -20,7 +15,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo
-    if (!(await isPrem(module.exports, conn, msg))) return;
     const q = args.join(' ')
     if (!q) return conn.sendMessage(chatId, { text: `Contoh: ${prefix}rule34 neko` }, { quoted: msg })
     try {
