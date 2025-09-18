@@ -1,66 +1,66 @@
-/*
- * Create By Dabi
- * © 2025
+/*  
+ * Create By Dabi  
+ * © 2025  
  */
 
-const globalSetting = require('./toolkit/setting');
-const fs = require('fs');
-const path = require('path');
-const pino = require('pino');
-const chalk = require('chalk');
-const readline = require('readline');
-const { makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
-const { isPrefix } = globalSetting;
-const { loadPlug, usrMsg, shopHandle, banned } = require('./toolkit/helper');
-const { makeInMemoryStore } = require('./toolkit/store.js')
-const Cc = require('./session/prgM.js');
-const { cekSholat } = require('./toolkit/pengingat.js');
-const { handleGame } = require('./toolkit/funcGame');
-const {
-  set,
-  get,
-  delete: del,
-  reset,
-  timer,
-  labvn,
-  saveLid,
-  msgDate,
-  checkSpam
-} = require('./toolkit/transmitter.js');
+import fs from "fs";
+import path from "path";
+import pino from "pino";
+import chalk from "chalk";
+import readline from "readline";
+import { Boom } from "@hapi/boom";
+import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import { fileURLToPath } from "url";
 
-const logger = pino({ level: 'silent' });
+import globalSetting from "./toolkit/setting.js";
+import makeInMemoryStore from "./toolkit/store.js";
+import Cc from "./session/setCfg.js";
+import { cekSholat } from "./toolkit/pengingat.js";
+import emtData from "./toolkit/transmitter.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { reset, timer, labvn, saveLidCache, messageContent, checkSpam } = emtData;
+const { isPrefix } = globalSetting;
+
+const logger = pino({ level: "silent" });
 const store = makeInMemoryStore();
+
 let conn;
 
 global.plugins = {};
 global.categories = {};
 global.lidCache = {};
-
-intDB();
+global.initDB();
 
 setInterval(async () => {
   const now = Date.now();
   const db = getDB();
 
   for (const u of Object.values(db.Private)) {
-    const p = u.isPremium;
-    if (p?.isPrem && (p.time = Math.max(p.time - 60000, 0)) === 0) p.isPrem = false;
+    const prem = u.isPremium;
+    if (prem?.isPrem && (prem.time = Math.max(prem.time - 60000, 0)) === 0) {
+      prem.isPrem = false;
+    }
   }
 
   for (const g of Object.values(db.Grup || {})) {
-    const gf = g.gbFilter || {}, id = g.Id;
-    for (const [type, mode] of Object.entries({ closeTime: 'announcement', openTime: 'not_announcement' })) {
+    const gf = g.gbFilter || {};
+    for (const [type, mode] of Object.entries({
+      closeTime: "announcement",
+      openTime: "not_announcement",
+    })) {
       const t = gf[type];
       if (t?.active && now >= t.until) {
         try {
-          await conn.groupSettingUpdate(id, mode);
-          t.active = false;
+          await conn.groupSettingUpdate(g.Id, mode);
           delete gf[type];
-          await conn.sendMessage(id, {
-            text: `✅ Grup telah *di${mode === 'announcement' ? 'tutup' : 'buka'}* secara otomatis.`
+          await conn.sendMessage(g.Id, {
+            text: `✅ Grup telah *di${mode === "announcement" ? "tutup" : "buka"}* otomatis.`,
           });
         } catch (e) {
-          console.error(`❌ Gagal ${mode === 'announcement' ? 'menutup' : 'membuka'} grup: ${id}`, e);
+          console.error(`❌ Gagal update grup: ${g.Id}`, e);
         }
       }
     }
@@ -69,110 +69,119 @@ setInterval(async () => {
   saveDB();
 }, 60000);
 
-const mute = async (chatId, senderId, conn, textMessage = "") => {
-  const groupData = gcData(chatId);
+const mute = async (chatId, senderId, conn) => {
+  const groupData = getGc(chatId);
+  if (!groupData?.mute) return false;
 
-  if (groupData?.mute) {
-    const metadata = await conn.groupMetadata(chatId);
-    const isAdmin = metadata.participants
-      .filter(p => p.admin)
-      .some(p => p.jid === senderId);
-
-    if (isAdmin) return true;
-    if (!isAdmin) return true;
-  }
-
+  const meta = await conn.groupMetadata(chatId);
+  const isAdmin = meta.participants.some((p) => p.admin && p.id === senderId);
   return false;
 };
 
-const Public = (senderId) => {
+const isPublic = (senderId) => {
   if (!global.public) {
-    const senderNumber = senderId.replace(/\D/g, '');
+    const senderNumber = senderId.replace(/\D/g, "");
     return !global.ownerNumber.includes(senderNumber);
   }
   return false;
 };
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const question = (query) => new Promise((resolve) => rl.question(query, resolve));
+const question = (q) => new Promise((res) => rl.question(q, res));
 
 const startBot = async () => {
   try {
-    const { state, saveCreds } = await useMultiFileAuthState('./session');
+    const { state, saveCreds } = await useMultiFileAuthState("./session");
     conn = makeWASocket({
       auth: state,
       printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
       messageCache: 3750,
-      logger: logger,
-      browser: ['Ubuntu', 'Chrome', '20.0.04'],
+      logger,
+      browser: ["Ubuntu", "Chrome", "20.0.04"],
     });
 
-    conn.ev.on('creds.update', saveCreds);
+    conn.ev.on("creds.update", saveCreds);
     store.bind(conn.ev);
 
     if (!state.creds?.me?.id) {
-      console.log(chalk.blueBright.bold('📱 Masukkan nomor bot WhatsApp Anda:'));
-      let phoneNumber = await question('> ');
-
-      phoneNumber = await global.calNumber(phoneNumber);
- 
-      const code = await conn.requestPairingCode(phoneNumber);
-      console.log(chalk.greenBright.bold('🔗 Kode Pairing:'), code?.match(/.{1,4}/g)?.join('-') || code);
+      console.log(chalk.blueBright.bold("📱 Masukkan nomor bot WhatsApp Anda:"));
+      const phone = await normalizeNumber(await question("> "));
+      const code = await conn.requestPairingCode(phone);
+      console.log(chalk.greenBright.bold("🔗 Kode Pairing:"), code?.match(/.{1,4}/g)?.join("-") || code);
     }
 
-    if (!conn.reactionCache) conn.reactionCache = new Map();
+    conn.reactionCache ??= new Map();
     rl.close();
 
-    conn.ev.on('connection.update', ({ connection }) => {
-      const messages = {
-        open: () => {
-          console.log(chalk.greenBright.bold('✅ Bot online!'));
-          global.autoBio && updateBio(conn);
-        },
-        connecting: () => console.log(chalk.yellowBright.bold('🔄 Menghubungkan kembali...')),
-        close: () => {
-          console.log(chalk.redBright.bold('❌ Koneksi terputus, mencoba menyambung ulang...'));
-          startBot();
-        }
-      };
-      messages[connection]?.();
-    });
+    conn.ev.on("connection.update", (update) => {
+      const { connection, lastDisconnect } = update
 
-    conn.ev.on('messages.upsert', async ({ messages }) => {
+      ;({
+        open: () => {
+          console.log(chalk.greenBright.bold("✅ Bot online!"))
+          global.autoBio && updateBio(conn)
+        },
+
+        connecting: () => {
+          console.log(chalk.yellowBright.bold("🔄 Menghubungkan kembali..."))
+        },
+
+        close: () => {
+          const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
+          console.log(chalk.redBright.bold("❌ Koneksi terputus, mencoba ulang..."))
+
+          if (reason === DisconnectReason.loggedOut) {
+            console.log(chalk.redBright.bold("🚫 Session invalid / logout, hapus session lalu scan ulang."))
+            startBot()
+          } else {
+            startBot()
+          }
+        },
+      }[connection]?.())
+    })
+
+    conn.ev.on("messages.upsert", async ({ messages }) => {
       const msg = messages?.[0];
-      if (!msg?.message) return;
+
+      if (!msg?.message) {
+        return;
+      }
 
       const { chatId, isGroup, senderId, pushName } = exCht(msg);
-      if (isGroup && chatId.endsWith('@g.us')) {
-        const meta = await mtData(chatId, conn);
-        if (meta) await saveLid(meta);
+
+      if (isGroup) {
+        const meta = await getMetadata(chatId, conn);
+        if (meta) {
+          await saveLidCache(meta);
+        }
       }
 
       replaceLid(msg);
-
-      const { textMessage, mediaInfo } = msgDate(msg);
+      const { textMessage, mediaInfo } = messageContent(msg);
       if (!textMessage && !mediaInfo) return;
 
-      const msgType = msg.message;
       const msgId = msg.key?.id;
-      if (msgType?.conversation || msgType?.extendedTextMessage || msgType?.imageMessage || msgType?.videoMessage) {
+      if (["conversation", "extendedTextMessage", "imageMessage", "videoMessage"].some((t) => msg.message?.[t])) {
         conn.reactionCache.set(msgId, msg);
         setTimeout(() => conn.reactionCache.delete(msgId), 180000);
       }
 
       const time = Format.indoTime("Asia/Jakarta", "HH:mm");
-      const senderNumber = senderId?.split('@')[0];
-      if (!senderNumber) return console.error(chalk.redBright.bold('Gagal mendapatkan nomor pengirim.'));
+      const senderNumber = senderId?.split("@")[0];
+      if (!senderNumber) {
+        console.error(chalk.redBright.bold("gagal mendapatkan nomor pengirim", senderNumber));
+        return;
+      }
 
       const db = getDB();
-      const userDb = Object.values(db?.Private || {}).find(u => u.Nomor === senderId) || {};
-      const isPrem = userDb.isPremium?.isPrem;
+      const userDb = getUser(senderId);
+      const isPrem = userDb?.value?.isPremium?.isPrem || false;
 
-      let displayName = pushName || 'Pengguna';
+      let displayName = pushName || "Pengguna";
       if (isGroup) {
-        const meta = await mtData(chatId, conn);
+        const meta = await getMetadata(chatId, conn);
         displayName = meta ? `${meta.subject} | ${displayName}` : `Grup Tidak Dikenal | ${displayName}`;
       }
 
@@ -183,33 +192,43 @@ const startBot = async () => {
 
       if (banned(senderId)) return console.log(`⚠️ User ${senderId} dibanned`);
 
-      await cekSholat(conn, msg, { chatId });
-      await labvn(textMessage, msg, conn, chatId);
-      await Cc(conn, msg, textMessage);
+      await Promise.all([
+        cekSholat(conn, msg, { chatId }),
+        labvn(textMessage, msg, conn, chatId),
+        Cc(conn, msg, textMessage),
+      ]);
 
-      if (
-        await gcFilter(conn, msg, chatId, senderId, isGroup) ||
-        await bdWrd(conn, msg, chatId, senderId, isGroup) ||
-        await mute(chatId, senderId, conn) ||
-        Public(senderId)
-      ) return;
+      if (await groupFilter(conn, msg, chatId, senderId, isGroup)) {
+        return;
+      }
+      if (await badwordFilter(conn, msg, chatId, senderId, isGroup)) {
+        return;
+      }
+      if (await mute(chatId, senderId, conn)) {
+        return;
+      }
+      if (isPublic(senderId)) {
+        return;
+      }
 
-      if (msg.message.reactionMessage) await rctKey(msg, conn);
+      if (msg.message.reactionMessage) {
+        await rctKey(msg, conn);
+      }
 
       const { ownerSetting } = setting;
       global.lastGreet ??= {};
-      const last = global.lastGreet[senderId] || 0;
       if (
         isGroup &&
         ownerSetting.forOwner &&
         ownerSetting.ownerNumber.includes(senderNumber) &&
-        Date.now() - last > 300000
+        Date.now() - (global.lastGreet[senderId] || 0) > 300000
       ) {
         global.lastGreet[senderId] = Date.now();
-        await conn.sendMessage(chatId, {
-          text: setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku",
-          mentions: [senderId]
-        }, { quoted: msg });
+          await conn.sendMessage(
+           chatId,
+          { text: setting?.msg?.rejectMsg?.forOwnerText || "Selamat datang owner ku", mentions: [senderId] },
+          { quoted: msg }
+        );
       }
 
       if ((isGroup && global.readGroup) || (!isGroup && global.readPrivate)) {
@@ -221,55 +240,62 @@ const startBot = async () => {
         setTimeout(() => conn.sendPresenceUpdate("paused", chatId), 3000);
       }
 
-      await afkCencel(senderId, chatId, msg, conn);
-      await afkTgR(msg, conn);
-      await shopHandle(conn, msg, textMessage, chatId, senderId);
-      const isGame = await handleGame(conn, msg, chatId, textMessage);
+      await Promise.all([
+        cancelAfk(senderId, chatId, msg, conn),
+        afkTag(msg, conn),
+        shopHandle(conn, msg, textMessage, chatId, senderId),
+        handleGame(conn, msg, chatId, textMessage),
+      ]);
 
-      if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) return;
+      if (await global.chtEmt(textMessage, msg, senderId, chatId, conn)) {
+        return;
+      }
 
       if (!isPrem) {
-        const mode = global.setting?.botSetting?.Mode || 'private';
-        if ((mode === 'group' && !isGroup) || (mode === 'private' && isGroup)) return;
+        const mode = global.setting?.botSetting?.Mode || "private";
+        if ((mode === "group" && !isGroup) || (mode === "private" && isGroup)) {
+          return;
+        }
       }
 
       const parsedPrefix = parseMessage(msg, isPrefix);
       const parsedNoPrefix = parseNoPrefix(msg);
-      if (!parsedPrefix && !parsedNoPrefix) return;
+      if (!parsedPrefix && !parsedNoPrefix) {
+        return;
+      }
 
       const runPlugin = async (parsed, prefixUsed) => {
         const { commandText, chatInfo } = parsed;
-        const sender = chatInfo.senderId;
-
         for (const [fileName, plugin] of Object.entries(global.plugins)) {
           if (!plugin?.command?.includes(commandText)) continue;
 
           if (prefixUsed) {
             authUser(msg, chatInfo);
-
-            const spam = await checkSpam(sender, conn, chatInfo.chatId);
-            if (spam) return;
+            if (await checkSpam(chatInfo.senderId, conn, chatInfo.chatId)) return;
           }
 
-          const userData = getUser(getDB(), sender);
-          const pluginPrefix = plugin.prefix;
-          const allowRun =
-            pluginPrefix === 'both' ||
-            (pluginPrefix === false && !prefixUsed) ||
-            ((pluginPrefix === true || pluginPrefix === undefined) && prefixUsed);
+          const userData = getUser(getDB(), chatInfo.senderId);
+
+          if ((plugin.premium && !(await global.isPrem(plugin, conn, msg))) ||
+              (plugin.owner && !(await global.isOwner(plugin, conn, msg)))) continue;
+
+          const allowRun = plugin.prefix === "both" ||
+                           (plugin.prefix === false && !prefixUsed) ||
+                           ((plugin.prefix !== false && plugin.prefix !== "both") && prefixUsed);
 
           if (!allowRun) continue;
 
           try {
             await plugin.run(conn, msg, { ...parsed, isPrefix, store });
+
             if (userData) {
-              const db = getDB();
               db.Private[userData.key].cmd = (db.Private[userData.key].cmd || 0) + 1;
               saveDB(db);
             }
           } catch (err) {
-            console.log(chalk.redBright.bold(`❌ Error pada plugin: ${fileName}\n${err.message}`));
+            console.log(chalk.redBright.bold(`❌ Error plugin: ${fileName}\n${err.stack}`));
           }
+
           break;
         }
       };
@@ -278,36 +304,30 @@ const startBot = async () => {
       if (parsedNoPrefix) await runPlugin(parsedNoPrefix, false);
     });
 
-    conn.ev.on('group-participants.update', async (event) => {
-      const { id: chatId, participants, action } = event;
-
+    conn.ev.on('group-participants.update', async ({ id: chatId, participants, action }) => {
       try {
-        const isWelcome = enGcW(chatId) && action === 'add';
-        const isLeave = enGcL(chatId) && (action === 'remove' || action === 'leave');
+        const isWelcome = enWelcome(chatId) && action === 'add';
+        const isLeave = enLeft(chatId) && ['remove', 'leave'].includes(action);
+        const textTemplate = isWelcome ? getWelTxt(chatId) : isLeave ? getLeftTxt(chatId) : '';
 
-        let textTemplate = '';
-        if (isWelcome) textTemplate = getWlcTxt(chatId);
-        if (isLeave) textTemplate = getLftTxt(chatId);
-
-        if (isWelcome || isLeave) {
+        if (textTemplate) {
           for (const participant of participants) {
             const userTag = `@${participant.split('@')[0]}`;
-            const text = textTemplate.replace(/@user|%user/g, userTag);
+            const text = textTemplate
+              .replace(/@user|%user/g, userTag)
+              .replace(/%time/g, Format.time());
 
-            await conn.sendMessage(chatId, {
-              text,
-              mentions: [participant],
-            });
+            await conn.sendMessage(chatId, { text, mentions: [participant] });
           }
         }
 
         if (['promote', 'demote'].includes(action)) {
           global.groupCache = global.groupCache || new Map();
           global.groupCache.delete(chatId);
-          await mtData(chatId, conn);
+          await getMetadata(chatId, conn);
         }
       } catch (error) {
-        console.error(chalk.redBright.bold('❌ Error saat menangani group-participants.update:'), error);
+        console.error('Error group-participants.update:', error);
       }
     });
   } catch (error) {
@@ -319,7 +339,7 @@ console.log(chalk.cyanBright.bold('Create By Dabi\n'));
 loadPlug();
 startBot();
 
-let file = require.resolve(__filename);
+let file = __filename;
 fs.watchFile(file, () => {
   console.log(chalk.yellowBright.inverse.italic(`[ PERUBAHAN TERDETEKSI ] ${__filename}, harap restart bot manual.`));
 });
