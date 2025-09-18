@@ -1,4 +1,4 @@
-const axios = require('axios')
+import axios from 'axios'
 const API_URL = 'https://api.vreden.my.id/api/hentaivid'
 
 async function fetchHentaivid() {
@@ -15,4 +15,4 @@ async function fetchHentaivid() {
   }
 }
 
-module.exports = { fetchHentaivid }
+export default fetchHentaivid;

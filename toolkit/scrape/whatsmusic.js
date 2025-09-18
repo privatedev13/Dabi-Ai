@@ -1,23 +1,25 @@
-const axios = require('axios')
+import axios from 'axios';
 
 async function whatsmusic(audioBuffer, termaiWeb, termaiKey) {
   try {
-    const response = await axios.post(`${termaiWeb}/api/audioProcessing/whatmusic?key=${termaiKey}`, audioBuffer, {
-      headers: {
-        'Content-Type': 'audio/mpeg'
+    const response = await axios.post(
+      `${termaiWeb}/api/audioProcessing/whatmusic?key=${termaiKey}`,
+      audioBuffer,
+      {
+        headers: { 'Content-Type': 'audio/mpeg' }
       }
-    })
+    );
 
-    if (response.data?.status === 'success' && response.data.details?.status) {
-      const { title, artists, acrid } = response.data.details.data
-      return { success: true, title, artists, acrid }
+    if (response.data?.status && response.data.data) {
+      const { title, artists, acrid } = response.data.data;
+      return { success: true, title, artists, acrid };
     } else {
-      return { success: false, message: 'Lagu tidak dikenali.' }
+      return { success: false, message: 'Lagu tidak dikenali.' };
     }
 
   } catch (error) {
-    return { success: false, message: 'Gagal request: ' + error.message }
+    return { success: false, message: 'Gagal request: ' + (error.response?.data?.message || error.message) };
   }
 }
 
-module.exports = { whatsmusic }
+export default whatsmusic;

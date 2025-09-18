@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 async function youtube(url, type = 'mp4') {
   const isValid = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url);
@@ -27,4 +27,4 @@ async function youtube(url, type = 'mp4') {
   }
 }
 
-module.exports = { youtube };
+export default youtube;

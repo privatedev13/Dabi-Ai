@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from "axios";
 
 async function facebookScraper(url) {
   if (!/^https?:\/\/(www\.)?facebook\.(com|watch)\/.+/.test(url)) {
@@ -6,7 +6,7 @@ async function facebookScraper(url) {
   }
 
   try {
-    const response = await axios.get("https://api.siputzx.my.id/api/d/facebook", {
+    const response = await axios.get(`${siptzKey}/api/d/facebook`, {
       params: { url },
       headers: {
         accept: "*/*",
@@ -15,8 +15,7 @@ async function facebookScraper(url) {
       }
     });
 
-    const res = response.data;
-    const { status, data } = res;
+    const { status, data } = response.data;
 
     if (!status || !data?.data?.length) {
       throw new Error("No video URLs found or malformed response.");
@@ -24,7 +23,7 @@ async function facebookScraper(url) {
 
     return {
       status: true,
-      title: data.title || 'No title',
+      title: data.title || "No title",
       thumbnail: data.thumbnail || null,
       duration: data.duration || 0,
       views: data.views || 0,
@@ -33,7 +32,7 @@ async function facebookScraper(url) {
       video: data.data.map((item, i) => ({
         url: item.url,
         quality: item.resolution || `Video ${i + 1}`,
-        format: item.format || 'mp4'
+        format: item.format || "mp4"
       }))
     };
   } catch (error) {
@@ -41,4 +40,4 @@ async function facebookScraper(url) {
   }
 }
 
-module.exports = facebookScraper;
+export default facebookScraper;

@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from 'axios';
 
 async function pinterestSearch(query, type = "image") {
   try {
@@ -19,4 +19,4 @@ async function pinterestSearch(query, type = "image") {
   }
 }
 
-module.exports = { pinterestSearch };
+export default pinterestSearch;
