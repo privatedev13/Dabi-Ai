@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Bayar Denda',
   command: ['bayar'],
   tags: 'Rpg Menu',
   desc: 'Bayar denda untuk keluar dari penjara',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId, senderId } = chatInfo;

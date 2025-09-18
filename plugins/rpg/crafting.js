@@ -1,19 +1,23 @@
-const fs = require('fs');
-const path = require('path');
-const gameFile = path.join(__dirname, '../../toolkit/db/game.json');
+import fs from 'fs';
+import path from 'path';
+const gameFile = path.resolve('./toolkit/db/game.json');
 
-module.exports = {
+export default {
   name: 'crafting',
   command: ['crafting', 'buat'],
   tags: 'Rpg Menu',
   desc: 'Membuat item dari bahan',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args
+  }) => {
     const { chatId, senderId } = chatInfo;
 
     try {
-      const { ore } = await global.loadFunc();
+      const { ore } = await global.loadFunctions();
       const db = JSON.parse(fs.readFileSync(gameFile));
       const users = db.tca?.user || {};
       const nama = Object.keys(users).find(k => users[k].id === senderId);

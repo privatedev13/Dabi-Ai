@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Cek Bank',
   command: ['cekbank', 'bankcek'],
   tags: 'Rpg Menu',
   desc: 'Menampilkan isi saldo bank',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;

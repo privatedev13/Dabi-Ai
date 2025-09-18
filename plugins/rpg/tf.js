@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'Transfer Uang',
   command: ['tf', 'transfer'],
   tags: 'Rpg Menu',
   desc: 'Mentransfer uang',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -21,7 +22,7 @@ module.exports = {
     }
 
     try {
-      intDB();
+      initDB();
       const db = getDB();
       const dbUser = db.Private;
 

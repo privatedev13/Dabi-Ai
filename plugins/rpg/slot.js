@@ -1,27 +1,32 @@
-const fs = require('fs');
-const path = require('path');
-
-const dbPath = '../../toolkit/db';
-const gameDBPath = path.join(__dirname, dbPath, 'slot.json');
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const dbPath = new URL('../../toolkit/db/slot.json', import.meta.url);
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 const symbols = ['🕊️', '🦀', '🦎', '🍀', '💎', '🍒'];
 const randSym = () => symbols[Math.floor(Math.random() * symbols.length)];
 
-const saveGameLog = data => {
-  const gameDB = fs.existsSync(gameDBPath) ? JSON.parse(fs.readFileSync(gameDBPath)) : {};
+const saveGameLog = async data => {
+  const exists = await fs.access(dbPath).then(() => true).catch(() => false);
+  const gameDB = exists ? JSON.parse(await fs.readFile(dbPath, 'utf-8')) : {};
   gameDB[data.name.toLowerCase()] = data;
-  fs.writeFileSync(gameDBPath, JSON.stringify(gameDB, null, 2));
+  await fs.writeFile(dbPath, JSON.stringify(gameDB, null, 2));
 };
 
-module.exports = {
+export default {
   name: 'Game Slot',
   command: ['isi', 'slot'],
   tags: 'Rpg Menu',
   desc: 'Main slot gacha uang',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, args, commandText }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args,
+    commandText
+  }) => {
     const { chatId, senderId, pushName } = chatInfo;
     const db = getDB();
     const user = Object.values(db.Private).find(u => u.Nomor === senderId);
@@ -43,7 +48,7 @@ module.exports = {
 
     const row2 = menang ? Array(3).fill(randSym()) : (() => {
       let r;
-      do { r = [randSym(), randSym(), randSym()] }
+      do { r = [randSym(), randSym(), randSym()]; } 
       while (r[0] === r[1] && r[1] === r[2]);
       return r;
     })();
@@ -70,7 +75,7 @@ module.exports = {
 
     global.saveBank(bank);
     saveDB();
-    saveGameLog({
+    await saveGameLog({
       name: pushName,
       user: senderId,
       bet,

@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const gamePath = path.join(__dirname, '../../toolkit/db/game.json');
+import fs from 'fs';
+import path from 'path';
 
+const gamePath = path.resolve('./toolkit/db/game.json');
 const more = String.fromCharCode(8206);
 const readmore = more.repeat(4001);
 
-module.exports = {
+export default {
   name: 'usergame',
   command: ['game', 'userme'],
   tags: 'Rpg Menu',
@@ -15,8 +15,7 @@ module.exports = {
   run: async (conn, msg, { chatInfo }) => {
     const { senderId, chatId, pushName } = chatInfo;
     const mention = senderId;
-    const defaultThumb = 'https://files.catbox.moe/6ylerz.jpg';
-    let thumbPp = defaultThumb;
+    let thumbPp = 'https://files.catbox.moe/6ylerz.jpg';
 
     try {
       const data = JSON.parse(fs.readFileSync(gamePath));
@@ -24,31 +23,28 @@ module.exports = {
       const nama = Object.keys(users).find(k => users[k].id === senderId);
 
       if (!nama) {
-        return conn.sendMessage(chatId, {
-          text: `Kamu belum mempunyai akun game!\nKetik *.create <nama>* untuk membuat akun.`
-        }, { quoted: msg });
+        return conn.sendMessage(
+          chatId,
+          { text: `Kamu belum mempunyai akun game!\nKetik *.create <nama>* untuk membuat akun.` },
+          { quoted: msg }
+        );
       }
 
       const u = users[nama];
       const inv = u.inv || {};
 
-      const formatInv = (obj, indent = '') => {
-        let output = '';
-        for (const [key, val] of Object.entries(obj)) {
-          if (val && typeof val === 'object' && !Array.isArray(val)) {
-            output += `${indent}• ${key}\n` + formatInv(val, indent + '  ');
-          } else {
-            output += `${indent}• ${key} ${val}\n`;
-          }
-        }
-        return output;
-      };
+      const formatInv = (obj, indent = '') =>
+        Object.entries(obj).map(([k, v]) =>
+          v && typeof v === 'object' && !Array.isArray(v)
+            ? `${indent}• ${k}\n${formatInv(v, indent + '  ')}`
+            : `${indent}• ${k} ${v}`
+        ).join('\n');
 
       const invText = Object.keys(inv).length ? formatInv(inv).trim() : '(kosong)';
 
-      intDB();
+      initDB();
       const db = getDB();
-      const d = Object.values(db.Private).find(v => v.Nomor === senderId);
+      const d = getUser(senderId);
       const uang = d?.money?.amount || 0;
 
       try {
@@ -64,31 +60,37 @@ module.exports = {
         `${foot}${garis}\n\n` +
         `Inventory: ${readmore}\n${invText}`;
 
-      await conn.sendMessage(chatId, {
-        text: teks,
-        mentions: [mention],
-        contextInfo: {
-          externalAdReply: {
-            title: "Game Profile",
-            body: `Akun game milik ${pushName}`,
-            thumbnailUrl: thumbPp,
-            mediaType: 1,
-            renderLargerThumbnail: true,
-          },
-          mentionedJid: [mention],
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: idCh
+      await conn.sendMessage(
+        chatId,
+        {
+          text: teks,
+          mentions: [mention],
+          contextInfo: {
+            externalAdReply: {
+              title: 'Game Profile',
+              body: `Akun game milik ${pushName}`,
+              thumbnailUrl: thumbPp,
+              mediaType: 1,
+              renderLargerThumbnail: true
+            },
+            mentionedJid: [mention],
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: idCh
+            }
           }
-        }
-      }, { quoted: msg });
+        },
+        { quoted: msg }
+      );
 
     } catch (e) {
       console.error('Error plugin usergame:', e);
-      conn.sendMessage(chatId, {
-        text: 'Terjadi kesalahan saat membaca akun game!'
-      }, { quoted: msg });
+      conn.sendMessage(
+        chatId,
+        { text: 'Terjadi kesalahan saat membaca akun game!' },
+        { quoted: msg }
+      );
     }
   }
 };

@@ -1,13 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const gameFile = path.join(__dirname, '../../toolkit/db/game.json');
+import fs from 'fs';
+import path from 'path';
+const gameFile = path.resolve('./toolkit/db/game.json');
 
-module.exports = {
+export default {
   name: 'maining',
   command: ['maining'],
   tags: 'Rpg Menu',
   desc: 'Menambang untuk mendapatkan item dan XP',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId, senderId } = chatInfo;
