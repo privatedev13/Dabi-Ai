@@ -1,9 +1,10 @@
 export default {
-  name: 'Tebakan',
-  command: ['tebakan'],
+  name: 'asahotak',
+  command: ['asahotak'],
   tags: 'Game Menu',
-  desc: 'Tebak-tebakan receh berhadiah tawa!',
+  desc: 'Game Asah Otak – Tebak jawaban dari soal!',
   prefix: true,
+  owner: false,
   premium: false,
 
   run: async (conn, msg, {
@@ -11,15 +12,15 @@ export default {
     commandText
   }) => {
     const { chatId, senderId } = chatInfo;
-    const { tebakSoal } = await global.loadFunctions();
+    const { asahotak } = await global.loadFunctions();
 
     try {
       const data = global.load(global.pPath);
       const gameData = data.FunctionGame || {};
-      const random = tebakSoal[Math.floor(Math.random() * tebakSoal.length)];
+      const random = asahotak[Math.floor(Math.random() * asahotak.length)];
 
       const sent = await conn.sendMessage(chatId, {
-        text: `*Tebakan Lucu!*\n\n${random.soal}`,
+        text: `*Asah Otak*\n\n${random.soal}\n\n⏳ Jawab dengan benar sebelum kehabisan kesempatan!`
       }, { quoted: msg });
 
       const sessionKey = `soal${Object.keys(gameData).length + 1}`;
@@ -27,7 +28,7 @@ export default {
         noId: senderId,
         type: commandText,
         soal: random.soal,
-        jawaban: random.jawaban,
+        jawaban: random.jawaban.toLowerCase(),
         created: Date.now(),
         id: sent.key.id,
         chance: 3,
@@ -36,12 +37,9 @@ export default {
 
       data.FunctionGame = gameData;
       global.save(data, global.pPath);
-
     } catch (e) {
-      await conn.sendMessage(chatId, {
-        text: '⚠️ Gagal mengirim soal tebakan.',
-      }, { quoted: msg });
-      console.error('[Tebakan Error]', e);
+      await conn.sendMessage(chatId, { text: '⚠️ Gagal mengirim soal *Asah Otak*' }, { quoted: msg });
+      console.error('[AsahOtak Error]', e);
     }
   }
 };

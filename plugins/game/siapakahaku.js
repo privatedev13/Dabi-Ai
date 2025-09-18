@@ -1,13 +1,17 @@
-module.exports = {
+export default {
   name: 'SiapaAku',
   command: ['siapakahaku'],
   tags: 'Game Menu',
   desc: 'Game Siapakah Aku? Coba tebak siapa aku dari petunjuk!',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo }) => {
-    const { chatId } = chatInfo;
-    const { siapaAkuSoal } = await global.loadFunc();
+  run: async (conn, msg, {
+    chatInfo,
+    commandText
+  }) => {
+    const { chatId, senderId } = chatInfo;
+    const { siapaAkuSoal } = await global.loadFunctions();
 
     try {
       const data = global.load(global.pPath);
@@ -20,7 +24,8 @@ module.exports = {
 
       const sessionKey = `soal${Object.keys(gameData).length + 1}`;
       gameData[sessionKey] = {
-        type: 'siapakahaku',
+        noId: senderId,
+        type: commandText,
         soal: random.soal,
         jawaban: random.jawaban.toLowerCase(),
         created: Date.now(),

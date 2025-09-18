@@ -1,15 +1,14 @@
-module.exports = {
+export default {
   name: 'Susun Kata',
   command: ['susunkata'],
   tags: 'Game Menu',
   desc: 'Game susun kata',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     const { chatId, senderId } = chatInfo;
-    const { susunKata } = await global.loadFunc();
+    const { susunKata } = await global.loadFunctions();
     const user = senderId;
 
     let data = global.load(global.pPath);
@@ -33,9 +32,9 @@ module.exports = {
 
     const sessionKey = `soal${Object.keys(data.FunctionGame).length + 1}`;
     data.FunctionGame[sessionKey] = {
+      noId: user,
       status: true,
       id: sent.key.id,
-      Nomor: user,
       chance: 3,
       chatId,
       data: {

@@ -1,13 +1,14 @@
-module.exports = {
+export default {
   name: 'Family-100',
   command: ['family', 'family100'],
   tags: 'Game Menu',
   desc: 'Family-100 gameplay',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
-    const { chatId } = chatInfo;
-    const { soalFamily } = await global.loadFunc();
+    const { chatId, senderId } = chatInfo;
+    const { soalFamily } = await global.loadFunctions();
 
     try {
       const session = global.load(global.pPath);
@@ -20,6 +21,7 @@ module.exports = {
       const sessionKey = `soal${Object.keys(session.FunctionGame).length + 1}`;
 
       session.FunctionGame[sessionKey] = {
+        noId: senderId,
         soal: randomSoal.soal,
         jawaban: randomSoal.jawaban,
         created: Date.now(),

@@ -1,12 +1,13 @@
-module.exports = {
+export default {
   name: 'MathQuiz',
   command: ['mtk', 'tesmtk'],
   tags: 'Game Menu',
   desc: 'Jawab soal matematika sederhana!',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
-    const { chatId } = chatInfo;
+    const { chatId, senderId } = chatInfo;
     const [num1, num2] = [1, 1].map(() => Math.floor(Math.random() * 100) + 1);
     const op = ['+', '-', '*', '÷'][Math.floor(Math.random() * 4)];
 
@@ -29,6 +30,7 @@ module.exports = {
     const sessionKey = `soal${Object.keys(gameData).length + 1}`;
 
     gameData[sessionKey] = {
+      noId: senderId,
       soal: question,
       jawaban: result,
       created: Date.now(),

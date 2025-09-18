@@ -1,13 +1,17 @@
-const axios = require('axios');
+import axios from 'axios';
 
-module.exports = {
+export default {
   name: 'Tebak Gambar',
   command: ['tebakgambar', 'tebak'],
   tags: 'Game Menu',
   desc: 'Game tebak gambar',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    commandText
+  }) => {
     const { chatId, senderId } = chatInfo;
 
     try {
@@ -36,14 +40,14 @@ module.exports = {
 
       const sessionKey = `soal${Object.keys(gameData).length + 1}`;
       gameData[sessionKey] = {
+        noId: senderId,
         status: true,
         id: sent.key.id,
-        Nomor: senderId,
         chatId,
         chance: 3,
         data: {
           soal: soal.deskripsi,
-          tipe: 'tebakgambar',
+          tipe: commandText,
           jawaban: soal.jawaban.toLowerCase()
         }
       };
