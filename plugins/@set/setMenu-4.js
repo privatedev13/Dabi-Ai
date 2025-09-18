@@ -7,7 +7,7 @@ export default {
           title: botFullName,
           body: `Ini Adalah Menu ${botName}`,
           thumbnailUrl: thumbnail,
-          mediaType: 1,
+          mediaType: 2,
           renderLargerThumbnail: true,
         },
         forwardingScore: 1,
