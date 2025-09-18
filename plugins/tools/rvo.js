@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+import fs from 'fs';
+import path from 'path';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'rvo',
   command: ['rvo', 'readviewonce'],
   tags: 'Tools Menu',
@@ -12,8 +12,6 @@ module.exports = {
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     if (!quoted) return conn.sendMessage(chatId, { text: 'Balas ke media (View Once atau biasa) yang mau diambil.' }, { quoted: msg });
 

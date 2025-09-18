@@ -1,14 +1,15 @@
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { writeExifImg } = require('../../toolkit/exif');
-const { upUguu, genMemeBuf } = require('../../toolkit/scrape/smeme');
-const fs = require('fs');
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import { writeExifImg } from '../../toolkit/exif.js';
+import { upUguu, genMemeBuf } from '../../toolkit/scrape/smeme.js';
+import fs from 'fs';
 
-module.exports = {
+export default {
   name: 'smeme',
   command: ['smeme', 'stickermeme'],
   tags: 'Tools Menu',
   desc: 'Membuat stiker meme dari gambar dengan teks atas dan bawah.',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

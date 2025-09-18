@@ -1,12 +1,13 @@
-const axios = require('axios');
-const { writeExifImg } = require('../../toolkit/exif');
+import axios from 'axios';
+import { writeExifImg } from '../../toolkit/exif.js';
 
-module.exports = {
+export default {
   name: 'qc',
   command: ['qc', 'quoted'],
   tags: 'Tools Menu',
   desc: 'Membuat quote dari pesan.',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

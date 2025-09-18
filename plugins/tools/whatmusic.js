@@ -1,13 +1,14 @@
-const { whatsmusic } = require('../../toolkit/scrape/whatsmusic.js');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const fs = require('fs');
+import whatsmusic from '../../toolkit/scrape/whatsmusic.js';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import fs from 'fs';
 
-module.exports = {
+export default {
   name: 'whatsmusic',
   command: ['whatmusic'],
   tags: 'Tools Menu',
   desc: 'Mendeteksi lagu dari voice note/audio',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

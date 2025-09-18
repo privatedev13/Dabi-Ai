@@ -1,12 +1,13 @@
-const axios = require('axios');
-const { convertToWebp, sendImageAsSticker } = require('../../toolkit/exif');
+import axios from 'axios';
+import { convertToWebp, sendImageAsSticker } from '../../toolkit/exif.js';
 
-module.exports = {
+export default {
   name: 'emojimix',
   command: ['emojimix', 'mix'],
   tags: 'Tools Menu',
   desc: 'Gabungkan dua emoji dan kirim sebagai stiker',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

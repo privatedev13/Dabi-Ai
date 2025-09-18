@@ -1,12 +1,13 @@
-const remini = require('../../toolkit/scrape/remini');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+import remini from '../../toolkit/scrape/remini.js';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'remini',
   command: ['remini', 'hd'],
   tags: 'Tools Menu',
   desc: 'Upscale kualitas gambar (scale 2-4)',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

@@ -1,14 +1,17 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-const { exec } = require("child_process");
-const { writeExifImg } = require("../../toolkit/exif");
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { exec } from "child_process";
+import { fileURLToPath } from "url";
+import { writeExifImg } from "../../toolkit/exif.js";
 
-module.exports = {
-  name: 'bratsticker',
-  command: ['brat', 'bart', 'bratgenerator'],
-  tags: 'Tools Menu',
-  desc: 'Membuat sticker brat dari teks',
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default {
+  name: "bratsticker",
+  command: ["brat", "bart", "bratgenerator"],
+  tags: "Tools Menu",
+  desc: "Membuat sticker brat dari teks",
   prefix: true,
 
   run: async (conn, msg, {
@@ -19,7 +22,11 @@ module.exports = {
   }) => {
     const { chatId, pushName } = chatInfo;
     if (!args.length)
-      return conn.sendMessage(chatId, { text: `Contoh penggunaan: ${prefix}${commandText} halo aku dabi` }, { quoted: msg });
+      return conn.sendMessage(
+        chatId,
+        { text: `Contoh penggunaan: ${prefix}${commandText} halo aku dabi` },
+        { quoted: msg }
+      );
 
     const text = args.join(" ");
     const apiUrl = `https://aqul-brat.hf.space/api/brat?text=${encodeURIComponent(text)}`;
@@ -33,7 +40,7 @@ module.exports = {
         return conn.sendMessage(chatId, { text: "Gagal mengambil gambar brat!" }, { quoted: msg });
 
       fs.writeFileSync(input, data);
-      const cmd = `ffmpeg -i ${input} -vf "scale=512:512:force_original_aspect_ratio=decrease" -c:v libwebp -lossless 1 ${output}`;
+      const cmd = `ffmpeg -i "${input}" -vf "scale=512:512:force_original_aspect_ratio=decrease" -c:v libwebp -lossless 1 "${output}"`;
 
       exec(cmd, async (err) => {
         if (err) {
@@ -41,14 +48,19 @@ module.exports = {
           return conn.sendMessage(chatId, { text: "Gagal mengkonversi ke sticker." }, { quoted: msg });
         }
 
-        const sticker = fs.readFileSync(output);
-        const finalPath = await writeExifImg(sticker, {
-          packname: `${footer}`,
-          author: `Ⓒ${pushName}`
-        });
+        try {
+          const sticker = fs.readFileSync(output);
+          const finalPath = await writeExifImg(sticker, {
+            packname: "Brat Sticker",
+            author: `Ⓒ${pushName}`
+          });
 
-        await conn.sendMessage(chatId, { sticker: fs.readFileSync(finalPath) }, { quoted: msg });
-        [input, output, finalPath].forEach(p => fs.existsSync(p) && fs.unlinkSync(p));
+          await conn.sendMessage(chatId, { sticker: fs.readFileSync(finalPath) }, { quoted: msg });
+          [input, output, finalPath].forEach(p => fs.existsSync(p) && fs.unlinkSync(p));
+        } catch (error) {
+          console.error("Exif error:", error);
+          conn.sendMessage(chatId, { text: "Gagal menambahkan metadata sticker." }, { quoted: msg });
+        }
       });
 
     } catch (e) {

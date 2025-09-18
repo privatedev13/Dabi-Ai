@@ -1,15 +1,19 @@
-const fs = require('fs');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
-const { writeExifImg } = require('../../toolkit/exif.js');
+import fs from 'fs';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import { writeExifImg } from '../../toolkit/exif.js';
 
-module.exports = {
+export default {
   name: 'Sticker Watermark',
   command: ['swm', 'swn'],
   tags: 'Tools Menu',
   desc: 'Mengubah watermark stiker',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args
+  }) => {
     const { chatId } = chatInfo;
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const stickerMsg = quoted?.stickerMessage;

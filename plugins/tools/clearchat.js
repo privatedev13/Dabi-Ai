@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'clearchat',
   command: ['clearchat', 'cc'],
   tags: 'Tools Menu',
   desc: 'Bersihkan semua riwayat chat',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

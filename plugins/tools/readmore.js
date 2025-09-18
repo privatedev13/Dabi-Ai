@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'readmore',
   command: ['rd', 'readmore'],
   tags: 'Tools Menu',
   desc: 'Membuat teks read more.',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

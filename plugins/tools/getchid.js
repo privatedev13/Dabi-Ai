@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'getchid',
   command: ['getchid', 'getchannelid', 'getsaluranid', 'getidsaluran'],
   tags: 'Tools Menu',
   desc: 'Ambil ID Saluran',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

@@ -1,15 +1,14 @@
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'Personal Talk Vidio',
   command: ['ptv', 'pvt'],
   tags: 'Tools Menu',
   desc: 'Generate Ptv studio',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     const { chatId } = chatInfo;
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const vid = quoted?.videoMessage || msg.message?.videoMessage;

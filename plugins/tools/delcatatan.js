@@ -1,20 +1,24 @@
-const fs = require('fs');
-const path = require('path');
-const catatanPath = path.join(__dirname, '../../toolkit/db/catatan.json');
+import fs from 'fs';
+import path from 'path';
+const catatanPath = path.resolve('./toolkit/db/catatan.json');
 
-module.exports = {
+export default {
   name: 'delcatat',
   command: ['delcatat'],
   tags: 'Tools Menu',
   desc: 'Hapus nama catatan',
   prefix: true,
   owner: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, textMessage, prefix, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    textMessage,
+    prefix,
+    args
+  }) => {
     try {
       const { chatId } = chatInfo;
-      if (!(await isOwner(module.exports, conn, msg))) return;
-
       if (!fs.existsSync(catatanPath)) fs.writeFileSync(catatanPath, '{}');
       const catatan = JSON.parse(fs.readFileSync(catatanPath));
       const nama = args[0];

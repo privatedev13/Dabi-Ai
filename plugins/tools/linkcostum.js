@@ -1,12 +1,13 @@
-const generateLink = require('../../toolkit/scrape/costumelink.js');
+import generateLink from '../../toolkit/scrape/costumelink.js';
 
-module.exports = {
+export default {
   name: 'linkcostum',
   command: ['linkcostum'],
   tags: 'Tools Menu',
   desc: 'Membuat shortlink wa.me dengan kode dan sandi custom',
   prefix: true,
   owner: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,8 +17,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     try {
       const res = await generateLink();
       if (!res?.url) {
