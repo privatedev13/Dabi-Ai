@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'welcome',
   command: ['welcome'],
   tags: 'Group Menu',
   desc: 'Mengatur fitur welcome di grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -18,11 +19,11 @@ module.exports = {
         return conn.sendMessage(chatId, { text: "Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg })
 
       const db = getDB()
-      const groupData = gcData(db, chatId)
+      const groupData = getGc(db, chatId)
       if (!groupData)
         return conn.sendMessage(chatId, { text: "Grup belum terdaftar di database.\nGunakan perintah .daftargc untuk mendaftar." }, { quoted: msg })
 
-      const { userAdmin } = await stGrup(conn, chatId, senderId)
+      const { userAdmin } = await exGrup(conn, chatId, senderId)
       if (!userAdmin)
         return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg })
 

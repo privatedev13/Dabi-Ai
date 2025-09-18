@@ -1,11 +1,11 @@
-module.exports = {
+export default {
   name: 'out',
   command: ['keluar', 'out'],
   tags: 'Group Menu',
   desc: 'Mengeluarkan bot dari group',
   prefix: true,
-  premium: true,
   owner: false,
+  premium: true,
 
   run: async (conn, msg, {
     chatInfo,
@@ -15,9 +15,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     let targetGroup = chatId;
 
     if (args.length > 0) {

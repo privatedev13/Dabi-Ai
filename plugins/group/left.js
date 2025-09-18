@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'left',
   command: ['left'],
   tags: 'Group Menu',
   desc: 'Mengatur fitur pesan keluar grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -17,13 +18,13 @@ module.exports = {
       return conn.sendMessage(chatId, { text: "Perintah ini hanya bisa digunakan di dalam grup!" }, { quoted: msg });
     }
 
-    const groupData = gcData(getDB(), chatId);
+    const groupData = getGc(getDB(), chatId);
 
     if (!groupData) {
       return conn.sendMessage(chatId, { text: "Grup belum terdaftar.\nGunakan *.daftargc* untuk mendaftar." }, { quoted: msg });
     }
 
-    const { userAdmin } = await stGrup(conn, chatId, senderId);
+    const { userAdmin } = await exGrup(conn, chatId, senderId);
     if (!userAdmin) {
       return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
     }

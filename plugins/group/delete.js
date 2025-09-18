@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'delete',
   command: ['d', 'del'],
   tags: 'Group Menu',
   desc: 'Menghapus pesan pengguna di group',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     try {
@@ -22,7 +23,7 @@ module.exports = {
       const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net';
       const isQuotedFromBot = quotedSender === botId;
 
-      const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+      const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
 
       if (!isQuotedFromBot && !userAdmin) {
         return conn.sendMessage(chatId, { text: 'Kamu bukan admin dan hanya bisa menghapus pesan dari bot.' }, { quoted: msg });

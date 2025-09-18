@@ -1,11 +1,12 @@
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'setppgc',
   command: ['setppgc', 'setfotogc'],
   tags: 'Group Menu',
   desc: 'Mengatur foto profil group',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -17,7 +18,7 @@ module.exports = {
       return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup' }, { quoted: msg });
     }
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
     if (!userAdmin) {
       return conn.sendMessage(chatId, { text: 'Kamu bukan Admin' }, { quoted: msg });
     }

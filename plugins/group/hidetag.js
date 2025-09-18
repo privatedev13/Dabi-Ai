@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'hidetag',
   command: ['hidetag', 'h'],
   tags: 'Group Menu',
   desc: 'Tag semua anggota grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -14,7 +15,7 @@ module.exports = {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
 
-    const { userAdmin } = await stGrup(conn, chatId, senderId);
+    const { userAdmin } = await exGrup(conn, chatId, senderId);
     if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
 
     const textToSend = args.join(' ');
@@ -23,7 +24,7 @@ module.exports = {
     }
 
     try {
-      const groupMetadata = await mtData(chatId, conn);
+      const groupMetadata = await getMetadata(chatId, conn);
       if (!groupMetadata) return conn.sendMessage(chatId, { text: 'Gagal mengambil data grup.' }, { quoted: msg });
 
       await conn.sendMessage(chatId, {

@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'antistiker',
   command: ['antistiker'],
   tags: 'Group Menu',
   desc: 'Mengaktifkan atau menonaktifkan fitur anti stiker spam',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,11 +17,11 @@ module.exports = {
     if (!isGroup) 
       return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
 
-    const groupData = gcData(getDB(), chatId);
+    const groupData = getGc(getDB(), chatId);
     if (!groupData) 
       return conn.sendMessage(chatId, { text: `Grup belum terdaftar di database.\nGunakan *${prefix}daftargc* untuk mendaftar.` }, { quoted: msg });
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
     if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
     if (!botAdmin) return conn.sendMessage(chatId, { text: 'Bot bukan admin!' }, { quoted: msg });
 

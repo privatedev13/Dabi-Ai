@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'listadmin',
   command: ['listadmin', 'listadmins'],
   tags: 'Group Menu',
   desc: 'Daftar semua admin grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     try {

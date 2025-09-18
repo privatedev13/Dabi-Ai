@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'setdesc',
   command: ['setdesc', 'setdeskripsi'],
   tags: 'Group Menu',
   desc: 'Mengatur deskripsi group',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -17,7 +18,7 @@ module.exports = {
       return conn.sendMessage(chatId, { text: '⚠️ Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg }, { quoted: msg });
     }
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
 
     if (!userAdmin) {
       return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });

@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'antibadword',
   command: ['badword', 'antibadword'],
   tags: 'Group Menu',
   desc: 'Mengatur fitur anti badword dalam grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -14,10 +15,10 @@ module.exports = {
     const { chatId, senderId, isGroup } = chatInfo;
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya untuk grup!' }, { quoted: msg });
 
-    const groupData = gcData(getDB(), chatId);
+    const groupData = getGc(getDB(), chatId);
     if (!groupData) return conn.sendMessage(chatId, { text: `Grup belum terdaftar.\nGunakan *${prefix}daftargc*.` }, { quoted: msg });
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
     if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
     if (!botAdmin) return conn.sendMessage(chatId, { text: 'Bot bukan admin!' }, { quoted: msg });
 

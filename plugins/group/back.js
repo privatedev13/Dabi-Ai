@@ -1,17 +1,18 @@
-const { proto } = require('@whiskeysockets/baileys');
+import { proto } from '@whiskeysockets/baileys';
 
-module.exports = {
+export default {
   name: 'back',
   command: ['bck', 'back'],
   tags: 'Group Menu',
   desc: 'Join grup dari link invite atau kirim pesan promosi jika sudah bergabung',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, { chatInfo }) => {
     const { chatId, senderId } = chatInfo;
 
     try {
-      const { userAdmin } = await stGrup(conn, chatId, senderId);
+      const { userAdmin } = await exGrup(conn, chatId, senderId);
       if (!userAdmin) {
         return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
       }

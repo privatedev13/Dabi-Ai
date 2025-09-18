@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'close',
   command: ['close', 'tutup'],
   tags: 'Group Menu',
   desc: 'Menutup chat group WhatsApp',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -13,11 +14,11 @@ module.exports = {
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya bisa digunakan dalam grup!' }, { quoted: msg });
 
     try {
-      const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+      const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
       if (!userAdmin) return conn.sendMessage(chatId, { text: 'Kamu bukan Admin!' }, { quoted: msg });
       if (!botAdmin) return conn.sendMessage(chatId, { text: 'Bot bukan admin!' }, { quoted: msg });
 
-      const groupData = gcData(getDB(), chatId);
+      const groupData = getGc(getDB(), chatId);
       if (!groupData) return conn.sendMessage(chatId, { text: 'Grup belum terdaftar di database.\nGunakan *daftargc* untuk mendaftar.' }, { quoted: msg });
 
       groupData.gbFilter ??= {};

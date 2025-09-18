@@ -2,12 +2,13 @@ function sanitizeGroupName(name) {
   return name.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
 }
 
-module.exports = {
+export default {
   name: 'warn',
   command: ['warn', 'warning'],
   tags: 'Group Menu',
   desc: 'Memberi sangsi kepada member',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -25,14 +26,14 @@ module.exports = {
 
     if (!isGroup) return conn.sendMessage(chatId, { text: 'Fitur ini hanya untuk grup!' }, { quoted: msg });
 
-    const { botAdmin, userAdmin, subject } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin, subject } = await exGrup(conn, chatId, senderId);
 
     if (!userAdmin) return conn.sendMessage(chatId, { text: '❌ Kamu bukan Admin!' }, { quoted: msg });
     if (!botAdmin) return conn.sendMessage(chatId, { text: '❌ Bot bukan admin' }, { quoted: msg });
 
     const rawGroupName = subject || `grup${Object.keys(data.Grup).length + 1}`;
     const groupName = sanitizeGroupName(rawGroupName);
-    const grupData = gcData(chatId);
+    const grupData = getGc(chatId);
 
     if (!args[0]) {
       const contoh = `Contoh penggunaan:

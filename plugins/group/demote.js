@@ -1,17 +1,21 @@
-module.exports = {
+export default {
   name: 'demote',
   command: ['demote', 'stopadmin', 'demoteadmin'],
   tags: 'Group Menu',
   desc: 'Turunkan admin grup menjadi anggota',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, prefix }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix
+  }) => {
     const { chatId, senderId, isGroup } = chatInfo;
 
     if (!isGroup)
       return conn.sendMessage(chatId, { text: 'Perintah ini hanya untuk grup.' }, { quoted: msg });
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
 
     if (!userAdmin)
       return conn.sendMessage(chatId, { text: 'Kamu bukan admin.' }, { quoted: msg });
@@ -27,7 +31,7 @@ module.exports = {
     }
 
     const fullTargetId = `${targetNum}@s.whatsapp.net`;
-    const metadata = await mtData(chatId, conn);
+    const metadata = await getMetadata(chatId, conn);
 
     if (!metadata)
       return conn.sendMessage(chatId, { text: 'Gagal mengambil metadata grup.' }, { quoted: msg });
@@ -48,7 +52,7 @@ module.exports = {
       await conn.groupParticipantsUpdate(chatId, [fullTargetId], 'demote');
       if (!global.groupCache) global.groupCache = new Map();
       global.groupCache.delete(chatId);
-      await mtData(chatId, conn);
+      await getMetadata(chatId, conn);
     } catch {
       conn.sendMessage(chatId, {
         text: 'Gagal menurunkan admin. Pastikan bot adalah admin dan ID valid.'

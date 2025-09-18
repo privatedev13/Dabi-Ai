@@ -1,17 +1,22 @@
-module.exports = {
+export default {
   name: 'promote',
   command: ['promote', 'jadiadmin', 'promoteadmin'],
   tags: 'Group Menu',
   desc: 'Promosikan anggota menjadi admin grup',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, prefix, commandText }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix,
+    commandText
+  }) => {
     const { chatId, senderId, isGroup } = chatInfo;
 
     if (!isGroup)
       return conn.sendMessage(chatId, { text: 'Perintah ini hanya untuk grup!' }, { quoted: msg });
 
-    const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+    const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
 
     if (!userAdmin)
       return conn.sendMessage(chatId, { text: 'Kamu bukan admin!' }, { quoted: msg });
@@ -27,7 +32,7 @@ module.exports = {
     }
 
     const fullTargetId = `${targetNum}@s.whatsapp.net`;
-    const metadata = await mtData(chatId, conn);
+    const metadata = await getMetadata(chatId, conn);
 
     if (!metadata)
       return conn.sendMessage(chatId, { text: 'Gagal mengambil metadata grup.' }, { quoted: msg });
@@ -48,7 +53,7 @@ module.exports = {
       await conn.groupParticipantsUpdate(chatId, [fullTargetId], 'promote');
       if (!global.groupCache) global.groupCache = new Map();
       global.groupCache.delete(chatId);
-      await mtData(chatId, conn);
+      await getMetadata(chatId, conn);
 
       await conn.sendMessage(chatId, {
         text: `@${targetNum} sekarang adalah admin.`,

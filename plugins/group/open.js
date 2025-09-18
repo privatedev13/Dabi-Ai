@@ -1,9 +1,10 @@
-module.exports = {
+export default {
   name: 'open',
   command: ['open', 'buka', 'bukagrup'],
   tags: 'Group Menu',
   desc: 'Menjadwalkan pembukaan chat grup',
   prefix: true,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -15,7 +16,7 @@ module.exports = {
     }
 
     try {
-      const { botAdmin, userAdmin } = await stGrup(conn, chatId, senderId);
+      const { botAdmin, userAdmin } = await exGrup(conn, chatId, senderId);
       if (!userAdmin) {
         return conn.sendMessage(chatId, { text: 'Kamu bukan Admin.' }, { quoted: msg });
       }
@@ -23,7 +24,7 @@ module.exports = {
         return conn.sendMessage(chatId, { text: 'Bot bukan admin.' }, { quoted: msg });
       }
 
-      const groupData = gcData(getDB(), chatId);
+      const groupData = getGc(getDB(), chatId);
       if (!groupData) {
         return conn.sendMessage(chatId, { text: "Grup belum terdaftar di database.\nGunakan perintah *.daftargc* untuk mendaftar." }, { quoted: msg });
       }

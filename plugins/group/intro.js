@@ -1,19 +1,18 @@
-module.exports = {
+export default {
   name: 'intro',
   command: ['intro'],
   tags: 'Group Menu',
   desc: 'Mengirimkan intro grup',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, {
-    chatInfo
-  }) => {
+  run: async (conn, msg, { chatInfo }) => {
     try {
       const { chatId, isGroup } = chatInfo;
       if (!isGroup) return conn.sendMessage(chatId, { text: 'Perintah ini hanya dapat digunakan di grup.' }, { quoted: msg });
-      if (!enGcW(chatId)) return conn.sendMessage(chatId, { text: 'Grup ini tidak terdaftar atau fitur welcome tidak aktif.' }, { quoted: msg });
+      if (!enWelcome(chatId)) return conn.sendMessage(chatId, { text: 'Grup ini tidak terdaftar atau fitur welcome tidak aktif.' }, { quoted: msg });
 
-      const welcomeText = getWlcTxt(chatId);
+      const welcomeText = getWelTxt(chatId);
       if (!welcomeText || welcomeText.trim() === '' || welcomeText.includes('Selamat datang @user')) {
         return conn.sendMessage(chatId, { text: 'Pesan welcome belum diatur.' }, { quoted: msg });
       }
