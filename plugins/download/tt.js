@@ -1,12 +1,12 @@
-const { getTiktokVideo } = require('../../toolkit/scrape/tiktok.js');
+import getTiktokVideo from '../../toolkit/scrape/tiktok.js';
 
-module.exports = {
+export default {
   name: 'tiktok',
   command: ['tiktok', 'tt'],
   tags: 'Download Menu',
   desc: 'Download video dari TikTok tanpa watermark.',
   prefix: true,
-  isPremium: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,7 +16,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
     if (!args[0]) {
       return conn.sendMessage(chatId, { text: `Example:\n${prefix}${commandText} https://vt.tiktok.com/7494086723190721798/` }, { quoted: msg });
     }

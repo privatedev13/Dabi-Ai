@@ -1,6 +1,6 @@
-const facebook = require("../../toolkit/scrape/facebook");
+import facebook from "../../toolkit/scrape/facebook.js";
 
-module.exports = {
+export default {
   name: 'facebook',
   command: ['fb', 'fbdl', 'facebook'],
   tags: 'Download Menu',
@@ -13,11 +13,9 @@ module.exports = {
     textMessage,
     prefix,
     commandText,
-    args
+    args,
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     const url = args[0];
     if (!url) {
       return conn.sendMessage(chatId, {
@@ -42,7 +40,6 @@ module.exports = {
       }
 
       const { url: videoUrl, resolution = "Tidak diketahui", format = "Tidak diketahui" } = videoData.video[0];
-
       const caption = `Video ditemukan:\nResolusi: ${resolution}\nFormat: ${format}`;
 
       await conn.sendMessage(chatId, {
@@ -52,7 +49,7 @@ module.exports = {
 
     } catch (err) {
       console.error(err);
-      return conn.sendMessage(chatId, {
+      await conn.sendMessage(chatId, {
         text: "Terjadi kesalahan. Coba lagi nanti."
       }, { quoted: msg });
     }

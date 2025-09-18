@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-module.exports = {
+export default {
   name: 'gitclone',
   command: ['git', 'gitclone'],
   tags: 'Download Menu',
@@ -15,8 +15,6 @@ module.exports = {
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     const url = args.join(' ');
     if (!url) return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/MaouDabi0/Dabi-Ai` }, { quoted: msg });
     if (!/^https?:\/\/.*github\.com/.test(url)) return conn.sendMessage(chatId, { text: `Link invalid!!` }, { quoted: msg });

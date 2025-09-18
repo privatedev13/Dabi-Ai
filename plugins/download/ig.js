@@ -1,6 +1,6 @@
-const { igdl } = require('ruhend-scraper');
+import { igdl } from 'ruhend-scraper';
 
-module.exports = {
+export default {
   name: 'instagram',
   command: ['instagram', 'ig', 'igdl', 'instegrem', 'insta'],
   tags: 'Download Menu',
@@ -10,34 +10,32 @@ module.exports = {
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
+    args,
     prefix,
-    commandText,
-    args
+    commandText
   }) => {
     try {
-      const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-
-      if (!args) {
-        return conn.sendMessage(chatId, { text: `Masukkan URL Instagram! Contoh: *${prefix}${commandText} https://www.instagram.com/p/C1Ck8sENM94/*` }, { quoted: msg });
+      const { chatId } = chatInfo;
+      if (!args || (Array.isArray(args) && !args[0])) {
+        return conn.sendMessage(chatId, {
+          text: `Masukkan URL Instagram! Contoh: *${prefix}${commandText} https://www.instagram.com/p/C1Ck8sENM94/*`
+        }, { quoted: msg });
       }
 
       const url = Array.isArray(args) ? args[0] : args;
-      if (!url || !url.match(/(https?:\/\/(?:www\.)?instagram\.[a-z\.]{2,6}\/[\w\-\.]+(\/[^\s]*)?)/g)) {
+      if (!url.match(/https?:\/\/(?:www\.)?instagram\.[a-z\.]{2,6}\/[\w\-\.]+(\/[^\s]*)?/i)) {
         return conn.sendMessage(chatId, { text: 'URL tidak valid! Pastikan itu adalah tautan Instagram.' }, { quoted: msg });
       }
 
       await conn.sendMessage(chatId, { text: '⏳ Sedang memproses, mohon tunggu...' }, { quoted: msg });
 
       const res = await igdl(url);
-      const data = res.data;
+      const media = res.data?.[0];
 
-      if (!data || data.length === 0) {
+      if (!media) {
         return conn.sendMessage(chatId, { text: 'Media tidak ditemukan atau URL salah.' }, { quoted: msg });
       }
 
-      const media = data[0];
       const fileName = `${media.title?.replace(/[\/:*?"<>|]/g, '') || 'instagram_1'}.mp4`;
       const caption = media.description || 'Video Instagram';
 
@@ -48,9 +46,8 @@ module.exports = {
         caption
       }, { quoted: msg });
 
-    } catch (error) {
-      console.error(error);
+    } catch {
       conn.sendMessage(msg.key.remoteJid, { text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti!' }, { quoted: msg });
     }
   }
-}
+};

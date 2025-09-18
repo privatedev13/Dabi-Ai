@@ -1,49 +1,50 @@
-const axios = require('axios');
+import axios from 'axios';
 
-module.exports = {
+export default {
   name: 'ssweb',
   command: ['ssweb', 'ss'],
   tags: 'Download Menu',
-  desc: 'Mengambil screenshot dari website menggunakan URL',
+  desc: 'Ambil screenshot dari website',
   prefix: true,
   premium: true,
 
   run: async (conn, msg, {
     chatInfo,
-    textMessage,
     prefix,
     commandText,
     args
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
-
     const url = args[0];
+
+    let type = 2;
+    if (args[1]) {
+      if (/^--type=\d$/.test(args[1])) type = args[1].split('=')[1];
+      else if (/^\d+$/.test(args[1])) type = args[1];
+    }
+
     if (!url || !/^https?:\/\//i.test(url)) {
       return conn.sendMessage(chatId, {
-        text: `*Contoh penggunaan:*\n${prefix + commandText} https://example.com`
+        text: `*Contoh penggunaan:*\n${prefix + commandText} https://example.com 2\natau\n${prefix + commandText} https://example.com --type=2`
       }, { quoted: msg });
     }
 
     try {
-      const apiUrl = `${global.HamzWeb}/tools/ssweb?apikey=${global.HamzKey}&url=${encodeURIComponent(url)}`;
+      const apiUrl = `${global.HamzWeb}/tools/ssweb?apikey=${global.HamzKey}&url=${encodeURIComponent(url)}&type=${type}`;
+      const res = await axios.get(apiUrl, { responseType: 'arraybuffer' });
 
-      const response = await axios.get(apiUrl, { responseType: 'arraybuffer' });
-
-      const contentType = response.headers['content-type'];
-      if (!contentType || !contentType.startsWith('image/')) {
+      if (!res.headers['content-type']?.startsWith('image/')) {
         throw new Error('API tidak mengembalikan gambar.');
       }
 
       await conn.sendMessage(chatId, {
-        image: Buffer.from(response.data),
-        caption: `✅ Screenshot dari: ${url}`
+        image: Buffer.from(res.data),
+        caption: `✅ Screenshot dari: ${url}\n📌 Mode type: ${type}`
       }, { quoted: msg });
 
-    } catch (error) {
-      console.error('SSWEB Error:', error);
+    } catch (e) {
       await conn.sendMessage(chatId, {
-        text: `❌ Terjadi kesalahan:\n${error.message || 'Tidak dapat mengambil screenshot.'}`
+        text: `❌ Terjadi kesalahan:\n${e.message || 'Tidak dapat mengambil screenshot.'}`
       }, { quoted: msg });
     }
   }

@@ -1,13 +1,17 @@
-const { pinterestSearch } = require('../../toolkit/scrape/pin.js');
+import pinterestSearch from '../../toolkit/scrape/pin.js';
 
-module.exports = {
+export default {
   name: 'Pinterest',
   command: ['pin', 'pinterest'],
-  tags: 'Downloader',
+  tags: 'Download Menu',
   desc: 'Cari gambar dari Pinterest',
   prefix: true,
+  premium: false,
 
-  run: async (conn, msg, { chatInfo, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    args
+  }) => {
     const { chatId } = chatInfo;
     try {
       if (!args[0]) {

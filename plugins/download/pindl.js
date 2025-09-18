@@ -1,6 +1,6 @@
-const axios = require('axios');
+import axios from 'axios';
 
-module.exports = {
+export default {
   name: 'pindl',
   command: ['pindl', 'pinterestdl'],
   tags: 'Download Menu',
@@ -16,7 +16,6 @@ module.exports = {
     commandText
   }) => {
     const { chatId } = chatInfo;
-    if (!(await isPrem(module.exports, conn, msg))) return;
     const url = args[0];
 
     if (!url || (!url.includes('pinterest.com') && !url.includes('pin.it'))) {

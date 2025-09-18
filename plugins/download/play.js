@@ -1,6 +1,6 @@
-const { play } = require('../../toolkit/scrape/play');
+import play from '../../toolkit/scrape/play.js';
 
-module.exports = {
+export default {
   name: 'play',
   command: ['play', 'lagu', 'song', 'ply'],
   tags: 'Download Menu',
@@ -8,7 +8,12 @@ module.exports = {
   prefix: true,
   premium: false,
 
-  run: async (conn, msg, { chatInfo, prefix, commandText, args }) => {
+  run: async (conn, msg, {
+    chatInfo,
+    prefix,
+    commandText,
+    args
+  }) => {
     const { chatId } = chatInfo;
 
     if (!args[0]) {

@@ -1,6 +1,6 @@
-const { youtube } = require('../../toolkit/scrape/youtube');
+import youtube from '../../toolkit/scrape/youtube.js';
 
-module.exports = {
+export default {
   name: 'youtube',
   command: ['ytmp3', 'ytmp4'],
   tags: 'Download Menu',
@@ -17,8 +17,6 @@ module.exports = {
   }) => {
     try {
       const { chatId } = chatInfo;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-
       const text = args.join(' ').trim();
       if (!text) {
         return conn.sendMessage(chatId, {

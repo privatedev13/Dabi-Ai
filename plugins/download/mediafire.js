@@ -1,6 +1,6 @@
-const { meFire } = require('../../toolkit/scrape/mediafire.js');
+import meFire from '../../toolkit/scrape/mediafire.js';
 
-module.exports = {
+export default {
   name: 'MediaFire',
   command: ['md', 'mediafire'],
   tags: 'Download Menu',
@@ -18,8 +18,6 @@ module.exports = {
   }) => {
     try {
       const { chatId } = chatInfo;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-      if (!(await isOwner(module.exports, conn, msg))) return;
       if (!args[0]) return conn.sendMessage(chatId, { text: `Contoh:\n${prefix + commandText} https://www.mediafire.com/file/xxxxx` }, { quoted: msg });
 
       const { name, size, mime, url } = await meFire(args[0]);
