@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 const configPath = './toolkit/set/config.json';
 const aiSessionPath = './session/AiSesion.json';
 
@@ -6,7 +6,7 @@ function getConfig() {
   return JSON.parse(fs.readFileSync(configPath, 'utf8'));
 }
 
-module.exports = {
+export default {
   name: 'setlogic',
   command: ['setlogic', 'set'],
   tags: 'Ai Menu',
@@ -22,8 +22,6 @@ module.exports = {
     args
   }) => {
     const { chatId, senderId, isGroup } = chatInfo;
-    if (!(await isOwner(module.exports, conn, msg))) return;
-
     if (args.length === 0) {
       const config = getConfig();
       const botName = config.botSetting.botName || 'Bot';

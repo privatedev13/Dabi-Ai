@@ -1,14 +1,20 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const sessionPath = path.join(__dirname, '../../temp/AiSesion.json');
 
-module.exports = {
+export default {
   name: 'resetai',
   command: ['resetaichat', 'resetai'],
   tags: 'Ai Menu',
   desc: 'Mereset sesi AI',
   prefix: true,
-  owner: true,
+  owner: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,
@@ -16,7 +22,6 @@ module.exports = {
     prefix,
     commandText
   }) => {
-    if (!(await isOwner(module.exports, conn, msg))) return;
     try {
       const { senderId, chatId } = chatInfo;
       const session = JSON.parse(fs.readFileSync(sessionPath, 'utf-8'));

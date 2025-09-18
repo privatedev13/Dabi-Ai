@@ -1,9 +1,11 @@
-module.exports = {
+export default {
   name: 'autoai',
   command: ['autoai', 'ai'],
   tags: 'Ai Menu',
   desc: 'Mengaktifkan atau menonaktifkan ai',
   prefix: true,
+  owner: false,
+  premium: false,
 
   run: async (conn, msg, {
     chatInfo,

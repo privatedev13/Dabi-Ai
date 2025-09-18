@@ -1,6 +1,6 @@
-const gpt4 = require('../../toolkit/scrape/gpt4');
+import gpt4 from '../../toolkit/scrape/gpt4.js';
 
-module.exports = {
+export default {
   name: 'gpt4o',
   command: ['aay', 'gpt4o', 'gpt4'],
   tags: 'Ai Menu',
@@ -12,7 +12,6 @@ module.exports = {
     chatInfo,
     textMessage
   }) => {
-    if (!(await isPrem(module.exports, conn, msg))) return;
     try {
       const { chatId } = chatInfo;
       let quotedText;

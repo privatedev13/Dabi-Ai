@@ -1,6 +1,6 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
-module.exports = {
+export default {
   name: 'reset-ai-bell',
   command: ['resetbell', 'resetai'],
   tags: 'Ai Menu',

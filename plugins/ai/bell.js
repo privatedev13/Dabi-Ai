@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   name: 'bell',
   command: ['bell'],
   tags: 'Ai Menu',
@@ -14,8 +14,6 @@ module.exports = {
   }) => {
     try {
       const { chatId, senderId, isGroup } = chatInfo;
-      if (!(await isPrem(module.exports, conn, msg))) return;
-
       if (!args[0] || !['on', 'off'].includes(args[0].toLowerCase())) {
         return conn.sendMessage(chatId, {
           text: `Gunakan format: ${prefix + commandText} <on/off>`
