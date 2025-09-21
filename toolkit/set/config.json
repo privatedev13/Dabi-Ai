@@ -1,10 +1,10 @@
 {
   "ownerSetting": {
     "ownerNumber": [
-      "62851xxxx"
+      "91924217xxxx"
     ],
-    "ownerName": "Yumi",
-    "contact": "6285194993977",
+    "ownerName": "ᵠ𝐀𝐍𝐉𝐀𝐍-𝐗𝐃ᵠ",
+    "contact": "919242172548",
     "ownerLink": {
       "tt": "",
       "yt": "",
@@ -19,22 +19,22 @@
     "forOwner": true
   },
   "botSetting": {
-    "botName": "dabi",
-    "botFullName": "Dabi Chan Ai",
+    "botName": "ᵠ𝐀𝐍𝐉𝐀𝐍-𝐗𝐃-𝐁𝐎𝐓ᵠ",
+    "botFullName": "ᵠ𝐀𝐍𝐉𝐀𝐍-𝐗𝐃-𝐁𝐎𝐓ᵠ",
     "type": "plugin",
-    "footer": "© 𝑫𝒂𝒃𝒊𝑳𝒊𝒏𝒆𝒔",
-    "thumbnail": "https://c.termai.cc/i9/vMw.jpg",
+    "footer": "© ᵠ𝐀𝐍𝐉𝐀𝐍",
+    "thumbnail": "https://files.catbox.moe/ibcqrh.jpg",
     "sendTextLink": {
-      "chshort": "https://whatsapp.com/channel/0029Van8WHGEAKW8OUDniG1m",
+      "chshort": "",
       "gcshort": "",
       "music": ""
     },
     "autoread": {
-      "group": false,
+      "group": true,
       "private": false
     },
     "Mode": "off",
-    "autoTyping": false,
+    "autoTyping": true,
     "public": true,
     "autoBio": false,
     "bioText": "<botName> aktif <waktu>",
@@ -46,7 +46,7 @@
       "❲",
       "❳"
     ],
-    "idCh": "120363310100263711@newsletter",
+    "idCh": "12036100263711@newsletter",
     "frame": {
       "head": "┏───•",
       "body": "│",
