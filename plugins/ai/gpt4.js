@@ -2,7 +2,7 @@ import gpt4 from '../../toolkit/scrape/gpt4.js';
 
 export default {
   name: 'gpt4o',
-  command: ['aay', 'gpt4o', 'gpt4'],
+  command: ['anjangpt', 'gpt', 'gpt4'],
   tags: 'Ai Menu',
   desc: 'Tanya ke GPT-4o menggunakan ChatGPT4o.one',
   prefix: true,
