@@ -30,7 +30,7 @@ export default {
     }
 
     try {
-      await conn.sendMessage(chatId, { react: { text: "⏳", key: msg.key } });
+      await conn.sendMessage(chatId, { react: { text: "☠️", key: msg.key } });
 
       const videoData = await facebook(url);
       if (!videoData?.status || !videoData.video?.length) {
