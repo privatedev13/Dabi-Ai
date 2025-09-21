@@ -1,6 +1,6 @@
 export default {
   name: 'autoai',
-  command: ['autoai', 'ai'],
+  command: ['ai', 'anjanai'],
   tags: 'Ai Menu',
   desc: 'Mengaktifkan atau menonaktifkan ai',
   prefix: true,
