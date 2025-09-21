@@ -5,7 +5,7 @@ export default {
       contextInfo: {
         externalAdReply: {
           title: botFullName,
-          body: `Ini Adalah Menu ${botName}`,
+          body: `Anjan Menu ${botName}`,
           thumbnailUrl: thumbnail,
           mediaType: 2,
           renderLargerThumbnail: true,
