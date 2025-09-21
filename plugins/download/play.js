@@ -2,7 +2,7 @@ import play from '../../toolkit/scrape/play.js';
 
 export default {
   name: 'play',
-  command: ['play', 'lagu', 'song', 'ply'],
+  command: ['play', 'gan', 'song', 'Anjan'],
   tags: 'Download Menu',
   desc: 'Mendownload lagu dari YouTube',
   prefix: true,
@@ -25,7 +25,7 @@ export default {
     const query = args.join(" ");
 
     try {
-      await conn.sendMessage(chatId, { react: { text: "🎵", key: msg.key } });
+      await conn.sendMessage(chatId, { react: { text: "🥹", key: msg.key } });
 
       const result = await play(query);
 
@@ -43,7 +43,7 @@ ${foot}${garis}`;
             title: "Play Music",
             thumbnailUrl: result.image,
             mediaType: 1,
-            renderLargerThumbnail: true,
+            renderLargerThumbnail: false,
           },
           forwardingScore: 1,
           isForwarded: true,
