@@ -24,7 +24,7 @@ export default {
           forwardingScore: 999,
           isForwarded: true,
           externalAdReply: {
-            body: `Ini Menu ${botFullName}`,
+            body: `Anjan Menu ${botFullName}`,
             thumbnailUrl: thumbnail,
             thumbnail: thumbnailBuffer,
             mediaType: 1,
