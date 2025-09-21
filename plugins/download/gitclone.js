@@ -16,7 +16,7 @@ export default {
   }) => {
     const { chatId } = chatInfo;
     const url = args.join(' ');
-    if (!url) return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/MaouDabi0/Dabi-Ai` }, { quoted: msg });
+    if (!url) return conn.sendMessage(chatId, { text: `Where is the link?\nExample:\n${prefix}${commandText} https://github.com/anjanai` }, { quoted: msg });
     if (!/^https?:\/\/.*github\.com/.test(url)) return conn.sendMessage(chatId, { text: `Link invalid!!` }, { quoted: msg });
 
     await conn.sendMessage(chatId, { react: { text: '📦', key: msg.key } });
